@@ -1,0 +1,10 @@
+before_init:
+- cat /mnt/workspace/github.netrc >> ~/.netrc
+- chmod 600 ~/.netrc
+contexts:
+  cxossp-github-personal-access-token: 0
+integrations:
+  aws: ic-dev
+maintainers:
+- email: CXone_IM_Outbound@nice.com
+  name: LiveVox-Integration-Pune

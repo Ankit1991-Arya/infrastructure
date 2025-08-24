@@ -1,0 +1,12 @@
+cloudformation:
+  entry_template_file: "main.cf.yaml"
+  region: "us-west-2"
+  stack_name: "lambda-platform-sre-sbc-health-check"
+  template_bucket: "cf-templates-13bbvsej0yxli-us-west-2"
+
+integrations:
+  aws: openrec-dev-na1
+maintainers:
+  - name: platform-sre
+    email: SRE-Platform@niceincontact.com
+platform: cloudformation

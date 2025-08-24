@@ -1,0 +1,64 @@
+secrets_data:
+  secret1:
+    name: "mon-dev-monitoring-auth"
+    description: "AWS Secret that stores Grafana Admin username and password for openAPM stack"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret2:
+    name: "mon-dev/SRE/OpenAPM/Alertmanager/BMC-QA-API"
+    description: "AWS Secret that stores BMC API details"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret3:
+    name: "mon-dev/SRE/OpenAPM/grafana/ic-dev/cloudwatch/datasource/ic-dev"
+    description: "AWS CloudWatch user AccessKey & SecretKey"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret4:
+    name: "mon-dev/SRE/OpenAPM/grafana/wfo-dev/cloudwatch/datasource/wfo-dev"
+    description: "AWS CloudWatch user AccessKey & SecretKey"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret5:
+    name: "mon-dev/SRE/OpenAPM/grafana/mon-dev/cloudwatch/datasource/mon-dev"
+    description: "AWS CloudWatch user AccessKey & SecretKey"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret6:
+    name: "Mon-dev/SRE/OpenAPM/grafana/okta"
+    description: "AWS Secret that stores OKTA client details for OKTA authentication on Mon Grafana"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret7:
+    name: "Mon-dev/SRE/OpenAPM/prometheusBlackboxExporter/monitoringtools"
+    description: "AWS Secret that stores authentication on Mon BlackboxExporter"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"      

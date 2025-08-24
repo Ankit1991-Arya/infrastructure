@@ -1,0 +1,11 @@
+cloudformation:
+  entry_template_file: main.cf.yaml
+  region: eu-west-2
+  stack_name: StandaloneServicesVPCAddAz
+  template_bucket: cf-templates-kappm5fkcqt9q-eu-west-2
+integrations:
+  aws: ic-uksov1-uk2
+maintainers:
+- email: networkarchitecture@nice.com
+  name: network-architecture
+platform: cloudformation

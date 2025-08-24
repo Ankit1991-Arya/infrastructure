@@ -1,0 +1,419 @@
+- principal: "User:connect-user"
+  resource_name: "KafkaTools.Connect.StatusStorage.V1"
+  operations: ["Write", "Describe", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:entity-user"
+  resource_name: "mrcconfig"
+  operations: ["Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "ACD.Dimension.base_Business_Unit_NaturalCallingConfig.V1"
+  operations: ["Describe", "Read", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "SuiteData.Dimension.Disposition.V1"
+  operations: ["Describe", "Read", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "ACD.Dimension.base_Agents.V1"
+  operations: ["Write", "Read", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "KafkaTools.Connect.OffsetStorage.V1"
+  operations: ["Write", "Read", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:ui-queue-user"
+  resource_name: "esc-uiq-agent-events"
+  operations: ["Read", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "SuiteData.Dimension.UnavailableState.V1"
+  operations: ["Write", "Describe", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:acd-script-engine-user"
+  resource_name: "Acd.Vc.ScriptingApiResponses.V1"
+  operations: ["Write", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "SuiteData.Dimension.Business_Unit.V1"
+  operations: ["Describe", "Read", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "SuiteData.Dimension.PointOfContact.V1"
+  operations: ["Write", "Describe", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "SuiteData.Dimension.Agent.V1"
+  operations: ["Describe", "Read", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "connect-status-storage-topic"
+  operations: ["Read", "Describe", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:acd-script-engine-user"
+  resource_name: "Acd.PersonalConnection"
+  operations: ["Write"]
+  resource_pattern_type: "Prefixed"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:ui-queue-user"
+  resource_name: "Acd.PersonalConnection"
+  operations: ["Write"]
+  resource_pattern_type: "Prefixed"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:sendgrid-integration-user"
+  resource_name: "SendGrid.InboundEmail.V1"
+  operations: ["Read", "Describe", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:routing-ng-user"
+  resource_name: "Routing.PotentialMatches.V1"
+  operations: ["Read", "Write", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:suite-data-user"
+  resource_name: "SuiteData"
+  operations: ["Read", "Write"]
+  resource_pattern_type: "Prefixed"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:routing-ng-user"
+  resource_name: "Routing.Skills.V1"
+  operations: ["Read", "Write", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "SuiteData.Dimension.Team.V1"
+  operations: ["Read", "Write", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:routing-ng-user"
+  resource_name: "SuiteData.Dimension.SkillExtendedSettings.V2"
+  operations: ["Read", "Describe", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:esc-cba-router-user"
+  resource_name: "Esc.Uiq.CellDiscovery"
+  operations: ["Write", "Read", "Describe"]
+  resource_pattern_type: "Prefixed"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "base_Dispositions"
+  operations: ["Write", "Read", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "base_Business_Unit_NaturalCallingConfig"
+  operations: ["Read", "Describe", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "connect-offset-topic"
+  operations: ["Read", "Describe", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:queryable-api-user"
+  resource_name: "SuiteData.Dimension.DialerSkillListManagement.V2"
+  operations: ["Read", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:schema-registry-user"
+  resource_name: "_schemas"
+  operations: ["DescribeConfigs", "Read", "Write", "Describe", "Create"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:ui-queue-user"
+  resource_name: "Acd.PersonConnection"
+  operations: ["Read"]
+  resource_pattern_type: "Prefixed"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:acd-script-engine-user"
+  resource_name: "Acd.PersonConnection"
+  operations: ["Read"]
+  resource_pattern_type: "Prefixed"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "SuiteData.Dimension.DialerSkillDelivery.V1"
+  operations: ["Write", "Read", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "ACD.Dimension.base_Business_Unit.V1"
+  operations: ["Describe", "Read", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "ACD.Dimension.base_AgentSkl.V1"
+  operations: ["Write", "Describe", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:sendgrid-integration-user"
+  resource_name: "SendGrid.OutboundEmail.V1"
+  operations: ["Write", "Describe", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "SuiteData.Dimension.Skill.V1"
+  operations: ["Write", "Read", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "ACD.Dimension.base_Team.V1"
+  operations: ["Describe", "Write", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "SuiteData.Dimension.AgentSkillAssociation.V1"
+  operations: ["Write", "Read", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "base_PointOfContact"
+  operations: ["Write", "Describe", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "ACD.Dimension.base_Dispositions.V1"
+  operations: ["Read", "Describe", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:queryable-api-user"
+  resource_name: "SuiteData.Dimension.DialerSkillDelivery.V2"
+  operations: ["Write", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:sendgrid-integration-user"
+  resource_name: "SendGrid.Notifications.V1"
+  operations: ["Read", "Describe", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "base_AgentSkl"
+  operations: ["Write", "Describe", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "_confluent-command"
+  operations: ["Read", "Write", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "KafkaTools.Connect.Config.V1"
+  operations: ["Read", "Write", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:queryable-api-user"
+  resource_name: "SuiteData.Dimension.Skill.V2"
+  operations: ["Read", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:routing-ng-user"
+  resource_name: "SuiteData.Dimension.Skill.V2"
+  operations: ["Write", "Read", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:routing-ng-user"
+  resource_name: "Routing.Matches.V1"
+  operations: ["Read", "Describe", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "base_Business_Unit"
+  operations: ["Write", "Read", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "SuiteData.Dimension.DialerSkillListManagement.V1"
+  operations: ["Write", "Describe", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "ACD.Dimension.base_Campaign.V1"
+  operations: ["Read", "Describe", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "internal"
+  operations: ["Read", "Describe", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "ACD.Dimension.base_Outstates.V1"
+  operations: ["Write", "Describe", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "ACD.Dimension.base_PointOfContact.V1"
+  operations: ["Read", "Write", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "base_Skills"
+  operations: ["Read", "Describe", "Write"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "ACD.Dimension.base_Skills.V1"
+  operations: ["Write", "Describe", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "ACD.Dimension.SchemaHistory.V1"
+  operations: ["Write", "Describe", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "base_Outstates"
+  operations: ["Read", "Write", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:ui-queue-user"
+  resource_name: "Esc.Uiq.AgentEvent.V1"
+  operations: ["Write", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "base_Agents"
+  operations: ["Read", "Write", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "base_Team"
+  operations: ["Describe", "Write", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "connect-config-topic"
+  operations: ["Describe", "Write", "Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"

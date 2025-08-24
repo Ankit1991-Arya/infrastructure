@@ -1,0 +1,5 @@
+data:
+  role:
+    arn: "arn:aws:iam::300101013673:role/ServiceAccess-sre-uptime-calculation-mon-role"
+  layer:
+    arn: "arn:aws:lambda:us-west-2:300101013673:layer:node_modules_layer:2"

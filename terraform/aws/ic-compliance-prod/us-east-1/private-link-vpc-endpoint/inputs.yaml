@@ -1,0 +1,52 @@
+private_link_data:
+  # Private link for API Facade and MediaPlayback
+  Facade-MediaPlayback:
+    vpc_id: vpc-49016a2f
+    subnet_ids:
+      - subnet-6c999225
+      - subnet-a2b4e5f9
+    security_group_ids:
+      - sg-09b9d31723cc6a201
+    service_name: "com.amazonaws.vpce.us-east-1.vpce-svc-0894933f11fb51fcd"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: false
+    route53_record_name: ""
+    tags: 
+      Request: "CHG0092022"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "apifacade"
+      Product: "apifacade"
+  # Private link for API Facade and IHub
+  Facade-IHub:
+    vpc_id: vpc-49016a2f
+    subnet_ids:
+      - subnet-6c999225
+      - subnet-a2b4e5f9
+    security_group_ids:
+      - sg-09b9d31723cc6a201
+    service_name: "com.amazonaws.vpce.us-east-1.vpce-svc-0c5d74f230fd584c4"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: false
+    route53_record_name: ""
+    tags: 
+      Request: "CHG0092022"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "apifacade"
+      Product: "apifacade"
+  # Private link for Realime-ASR
+  Realime-ASR:
+    vpc_id: vpc-380c675e
+    subnet_ids:
+      - subnet-609b9029
+      - subnet-32b2e369
+    security_group_ids:
+      - sg-0c93d73b464041c8d
+    service_name: "com.amazonaws.vpce.us-east-1.vpce-svc-03ed9bd6d40827854"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: true
+    route53_record_name: ""
+    tags: 
+      Request: "CHG0108575"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "Lynx"
+      Product: "Realtime: ASR"

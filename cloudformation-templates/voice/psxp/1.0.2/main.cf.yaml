@@ -1,0 +1,1765 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "AWS CloudFormation Template to setup and deploy a PSX Primary with a single interface for CXone derived from Ribbon PSX  V16.01.05R000 PSXCFN_PRIMARY.yaml"
+Parameters:
+
+  EnableHttpsProxy:
+    Description: Set to Y for enabling https proxy server & specify proxy details below
+    Type: String
+    AllowedValues:
+      - "N"
+      - "Y"
+    Default: "N"
+
+  PrimHttpsProxyIpAddress:
+    Description: Primary HTTPS Proxy IP Address
+    Type: String
+    Default: ""
+
+  PrimHttpsProxyPortNumber:
+    Description: Primary HTTPS Proxy Port Number
+    Type: Number
+    Default: 3129
+
+  PrimHttpsProxyUserName:
+    Description: Primary HTTPS Proxy Username
+    Type: String
+    Default: "root"
+
+  PrimHttpsProxyPassword:
+    Description: Primary HTTPS Proxy Password
+    Type: String
+    Default: ""
+
+  PrimHttpsProxyCertificateDomainName:
+    Description: Primary HTTPS Proxy Certificate Domain Name
+    Type: String
+    Default: ""
+
+  SecHttpsProxyIpAddress:
+    Description: Secondary HTTPS Proxy IP Address
+    Type: String
+    Default: ""
+
+  SecHttpsProxyPortNumber:
+    Description: Secondary HTTPS Proxy Port Number
+    Type: Number
+    Default: 3129
+
+  SecHttpsProxyUserName:
+    Description: Secondary HTTPS Proxy Username
+    Type: String
+    Default: "root"
+
+  SecHttpsProxyPassword:
+    Description: Secondary HTTPS Proxy Password
+    Type: String
+    Default: ""
+
+  SecHttpsProxyCertificateDomainName:
+    Description: Secondary HTTPS Proxy Certificate Domain Name
+    Type: String
+    Default: ""
+
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: c5.2xlarge
+    AllowedValues: [m5.xlarge, m5.2xlarge,m5.4xlarge,c5.2xlarge,c5.4xlarge]
+    ConstraintDescription: must be a valid EC2 instance type.
+
+## CXone commented out KeyName due to import from RegionConfig stack
+#  KeyName:
+#    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances
+#    Type: AWS::EC2::KeyPair::KeyName
+#    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+#    Default: ""
+#
+  Name:
+    Description: PSX instance hostname
+    Type: String
+    AllowedPattern: "[a-zA-Z]+[a-zA-Z0-9]*"
+    Default: "psxmaster"
+
+#  Role:
+#    Description: PSX Role
+#    Type: String
+#    AllowedValues: [Master,Recovery]
+#    Default: "Master"
+
+  ProcessManagerId:
+    Description: PSX Process Manager
+    Type: String
+    Default: DEFAULT_CLOUD_PRIMARY
+    AllowedValues: [DEFAULT_CLOUD_PRIMARY, DFLT_CLOUD_PRIMARY_CALL]
+
+  TDAEnabled:
+    Description: TDA Enabled
+    Type: String
+    AllowedValues:
+      - "N"
+      #- "Y"
+    Default: "N"
+
+  SsuserSshKey:
+    Description: Optional Public Ssh Key for ssuser
+    Type: String
+    Default: ""
+
+  NtpServer1:
+    Description: NTP Server
+    Type: String
+    Default: ""
+
+  NtpServer2:
+    Description: Secondary NTP Server
+    Type: String
+    Default: ""
+
+  DnsServer1:
+    Description: Dns Server
+    Type: String
+    Default: ""
+
+  DnsServer2:
+    Description: Secondary Dns Server
+    Type: String
+    Default: ""
+
+  DnsSearchPath:
+    Type: String
+    Description: DnsSearchPath value
+    Default: "inucn.com"
+
+  TimeZone:
+    Description: Time Zone
+    Type: String
+    Default: "GMT"
+
+  EmsSshKey1:
+    Description: "Public Ssh Key for EMS 1 - Obtained from Primary EMS insight user's .ssh/id_rsa.pub."
+    Type: String
+    Default: ""
+
+  EmsSshKey2:
+    Description: "Optional Public Ssh Key for EMS 2 - Obtained from Secondary EMS insight user's .ssh/id_rsa.pub."
+    Type: String
+    Default: ""
+
+  AdminSshKey:
+    Description: Optional Public Ssh Key for admin user
+    Type: String
+    Default: ""
+
+  AdminPasswordHash:
+    Description: "Password hash for PSX admin user $6$salt$encpasswd"
+    Type: String
+    Default: ""
+
+  MgmtSecurityGroup:
+    Description: "Security group for PSX management - Created from Voice-Ribbon-PSXSecurityGroup.yml CloudFormation Script"
+    Type: AWS::EC2::SecurityGroup::Id
+    Default: ""
+
+  AmiId:
+    Description: "Amazon AMI image for PSX"
+    Type: String
+    Default: ""
+
+  MgmtSubnetId:
+    Description: "SubnetId of an existing subnet in your Virtual Private Cloud (VPC) for Management"
+    Type: AWS::EC2::Subnet::Id
+    Default: ""
+
+  PlacementGroup:
+    Type: String
+    Description: "Optional placement group for this PSX instance"
+    Default: ""
+
+  ManagementEIPCount:
+    Description: "Enter Number of EIP required on management interface"
+    Type: Number
+    Default: 0
+    AllowedValues: [0,1]
+    MaxValue: 1
+    MinValue: 0
+
+  ManagementRoutes:
+    Type: String
+    Description: "Optional routes for the management interface"
+    Default: ""
+
+## CXone updated to include gp3
+  VolumeType:
+    Type: String
+    Description: "Select Type of Volume for PSX"
+    AllowedValues: [gp3,gp2,io1]
+    Default: "gp3"
+
+  VolumeSize:
+    Description: "180Gb for small and 600Gb for large"
+    Type: Number
+    Default: 600
+    MaxValue: 1024
+    MinValue: 80
+
+  Iops:
+    Type: Number
+    Description: "Enter IOPS reservation for io1/gp3 EBS volume type"
+    Default: 3000
+    MaxValue: 3500
+
+  SdRegistry:
+    Type: String
+    Description: Comma-separated list of registry server used by the Service Discovery Representative ( IP | IP:port | hostname)
+    Default: ""
+
+  SdRegistryType:
+    Type: String
+    Description: Type of registry servers used by the Service Discovery Representative (all have to be same type)
+    Default: "dns"
+
+  EmsFqdn:
+    Type: String
+    Description: EMS Fully Qualified Domain Name - e.g. instance1._ems._tcp.example.com (No quotes required)
+    Default: ""
+
+  EmsIp1:
+    Type: String
+    Description: "Primary EMS Host IP"
+    Default: ""
+
+  EmsIp2:
+    Type: String
+    Description: "Optional Secondary EMS Host IP"
+    Default: ""
+
+  EmsUsername:
+    Description: "EMS UserName"
+    Type: String
+    Default: "restuser"
+
+
+  EmsPassword:
+    Description: "EMS Password"
+    Type: String
+    Default: ""
+
+  EmsPrivateNodeParameters:
+    Description: "EMS Private Node Parameters - vnfc_id=<vnfc_id>,cluster_id=<Primary PSX Cluster ID>"
+    AllowedPattern: "^$|([a-zA-Z0-9_,-=]*)"
+    Type: String
+    Default: "vnfc"
+
+  PreviousOracleNodeId:
+    Type: String
+    Description: Registration Node Id of previous Oracle instance this stack is replacing
+    Default: ""
+
+  PreviousOracleNodeName:
+    Type: String
+    Description: Previous Node Name (Former GrSystemName)
+    Default: ""
+
+  DbEbsVolume:
+    Description: "Pre-Allocated Ebs Volume to use for DB storage."
+    Type: String
+    Default: ""
+
+  Upgrade:
+    Type: String
+    Description: "Perform upgrade on DB volume (if possible)."
+    AllowedValues:
+      - "No"
+      - "Yes"
+    Default: "No"
+
+  MgmtPrivIP:
+    Description: "Specific private IP to request on management subnet"
+    Type: String
+    AllowedPattern: "$|((\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3}).(\\d{1,3}))"
+    ConstraintDescription: "Must be a valid IP address or Empty"
+    Default: ""
+
+  MgmtExistingEIPID:
+    Description: "Pre-Allocated EIP ID"
+    Type: String
+    Default: ""
+
+  MgmtExistingEIP:
+    Description: "Existing Management EIP address for pre-allocated EIP"
+    Type: String
+    AllowedPattern: "$|((\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3}).(\\d{1,3}))"
+    ConstraintDescription: "Existing Management EIP address for pre-allocated EIP or Empty"
+    Default: ""
+
+  DbIpAddress:
+    Type: String
+    Description: "IP address of database"
+    Default: ""
+
+  DbHostname:
+    Type: String
+    Description: "Hostname of database node"
+    Default: ""
+
+  BdrNodeType:
+    Type: String
+    Description: "BDR Node Type"
+    Default: "P"
+    AllowedValues:
+      - "P"
+      - "S"
+
+  BdrFirstNode:
+    Type: String
+    Description: "Is this BDR first node"
+    Default: "Y"
+    AllowedValues:
+      - "Y"
+      - "N"
+
+  BdrUpStreamHostname:
+    Type: String
+    Description: "Hostname of BDR node from where this node will get initial data"
+    Default: ""
+
+  BdrUpStreamIp:
+    Type: String
+    Description: "IP of BDR node from where this node will get initial data"
+    Default: ""
+
+  PgAuditLogLevel:
+    Type: String
+    Description: Log Level of Postgres Audit bitwise 1 - -misc, 2 - all, 3 - role, 4 - read, 5 - write, 6 - ddl (example:ddl,write,role is 56)
+    Default: ""
+
+  GenPgSshKey:
+    Type: String
+    Description: "Generate new Postgres Ssh Key"
+    Default: "N"
+    AllowedValues:
+      - "Y"
+      - "N"
+  PgGenericKey:
+    Type: String
+    Description: "Postgres Generic Key"
+    Default: ""
+
+  LicenseMode:
+    Type: String
+    Description: "License Mode"
+    Default: "DomainLocked"
+    AllowedValues:
+      - "NodeLocked"
+      - "DomainLocked"
+
+  LicenseProfileId:
+    Type: String
+    Description: "License Profile Id"
+    Default: ""
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "Network Configuration"
+        Parameters:
+          - MgmtSubnetId
+          - ManagementEIPCount
+          - MgmtSecurityGroup
+          - MgmtPrivIP
+          - MgmtExistingEIP
+          - MgmtExistingEIPID
+      -
+        Label:
+          default: "Amazon EC2 Configuration"
+        Parameters:
+          - AmiId
+          - InstanceType
+#          - KeyName
+          - VolumeType
+          - VolumeSize
+          - Iops
+          - DbEbsVolume
+          - PlacementGroup
+      -
+        Label:
+          default: "PSX Configuration"
+        Parameters:
+          - Name
+          - ProcessManagerId
+          - TDAEnabled
+          - SdRegistry
+          - SdRegistryType
+          - EmsFqdn
+          - EmsIp1
+          - EmsIp2
+          - EmsUsername
+          - EmsPassword
+          - EmsPrivateNodeParameters
+          - PreviousOracleNodeId
+          - PreviousOracleNodeName
+          - DnsServer1
+          - DnsServer2
+          - DnsSearchPath
+          - NtpServer1
+          - NtpServer2
+          - TimeZone
+          - ManagementRoutes
+          - Upgrade
+          - LicenseMode
+          - LicenseProfileId
+          - EnableHttpsProxy
+          - PrimHttpsProxyIpAddress
+          - PrimHttpsProxyPortNumber
+          - PrimHttpsProxyUserName
+          - PrimHttpsProxyPassword
+          - PrimHttpsProxyCertificateDomainName
+          - SecHttpsProxyIpAddress
+          - SecHttpsProxyPortNumber
+          - SecHttpsProxyUserName
+          - SecHttpsProxyPassword
+          - SecHttpsProxyCertificateDomainName
+      -
+        Label:
+          default: "PSX Access Configuration"
+        Parameters:
+          - AdminPasswordHash
+          - AdminSshKey
+          - EmsSshKey1
+          - EmsSshKey2
+          - SsuserSshKey
+
+      -
+        Label:
+          default: "Postgres BDR Settings"
+        Parameters:
+          - DbIpAddress
+          - DbHostname
+          - BdrNodeType
+          - BdrFirstNode
+          - BdrUpStreamHostname
+          - BdrUpStreamIp
+          - GenPgSshKey
+          - PgGenericKey
+
+      -
+        Label:
+          default: "Postgres Audit Log Settings"
+        Parameters:
+          - PgAuditLogLevel
+
+Conditions:
+  UseIops: !Equals [!Ref VolumeType, "io1"]
+  UseMgmtEIP: !Equals [!Ref ManagementEIPCount, 1]
+  NoMgmtEIP:  !Equals [!Ref ManagementEIPCount, 0]
+  HasDbVolume: !Not [ !Equals ["", !Ref DbEbsVolume]]
+  HasPrivateIP: !Not [ !Equals ["", !Ref MgmtPrivIP]]
+  HasExistingEIP: !Not [ !Equals ["", !Ref MgmtExistingEIPID]]
+  NoDbVolume: !Equals ["", !Ref DbEbsVolume]
+
+  AllocEIP: !And
+    - !Condition UseMgmtEIP
+    - !Not [!Condition HasExistingEIP]
+
+  MasterEIPHasDBVol: !And
+#    - !Equals [!Ref ManagementEIPCount, 1]
+    - !Condition AllocEIP
+#    - !Or [!Equals [!Ref Role, "Master"], !Equals [!Ref Role, "Recovery"]]
+    - !Condition HasDbVolume
+
+  MasterExistingEIPHasDBVol: !And
+    - !Equals [!Ref ManagementEIPCount, 1]
+    - !Condition HasExistingEIP
+#    - !Or [!Equals [!Ref Role, "Master"], !Equals [!Ref Role, "Recovery"]]
+    - !Condition HasDbVolume
+
+  MasterEIPNoDBVol: !And
+#    - !Equals [!Ref ManagementEIPCount, 1]
+    - !Condition AllocEIP
+#    - !Or [!Equals [!Ref Role, "Master"], !Equals [!Ref Role, "Recovery"]]
+    - !Condition NoDbVolume
+
+  MasterExistingEIPNoDBVol: !And
+    - !Equals [!Ref ManagementEIPCount, 1]
+    - !Not [!Condition AllocEIP]
+#    - !Or [!Equals [!Ref Role, "Master"], !Equals [!Ref Role, "Recovery"]]
+    - !Condition NoDbVolume
+
+
+  MasterNoEIPHasDBVol: !And
+    - !Equals [!Ref ManagementEIPCount, 0]
+    - !Condition NoMgmtEIP
+#    - !Or [!Equals [!Ref Role, "Master"], !Equals [!Ref Role, "Recovery"]]
+    - !Condition HasDbVolume
+
+  MasterNoEIPNoDBVol: !And
+    - !Equals [!Ref ManagementEIPCount, 0]
+#    - !Or [!Equals [!Ref Role, "Master"], !Equals [!Ref Role, "Recovery"]]
+    - !Condition NoDbVolume
+
+
+Resources:
+
+  HasDbVolumeEIPAttachment:
+    Condition: MasterEIPHasDBVol
+    Type: "AWS::EC2::VolumeAttachment"
+    Properties:
+      InstanceId: !Ref MasterEIPHasDBVolEC2Instance
+      VolumeId: !Ref DbEbsVolume
+      Device: "/dev/sda2"
+
+  HasDbVolumeExistingEIPAttachment:
+    Condition: MasterExistingEIPHasDBVol
+    Type: "AWS::EC2::VolumeAttachment"
+    Properties:
+      InstanceId: !Ref MasterExistingEIPHasDBVolEC2Instance
+      VolumeId: !Ref DbEbsVolume
+      Device: "/dev/sda2"
+
+  HasDbVolumeNoEIPAttachment:
+    Condition: MasterNoEIPHasDBVol
+    Type: "AWS::EC2::VolumeAttachment"
+    Properties:
+      InstanceId: !Ref MasterNoEIPHasDBVolEC2Instance
+      VolumeId: !Ref DbEbsVolume
+      Device: "/dev/sda2"
+
+
+
+  #Network interfaces and EIP assignment (when required)
+  mgtXface:
+    Type: AWS::EC2::NetworkInterface
+#   UpdateReplacePolicy: Delete
+    Properties:
+      SubnetId: !Ref MgmtSubnetId
+      Description: Managment Interface
+
+      GroupSet:
+      - !Ref MgmtSecurityGroup
+      SourceDestCheck: true
+      PrivateIpAddress: !If [HasPrivateIP, !Ref MgmtPrivIP, !Ref "AWS::NoValue"]
+#      PrivateIpAddress: !Ref MgmtPrivIP
+
+  MgmtIPAddress:
+#    Condition: UseMgmtEIP
+    Condition: AllocEIP
+    Type: AWS::EC2::EIP
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Domain: vpc
+
+  MgtEIPAssociationHasDB:
+    Condition: MasterEIPHasDBVol
+    DependsOn: MasterEIPHasDBVolEC2Instance
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: { "Fn::GetAtt": ["MgmtIPAddress", "AllocationId" ]}
+      NetworkInterfaceId: !Ref mgtXface
+      PrivateIpAddress: { "Fn::GetAtt": ["mgtXface", "PrimaryPrivateIpAddress"]}
+
+#new
+  MgtExistingEIPAssociationHasDB:
+    Condition: MasterExistingEIPHasDBVol
+    DependsOn: MasterExistingEIPHasDBVolEC2Instance
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !Ref MgmtExistingEIPID
+#      AllocationId: !If [AllocEIP, { "Fn::GetAtt": ["MgmtIPAddress", "AllocationId" ]}, !Ref MgmtExistingEIP]
+#      AllocationId: { "Fn::GetAtt": ["MgmtIPAddress", "AllocationId" ]}
+      NetworkInterfaceId: !Ref mgtXface
+      PrivateIpAddress: { "Fn::GetAtt": ["mgtXface", "PrimaryPrivateIpAddress"]}
+
+  MgtEIPAssociationNoDB:
+    Condition: MasterEIPNoDBVol
+    DependsOn: MasterEIPNoDBVolEC2Instance
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+#      AllocationId: !If [AllocEIP, { "Fn::GetAtt": ["MgmtIPAddress", "AllocationId" ]}, !Ref MgmtExistingEIPID]
+      AllocationId: { "Fn::GetAtt": ["MgmtIPAddress", "AllocationId" ]}
+      NetworkInterfaceId: !Ref mgtXface
+      PrivateIpAddress: { "Fn::GetAtt": ["mgtXface", "PrimaryPrivateIpAddress"]}
+
+#new
+  MgtExistingEIPAssociationNoDB:
+    Condition: MasterExistingEIPNoDBVol
+    DependsOn: MasterExistingEIPNoDBVolEC2Instance
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !Ref MgmtExistingEIPID
+      NetworkInterfaceId: !Ref mgtXface
+      PrivateIpAddress: { "Fn::GetAtt": ["mgtXface", "PrimaryPrivateIpAddress"]}
+
+
+  #EC2::Instance for Master/GR w/ single interface with EIP
+  #  which needs to allocate a new EBS DB volume
+  MasterEIPNoDBVolEC2Instance:
+    Condition: MasterEIPNoDBVol
+    Type: AWS::EC2::Instance
+    Properties:
+
+## CXone updated Tags
+      Tags:
+      -
+        Key: "Name"
+        Value: !Ref Name
+      -
+        Key: "Owner"
+        Value: "Voice Teams"      
+      -
+        Key: "ApplicationOwner"
+        Value: "Voice Teams"
+      -
+        Key: "InfrastructureOwner"
+        Value: "Voice Teams"
+      -
+        Key: "Product"
+        Value: "Infrastructure"
+      -
+        Key: "Service"
+        Value: "AWS Voice POP"
+      -
+        Key: "DeviceType"
+        Value: "Ribbon PSX"
+      -
+        Key: "Cluster"
+        Value: "Global"
+      BlockDeviceMappings:
+      -
+        DeviceName: /dev/sda1
+        Ebs:
+          DeleteOnTermination: false
+          VolumeSize: !Ref VolumeSize
+          VolumeType: !Ref VolumeType
+          Iops: !If [UseIops, !Ref Iops, !Ref "AWS::NoValue"]
+
+      NetworkInterfaces:
+      -
+        NetworkInterfaceId : !Ref mgtXface
+        DeviceIndex : "0"
+
+
+      PlacementGroupName: !Ref PlacementGroup
+      UserData:
+       Fn::Base64:
+        Fn::Sub: |
+          Content-Type: multipart/mixed; boundary="==BOUNDARY=="
+          MIME-Version: 1.0
+          --==BOUNDARY==
+          MIME-Version: 1.0
+          Content-Type: text/cloud-config; charset="us-ascii"
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="cloud_config_data"
+
+          #cloud-config
+          timezone: ${TimeZone}
+          manage_resolv_conf: true
+          resolv_conf:
+            nameservers:
+              - ${DnsServer1}
+              - ${DnsServer2}
+            searchdomains:
+              - ${DnsSearchPath}
+          ntp:
+            enabled: true
+            ntp_client: chrony
+            config:
+              confpath: /etc/chrony.conf
+              check_exe: chronyd
+              packages:
+                - chrony
+              service_name: chronyd
+            pools: [0.int.pool.ntp.org, 1.int.pool.ntp.org, ntp.myorg.org]
+            servers:
+              - ${NtpServer1}
+              - ${NtpServer2}
+          users:
+          - name: ssuser
+            ssh_authorized_keys:
+            - ${SsuserSshKey}
+            - ${EmsSshKey1}
+            - ${EmsSshKey2}
+          - name: admin
+            ssh_authorized_keys:
+            - ${AdminSshKey}
+
+          runcmd:
+            - usermod -p '${AdminPasswordHash}' admin
+
+          #
+          # Uncomment the lines below and populate the example content with your specific data 
+          # if deploying with a known encrypted Postgres ssh key,
+          #
+          # write_files:
+          #  - path: /var/lib/pgsql/.ssh/new_keypair.enc 
+          #    permissions: 0600
+          #    content: |
+          #      @@FiItEw7X4x9AAFoEIZ/8wg==QD+Y4zUbJ6JPLygdakI91w==
+          #      @@abrM3Mcszm4sMpBrXqRalA==MIvVfK591Hm03lZTFcPVAw==
+          #      @@eEHL8ybbngW+3GFF/TUqZQ==ufMNn4TQ8ksjak5oHO3o9A==
+          #      @@05zmttFEGvh0tNh5HIFvkg==uOSiZEiWVK+SG/+jMybBUw==
+          #      @@iHGqGUtFD8JXNZiG5rAJeQ==0lZuVUWYxLjSvDo5tAZlCQ==
+          #      @@kVCGrvy8vjT0ikptFMgHPg==I+6D1r6nXEa4Ai3VjierFQ==           
+
+          --==BOUNDARY==
+          MIME-Version: 1.0
+          Content-Type: text/text; charset="us-ascii"
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="vnfm.txt"
+          {
+            "InstanceName": "${Name}",
+            "ManagementFloatingIP": "${MgmtIPAddress}",
+            "SignalingFloatingIP": "${MgmtIPAddress}",
+            "SignalingInterface": "eth0",
+            "EnumInterface": "eth0",
+            "EmsUsername": "${EmsUsername}",
+            "EmsPassword": "${EmsPassword}",
+            "EmsPrivateNodeParameters": "${EmsPrivateNodeParameters}",
+            "PreviousOracleNodeId": "${PreviousOracleNodeId}",
+            "PreviousOracleNodeName": "${PreviousOracleNodeName}",
+            "TDAEnabled": "${TDAEnabled}",
+            "ProcessManagerId":"${ProcessManagerId}",
+            "MasterUpgrade":"${Upgrade}",
+            "SdRegistry": "${SdRegistry}",
+            "SdRegistryType": "${SdRegistryType}",
+            "EmsFqdn": "${EmsFqdn}",
+            "DbIpAddress": "${DbIpAddress}",
+            "DbHostname": "${DbHostname}",
+            "BdrNodeType": "${BdrNodeType}",
+            "BdrFirstNode": "${BdrFirstNode}",
+            "BdrUpStreamHostname": "${BdrUpStreamHostname}",
+            "BdrUpStreamIp": "${BdrUpStreamIp}",
+            "PgAuditLogLevel": "${PgAuditLogLevel}",
+            "GenPgSshKey": "${GenPgSshKey}",
+            "PgGenericKey": "${PgGenericKey}",
+            "LicenseMode": "${LicenseMode}",
+            "LicenseProfileId": "${LicenseProfileId}",
+            "growpart": {"export": 65, "var": 35},
+            "EnableHttpsProxy": "${EnableHttpsProxy}",
+            "PrimHttpsProxyIpAddress": "${PrimHttpsProxyIpAddress}",
+            "PrimHttpsProxyPortNumber": "${PrimHttpsProxyPortNumber}",
+            "PrimHttpsProxyUserName": "${PrimHttpsProxyUserName}",
+            "PrimHttpsProxyPassword": "${PrimHttpsProxyPassword}",
+            "PrimHttpsProxyCertificateDomainName": "${PrimHttpsProxyCertificateDomainName}",
+            "SecHttpsProxyIpAddress": "${SecHttpsProxyIpAddress}",
+            "SecHttpsProxyPortNumber": "${SecHttpsProxyPortNumber}",
+            "SecHttpsProxyUserName": "${SecHttpsProxyUserName}",
+            "SecHttpsProxyPassword": "${SecHttpsProxyPassword}",
+            "SecHttpsProxyCertificateDomainName": "${SecHttpsProxyCertificateDomainName}",
+            "customData": {
+              "attributes": [
+                {
+                  "name": "EMS:IP:PUBLIC:1",
+                  "value": "${EmsIp1}"
+                },
+                {
+                  "name": "EMS:IP:PUBLIC:2",
+                  "value": "${EmsIp2}"
+                },
+                {
+                  "name": "eth0:IP:ROUTE:IFNAME",
+                  "value":"IF1"
+                },
+                {
+                  "name":"eth0:IP:ROUTE",
+                  "value":"${ManagementRoutes}"
+                },
+                {
+                  "name":"eth0:0:IP:PORT",
+                  "value":"eth0"
+                }
+              ]
+            }
+          }
+
+          --==BOUNDARY==--
+
+      InstanceType: !Ref 'InstanceType'
+## CXone updated KeyName to import KeypairVoiceTeams from RegionConfig stack
+      KeyName: !ImportValue 'RegionConfig-KeypairVoiceTeams'
+      ImageId: !Ref 'AmiId'
+
+  #EC2::Instance for Master/GR w/ single interface with pre-existing EIP
+  #  which needs to allocate a new EBS DB volume
+  MasterExistingEIPNoDBVolEC2Instance:
+    Condition: MasterExistingEIPNoDBVol
+#   UpdateReplacePolicy: Retain
+    Type: AWS::EC2::Instance
+    Properties:
+
+## CXone updated Tags
+      Tags:
+      -
+        Key: "Owner"
+        Value: "Voice Teams"      
+      -
+        Key: "Name"
+        Value: !Ref Name
+      -
+        Key: "ApplicationOwner"
+        Value: "Voice Teams"
+      -
+        Key: "InfrastructureOwner"
+        Value: "Voice Teams"
+      -
+        Key: "Product"
+        Value: "Infrastructure"
+      -
+        Key: "Service"
+        Value: "AWS Voice POP"
+      -
+        Key: "DeviceType"
+        Value: "Ribbon PSX"
+      -
+        Key: "Cluster"
+        Value: "Global"
+      BlockDeviceMappings:
+      -
+        DeviceName: /dev/sda1
+        Ebs:
+          DeleteOnTermination: false
+          VolumeSize: !Ref VolumeSize
+          VolumeType: !Ref VolumeType
+          Iops: !If [UseIops, !Ref Iops, !Ref "AWS::NoValue"]
+
+      NetworkInterfaces:
+      -
+        NetworkInterfaceId : !Ref mgtXface
+        DeviceIndex : "0"
+
+
+      PlacementGroupName: !Ref PlacementGroup
+      UserData:
+       Fn::Base64:
+        Fn::Sub: |
+          Content-Type: multipart/mixed; boundary="==BOUNDARY=="
+          MIME-Version: 1.0
+          --==BOUNDARY==
+          MIME-Version: 1.0
+          Content-Type: text/cloud-config; charset="us-ascii"
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="cloud_config_data"
+
+          #cloud-config
+          timezone: ${TimeZone}
+          manage_resolv_conf: true
+          resolv_conf:
+            nameservers:
+              - ${DnsServer1}
+              - ${DnsServer2}
+            searchdomains:
+              - ${DnsSearchPath}
+          ntp:
+            enabled: true
+            ntp_client: chrony
+            config:
+              confpath: /etc/chrony.conf
+              check_exe: chronyd
+              packages:
+                - chrony
+              service_name: chronyd
+            pools: [0.int.pool.ntp.org, 1.int.pool.ntp.org, ntp.myorg.org]
+            servers:
+              - ${NtpServer1}
+              - ${NtpServer2}
+          users:
+          - name: ssuser
+            ssh_authorized_keys:
+            - ${SsuserSshKey}
+            - ${EmsSshKey1}
+            - ${EmsSshKey2}
+          - name: admin
+            ssh_authorized_keys:
+            - ${AdminSshKey}
+
+          runcmd:
+            - usermod -p '${AdminPasswordHash}' admin
+          #
+          # Uncomment the lines below and populate the example content with your specific data 
+          # if deploying with a known encrypted Postgres ssh key,
+          #
+          # write_files:
+          #  - path: /var/lib/pgsql/.ssh/new_keypair.enc 
+          #    permissions: 0600
+          #    content: |
+          #      @@FiItEw7X4x9AAFoEIZ/8wg==QD+Y4zUbJ6JPLygdakI91w==
+          #      @@abrM3Mcszm4sMpBrXqRalA==MIvVfK591Hm03lZTFcPVAw==
+          #      @@eEHL8ybbngW+3GFF/TUqZQ==ufMNn4TQ8ksjak5oHO3o9A==
+          #      @@05zmttFEGvh0tNh5HIFvkg==uOSiZEiWVK+SG/+jMybBUw==
+          #      @@iHGqGUtFD8JXNZiG5rAJeQ==0lZuVUWYxLjSvDo5tAZlCQ==
+          #      @@kVCGrvy8vjT0ikptFMgHPg==I+6D1r6nXEa4Ai3VjierFQ==             
+          --==BOUNDARY==
+          MIME-Version: 1.0
+          Content-Type: text/text; charset="us-ascii"
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="vnfm.txt"
+          {
+            "InstanceName": "${Name}",
+            "ManagementFloatingIP": "${MgmtExistingEIP}",
+            "SignalingFloatingIP": "${MgmtExistingEIP}",
+            "SignalingInterface": "eth0",
+            "EnumInterface": "eth0",
+            "EmsUsername": "${EmsUsername}",
+            "EmsPassword": "${EmsPassword}",
+            "EmsPrivateNodeParameters": "${EmsPrivateNodeParameters}",
+            "PreviousOracleNodeId": "${PreviousOracleNodeId}",
+            "PreviousOracleNodeName": "${PreviousOracleNodeName}",
+            "TDAEnabled": "${TDAEnabled}",
+            "ProcessManagerId":"${ProcessManagerId}",
+            "MasterUpgrade":"${Upgrade}",
+            "SdRegistry": "${SdRegistry}",
+            "SdRegistryType": "${SdRegistryType}",
+            "EmsFqdn": "${EmsFqdn}",
+            "DbIpAddress": "${DbIpAddress}",
+            "DbHostname": "${DbHostname}",
+            "BdrNodeType": "${BdrNodeType}",
+            "BdrFirstNode": "${BdrFirstNode}",
+            "BdrUpStreamHostname": "${BdrUpStreamHostname}",
+            "BdrUpStreamIp": "${BdrUpStreamIp}",
+            "PgAuditLogLevel": "${PgAuditLogLevel}",
+            "GenPgSshKey": "${GenPgSshKey}",
+            "PgGenericKey": "${PgGenericKey}",
+            "LicenseMode": "${LicenseMode}",
+            "LicenseProfileId": "${LicenseProfileId}",
+            "growpart": {"export": 65, "var": 35},
+            "EnableHttpsProxy": "${EnableHttpsProxy}",
+            "PrimHttpsProxyIpAddress": "${PrimHttpsProxyIpAddress}",
+            "PrimHttpsProxyPortNumber": "${PrimHttpsProxyPortNumber}",
+            "PrimHttpsProxyUserName": "${PrimHttpsProxyUserName}",
+            "PrimHttpsProxyPassword": "${PrimHttpsProxyPassword}",
+            "PrimHttpsProxyCertificateDomainName": "${PrimHttpsProxyCertificateDomainName}",
+            "SecHttpsProxyIpAddress": "${SecHttpsProxyIpAddress}",
+            "SecHttpsProxyPortNumber": "${SecHttpsProxyPortNumber}",
+            "SecHttpsProxyUserName": "${SecHttpsProxyUserName}",
+            "SecHttpsProxyPassword": "${SecHttpsProxyPassword}",
+            "SecHttpsProxyCertificateDomainName": "${SecHttpsProxyCertificateDomainName}",
+            "customData": {
+              "attributes": [
+                {
+                  "name": "EMS:IP:PUBLIC:1",
+                  "value": "${EmsIp1}"
+                },
+                {
+                  "name": "EMS:IP:PUBLIC:2",
+                  "value": "${EmsIp2}"
+                },
+                {
+                  "name": "eth0:IP:ROUTE:IFNAME",
+                  "value":"IF1"
+                },
+                {
+                  "name":"eth0:IP:ROUTE",
+                  "value":"${ManagementRoutes}"
+                },
+                {
+                  "name":"eth0:0:IP:PORT",
+                  "value":"eth0"
+                }
+              ]
+            }
+          }
+
+          --==BOUNDARY==--
+
+      InstanceType: !Ref 'InstanceType'
+## CXone updated KeyName to import KeypairVoiceTeams from RegionConfig stack
+      KeyName: !ImportValue 'RegionConfig-KeypairVoiceTeams'
+      ImageId: !Ref 'AmiId'
+
+
+  #EC2::Instance for Master/GR w/ single interface with EIP
+  # w/ existing EBS DB volume provided to be attached to EC2 instance
+  MasterEIPHasDBVolEC2Instance:
+    Condition: MasterEIPHasDBVol
+    Type: AWS::EC2::Instance
+    Properties:
+
+## CXone updated Tags
+      Tags:
+      -
+        Key: "Name"
+        Value: !Ref Name
+      -
+        Key: "Owner"
+        Value: "Voice Teams"      
+      -
+        Key: "ApplicationOwner"
+        Value: "Voice Teams"
+      -
+        Key: "InfrastructureOwner"
+        Value: "Voice Teams"
+      -
+        Key: "Product"
+        Value: "Infrastructure"
+      -
+        Key: "Service"
+        Value: "AWS Voice POP"
+      -
+        Key: "DeviceType"
+        Value: "Ribbon PSX"
+      -
+        Key: "Cluster"
+        Value: "Global"
+      BlockDeviceMappings:
+      -
+        DeviceName: /dev/sda1
+        Ebs:
+          DeleteOnTermination: false
+          VolumeSize: !Ref VolumeSize
+          VolumeType: !Ref VolumeType
+          Iops: !If [UseIops, !Ref Iops, !Ref "AWS::NoValue"]
+
+      NetworkInterfaces:
+      -
+        NetworkInterfaceId : !Ref mgtXface
+        DeviceIndex : "0"
+
+
+      PlacementGroupName: !Ref PlacementGroup
+      UserData:
+       Fn::Base64:
+        Fn::Sub: |
+          Content-Type: multipart/mixed; boundary="==BOUNDARY=="
+          MIME-Version: 1.0
+          --==BOUNDARY==
+          MIME-Version: 1.0
+          Content-Type: text/cloud-config; charset="us-ascii"
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="cloud_config_data"
+
+          #cloud-config
+          timezone: ${TimeZone}
+          manage_resolv_conf: true
+          resolv_conf:
+            nameservers:
+              - ${DnsServer1}
+              - ${DnsServer2}
+            searchdomains:
+              - ${DnsSearchPath}
+          ntp:
+            enabled: true
+            ntp_client: chrony
+            config:
+              confpath: /etc/chrony.conf
+              check_exe: chronyd
+              packages:
+                - chrony
+              service_name: chronyd
+            pools: [0.int.pool.ntp.org, 1.int.pool.ntp.org, ntp.myorg.org]
+            servers:
+              - ${NtpServer1}
+              - ${NtpServer2}
+          users:
+          - name: ssuser
+            ssh_authorized_keys:
+            - ${SsuserSshKey}
+            - ${EmsSshKey1}
+            - ${EmsSshKey2}
+          - name: admin
+            ssh_authorized_keys:
+            - ${AdminSshKey}
+
+          runcmd:
+            - usermod -p '${AdminPasswordHash}' admin
+          #
+          # Uncomment the lines below and populate the example content with your specific data 
+          # if deploying with a known encrypted Postgres ssh key,
+          #
+          # write_files:
+          #  - path: /var/lib/pgsql/.ssh/new_keypair.enc 
+          #    permissions: 0600
+          #    content: |
+          #      @@FiItEw7X4x9AAFoEIZ/8wg==QD+Y4zUbJ6JPLygdakI91w==
+          #      @@abrM3Mcszm4sMpBrXqRalA==MIvVfK591Hm03lZTFcPVAw==
+          #      @@eEHL8ybbngW+3GFF/TUqZQ==ufMNn4TQ8ksjak5oHO3o9A==
+          #      @@05zmttFEGvh0tNh5HIFvkg==uOSiZEiWVK+SG/+jMybBUw==
+          #      @@iHGqGUtFD8JXNZiG5rAJeQ==0lZuVUWYxLjSvDo5tAZlCQ==
+          #      @@kVCGrvy8vjT0ikptFMgHPg==I+6D1r6nXEa4Ai3VjierFQ==             
+          --==BOUNDARY==
+          MIME-Version: 1.0
+          Content-Type: text/text; charset="us-ascii"
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="vnfm.txt"
+          {
+            "InstanceName": "${Name}",
+            "ManagementFloatingIP": "${MgmtIPAddress}",
+            "SignalingFloatingIP": "${MgmtIPAddress}",
+            "SignalingInterface": "eth0",
+            "EnumInterface": "eth0",
+            "EmsUsername": "${EmsUsername}",
+            "EmsPassword": "${EmsPassword}",
+            "EmsPrivateNodeParameters": "${EmsPrivateNodeParameters}",
+            "PreviousOracleNodeId": "${PreviousOracleNodeId}",
+            "PreviousOracleNodeName": "${PreviousOracleNodeName}",
+            "TDAEnabled": "${TDAEnabled}",
+            "ProcessManagerId":"${ProcessManagerId}",
+            "UseCinder": "Y",
+            "MasterUpgrade":"${Upgrade}",
+            "SdRegistry": "${SdRegistry}",
+            "SdRegistryType": "${SdRegistryType}",
+            "EmsFqdn": "${EmsFqdn}",
+            "DbIpAddress": "${DbIpAddress}",
+            "DbHostname": "${DbHostname}",
+            "BdrNodeType": "${BdrNodeType}",
+            "BdrFirstNode": "${BdrFirstNode}",
+            "BdrUpStreamHostname": "${BdrUpStreamHostname}",
+            "BdrUpStreamIp": "${BdrUpStreamIp}",
+            "PgAuditLogLevel": "${PgAuditLogLevel}",
+            "GenPgSshKey": "${GenPgSshKey}",
+            "PgGenericKey": "${PgGenericKey}",
+            "LicenseMode": "${LicenseMode}",
+            "LicenseProfileId": "${LicenseProfileId}",
+            "growpart": {"export": 65, "var": 35},
+            "EnableHttpsProxy": "${EnableHttpsProxy}",
+            "PrimHttpsProxyIpAddress": "${PrimHttpsProxyIpAddress}",
+            "PrimHttpsProxyPortNumber": "${PrimHttpsProxyPortNumber}",
+            "PrimHttpsProxyUserName": "${PrimHttpsProxyUserName}",
+            "PrimHttpsProxyPassword": "${PrimHttpsProxyPassword}",
+            "PrimHttpsProxyCertificateDomainName": "${PrimHttpsProxyCertificateDomainName}",
+            "SecHttpsProxyIpAddress": "${SecHttpsProxyIpAddress}",
+            "SecHttpsProxyPortNumber": "${SecHttpsProxyPortNumber}",
+            "SecHttpsProxyUserName": "${SecHttpsProxyUserName}",
+            "SecHttpsProxyPassword": "${SecHttpsProxyPassword}",
+            "SecHttpsProxyCertificateDomainName": "${SecHttpsProxyCertificateDomainName}",
+            "customData": {
+              "attributes": [
+                {
+                  "name": "EMS:IP:PUBLIC:1",
+                  "value": "${EmsIp1}"
+                },
+                {
+                  "name": "EMS:IP:PUBLIC:2",
+                  "value": "${EmsIp2}"
+                },
+                {
+                  "name": "eth0:IP:ROUTE:IFNAME",
+                  "value":"IF1"
+                },
+                {
+                  "name":"eth0:IP:ROUTE",
+                  "value":"${ManagementRoutes}"
+                },
+                {
+                  "name":"eth0:0:IP:PORT",
+                  "value":"eth0"
+                }
+              ]
+            }
+          }
+
+          --==BOUNDARY==--
+
+      InstanceType: !Ref 'InstanceType'
+## CXone updated KeyName to import KeypairVoiceTeams from RegionConfig stack
+      KeyName: !ImportValue 'RegionConfig-KeypairVoiceTeams'
+      ImageId: !Ref 'AmiId'
+
+  #EC2::Instance for Master/GR w/ single interface with EIP
+  # w/ existing EBS DB volume provided to be attached to EC2 instance
+  MasterExistingEIPHasDBVolEC2Instance:
+    Condition: MasterExistingEIPHasDBVol
+    Type: AWS::EC2::Instance
+    Properties:
+
+## CXone updated Tags
+      Tags:
+      -
+        Key: "Name"
+        Value: !Ref Name
+      -
+        Key: "Owner"
+        Value: "Voice Teams"     
+      -
+        Key: "ApplicationOwner"
+        Value: "Voice Teams"
+      -
+        Key: "InfrastructureOwner"
+        Value: "Voice Teams"
+      -
+        Key: "Product"
+        Value: "Infrastructure"
+      -
+        Key: "Service"
+        Value: "AWS Voice POP"
+      -
+        Key: "DeviceType"
+        Value: "Ribbon PSX"
+      -
+        Key: "Cluster"
+        Value: "Global"
+      BlockDeviceMappings:
+      -
+        DeviceName: /dev/sda1
+        Ebs:
+          DeleteOnTermination: false
+          VolumeSize: !Ref VolumeSize
+          VolumeType: !Ref VolumeType
+          Iops: !If [UseIops, !Ref Iops, !Ref "AWS::NoValue"]
+
+      NetworkInterfaces:
+      -
+        NetworkInterfaceId : !Ref mgtXface
+        DeviceIndex : "0"
+
+
+      PlacementGroupName: !Ref PlacementGroup
+      UserData:
+       Fn::Base64:
+        Fn::Sub: |
+          Content-Type: multipart/mixed; boundary="==BOUNDARY=="
+          MIME-Version: 1.0
+          --==BOUNDARY==
+          MIME-Version: 1.0
+          Content-Type: text/cloud-config; charset="us-ascii"
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="cloud_config_data"
+
+          #cloud-config
+          timezone: ${TimeZone}
+          manage_resolv_conf: true
+          resolv_conf:
+            nameservers:
+              - ${DnsServer1}
+              - ${DnsServer2}
+            searchdomains:
+              - ${DnsSearchPath}
+          ntp:
+            enabled: true
+            ntp_client: chrony
+            config:
+              confpath: /etc/chrony.conf
+              check_exe: chronyd
+              packages:
+                - chrony
+              service_name: chronyd
+            pools: [0.int.pool.ntp.org, 1.int.pool.ntp.org, ntp.myorg.org]
+            servers:
+              - ${NtpServer1}
+              - ${NtpServer2}
+          users:
+          - name: ssuser
+            ssh_authorized_keys:
+            - ${SsuserSshKey}
+            - ${EmsSshKey1}
+            - ${EmsSshKey2}
+          - name: admin
+            ssh_authorized_keys:
+            - ${AdminSshKey}
+
+          runcmd:
+            - usermod -p '${AdminPasswordHash}' admin
+          #
+          # Uncomment the lines below and populate the example content with your specific data 
+          # if deploying with a known encrypted Postgres ssh key,
+          #
+          # write_files:
+          #  - path: /var/lib/pgsql/.ssh/new_keypair.enc 
+          #    permissions: 0600
+          #    content: |
+          #      @@FiItEw7X4x9AAFoEIZ/8wg==QD+Y4zUbJ6JPLygdakI91w==
+          #      @@abrM3Mcszm4sMpBrXqRalA==MIvVfK591Hm03lZTFcPVAw==
+          #      @@eEHL8ybbngW+3GFF/TUqZQ==ufMNn4TQ8ksjak5oHO3o9A==
+          #      @@05zmttFEGvh0tNh5HIFvkg==uOSiZEiWVK+SG/+jMybBUw==
+          #      @@iHGqGUtFD8JXNZiG5rAJeQ==0lZuVUWYxLjSvDo5tAZlCQ==
+          #      @@kVCGrvy8vjT0ikptFMgHPg==I+6D1r6nXEa4Ai3VjierFQ==             
+          --==BOUNDARY==
+          MIME-Version: 1.0
+          Content-Type: text/text; charset="us-ascii"
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="vnfm.txt"
+          {
+            "InstanceName": "${Name}",
+            "ManagementFloatingIP": "${MgmtExistingEIP}",
+            "SignalingFloatingIP": "${MgmtExistingEIP}",
+            "SignalingInterface": "eth0",
+            "EnumInterface": "eth0",
+            "EmsUsername": "${EmsUsername}",
+            "EmsPassword": "${EmsPassword}",
+            "EmsPrivateNodeParameters": "${EmsPrivateNodeParameters}",
+            "PreviousOracleNodeId": "${PreviousOracleNodeId}",
+            "PreviousOracleNodeName": "${PreviousOracleNodeName}",
+            "TDAEnabled": "${TDAEnabled}",
+            "ProcessManagerId":"${ProcessManagerId}",
+            "MasterUpgrade":"${Upgrade}",
+            "UseCinder": "Y",
+            "SdRegistry": "${SdRegistry}",
+            "SdRegistryType": "${SdRegistryType}",
+            "EmsFqdn": "${EmsFqdn}",
+            "DbIpAddress": "${DbIpAddress}",
+            "DbHostname": "${DbHostname}",
+            "BdrNodeType": "${BdrNodeType}",
+            "BdrFirstNode": "${BdrFirstNode}",
+            "BdrUpStreamHostname": "${BdrUpStreamHostname}",
+            "BdrUpStreamIp": "${BdrUpStreamIp}",
+            "PgAuditLogLevel": "${PgAuditLogLevel}",
+            "GenPgSshKey": "${GenPgSshKey}",
+            "PgGenericKey": "${PgGenericKey}",
+            "LicenseMode": "${LicenseMode}",
+            "LicenseProfileId": "${LicenseProfileId}",
+            "growpart": {"export": 65, "var": 35},
+            "EnableHttpsProxy": "${EnableHttpsProxy}",
+            "PrimHttpsProxyIpAddress": "${PrimHttpsProxyIpAddress}",
+            "PrimHttpsProxyPortNumber": "${PrimHttpsProxyPortNumber}",
+            "PrimHttpsProxyUserName": "${PrimHttpsProxyUserName}",
+            "PrimHttpsProxyPassword": "${PrimHttpsProxyPassword}",
+            "PrimHttpsProxyCertificateDomainName": "${PrimHttpsProxyCertificateDomainName}",
+            "SecHttpsProxyIpAddress": "${SecHttpsProxyIpAddress}",
+            "SecHttpsProxyPortNumber": "${SecHttpsProxyPortNumber}",
+            "SecHttpsProxyUserName": "${SecHttpsProxyUserName}",
+            "SecHttpsProxyPassword": "${SecHttpsProxyPassword}",
+            "SecHttpsProxyCertificateDomainName": "${SecHttpsProxyCertificateDomainName}",
+            "customData": {
+              "attributes": [
+                {
+                  "name": "EMS:IP:PUBLIC:1",
+                  "value": "${EmsIp1}"
+                },
+                {
+                  "name": "EMS:IP:PUBLIC:2",
+                  "value": "${EmsIp2}"
+                },
+                {
+                  "name": "eth0:IP:ROUTE:IFNAME",
+                  "value":"IF1"
+                },
+                {
+                  "name":"eth0:IP:ROUTE",
+                  "value":"${ManagementRoutes}"
+                },
+                {
+                  "name":"eth0:0:IP:PORT",
+                  "value":"eth0"
+                }
+              ]
+            }
+          }
+
+          --==BOUNDARY==--
+
+      InstanceType: !Ref 'InstanceType'
+## CXone updated KeyName to import KeypairVoiceTeams from RegionConfig stack
+      KeyName: !ImportValue 'RegionConfig-KeypairVoiceTeams'
+      ImageId: !Ref 'AmiId'
+
+
+  #EC2::Instance for Master/GR w/ single interface withou EIP
+  #  which needs to allocate a new EBS DB volume
+  MasterNoEIPNoDBVolEC2Instance:
+    Condition: MasterNoEIPNoDBVol
+    Type: AWS::EC2::Instance
+    Properties:
+
+## CXone updated Tags
+      Tags:
+      -
+        Key: "Name"
+        Value: !Ref Name
+      -
+        Key: "Owner"
+        Value: "Voice Teams"
+      -
+        Key: "ApplicationOwner"
+        Value: "Voice Teams"
+      -
+        Key: "InfrastructureOwner"
+        Value: "Voice Teams"
+      -
+        Key: "Product"
+        Value: "Infrastructure"
+      -
+        Key: "Service"
+        Value: "AWS Voice POP"
+      -
+        Key: "DeviceType"
+        Value: "Ribbon PSX"
+      -
+        Key: "Cluster"
+        Value: "Global"
+      BlockDeviceMappings:
+      -
+        DeviceName: /dev/sda1
+        Ebs:
+          DeleteOnTermination: false
+          VolumeSize: !Ref VolumeSize
+          VolumeType: !Ref VolumeType
+          Iops: !If [UseIops, !Ref Iops, !Ref "AWS::NoValue"]
+
+      NetworkInterfaces:
+      -
+        NetworkInterfaceId : !Ref mgtXface
+        DeviceIndex : "0"
+
+
+      PlacementGroupName: !Ref PlacementGroup
+      UserData:
+       Fn::Base64:
+        Fn::Sub: |
+          Content-Type: multipart/mixed; boundary="==BOUNDARY=="
+          MIME-Version: 1.0
+          --==BOUNDARY==
+          MIME-Version: 1.0
+          Content-Type: text/cloud-config; charset="us-ascii"
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="cloud_config_data"
+
+          #cloud-config
+          timezone: ${TimeZone}
+          manage_resolv_conf: true
+          resolv_conf:
+            nameservers:
+              - ${DnsServer1}
+              - ${DnsServer2}
+            searchdomains:
+              - ${DnsSearchPath}
+          ntp:
+            enabled: true
+            ntp_client: chrony
+            config:
+              confpath: /etc/chrony.conf
+              check_exe: chronyd
+              packages:
+                - chrony
+              service_name: chronyd
+            pools: [0.int.pool.ntp.org, 1.int.pool.ntp.org, ntp.myorg.org]
+            servers:
+              - ${NtpServer1}
+              - ${NtpServer2}
+          users:
+          - name: ssuser
+            ssh_authorized_keys:
+            - ${SsuserSshKey}
+            - ${EmsSshKey1}
+            - ${EmsSshKey2}
+          - name: admin
+            ssh_authorized_keys:
+            - ${AdminSshKey}
+
+          runcmd:
+            - usermod -p '${AdminPasswordHash}' admin
+     
+          #
+          # Uncomment the lines below and populate the example content with your specific data 
+          # if deploying with a known encrypted Postgres ssh key,
+          #
+          # write_files:
+          #  - path: /var/lib/pgsql/.ssh/new_keypair.enc 
+          #    permissions: 0600
+          #    content: |
+          #      @@FiItEw7X4x9AAFoEIZ/8wg==QD+Y4zUbJ6JPLygdakI91w==
+          #      @@abrM3Mcszm4sMpBrXqRalA==MIvVfK591Hm03lZTFcPVAw==
+          #      @@eEHL8ybbngW+3GFF/TUqZQ==ufMNn4TQ8ksjak5oHO3o9A==
+          #      @@05zmttFEGvh0tNh5HIFvkg==uOSiZEiWVK+SG/+jMybBUw==
+          #      @@iHGqGUtFD8JXNZiG5rAJeQ==0lZuVUWYxLjSvDo5tAZlCQ==
+          #      @@kVCGrvy8vjT0ikptFMgHPg==I+6D1r6nXEa4Ai3VjierFQ==                 
+          --==BOUNDARY==
+          MIME-Version: 1.0
+          Content-Type: text/text; charset="us-ascii"
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="vnfm.txt"
+          {
+            "InstanceName": "${Name}",
+            "SignalingInterface": "eth0",
+            "EnumInterface": "eth0",
+            "EmsUsername": "${EmsUsername}",
+            "EmsPassword": "${EmsPassword}",
+            "EmsPrivateNodeParameters": "${EmsPrivateNodeParameters}",
+            "PreviousOracleNodeId": "${PreviousOracleNodeId}",
+            "PreviousOracleNodeName": "${PreviousOracleNodeName}",
+            "TDAEnabled": "${TDAEnabled}",
+            "ProcessManagerId":"${ProcessManagerId}",
+            "MasterUpgrade":"${Upgrade}",
+            "SdRegistry": "${SdRegistry}",
+            "SdRegistryType": "${SdRegistryType}",
+            "EmsFqdn": "${EmsFqdn}",
+            "DbIpAddress": "${DbIpAddress}",
+            "DbHostname": "${DbHostname}",
+            "BdrNodeType": "${BdrNodeType}",
+            "BdrFirstNode": "${BdrFirstNode}",
+            "BdrUpStreamHostname": "${BdrUpStreamHostname}",
+            "BdrUpStreamIp": "${BdrUpStreamIp}",
+            "PgAuditLogLevel": "${PgAuditLogLevel}",
+            "GenPgSshKey": "${GenPgSshKey}",
+            "PgGenericKey": "${PgGenericKey}",
+            "LicenseMode": "${LicenseMode}",
+            "LicenseProfileId": "${LicenseProfileId}",
+            "growpart": {"export": 65, "var": 35},
+            "EnableHttpsProxy": "${EnableHttpsProxy}",
+            "PrimHttpsProxyIpAddress": "${PrimHttpsProxyIpAddress}",
+            "PrimHttpsProxyPortNumber": "${PrimHttpsProxyPortNumber}",
+            "PrimHttpsProxyUserName": "${PrimHttpsProxyUserName}",
+            "PrimHttpsProxyPassword": "${PrimHttpsProxyPassword}",
+            "PrimHttpsProxyCertificateDomainName": "${PrimHttpsProxyCertificateDomainName}",
+            "SecHttpsProxyIpAddress": "${SecHttpsProxyIpAddress}",
+            "SecHttpsProxyPortNumber": "${SecHttpsProxyPortNumber}",
+            "SecHttpsProxyUserName": "${SecHttpsProxyUserName}",
+            "SecHttpsProxyPassword": "${SecHttpsProxyPassword}",
+            "SecHttpsProxyCertificateDomainName": "${SecHttpsProxyCertificateDomainName}",
+            "customData": {
+              "attributes": [
+                {
+                  "name": "EMS:IP:PUBLIC:1",
+                  "value": "${EmsIp1}"
+                },
+                {
+                  "name": "EMS:IP:PUBLIC:2",
+                  "value": "${EmsIp2}"
+                },
+                {
+                  "name": "eth0:IP:ROUTE:IFNAME",
+                  "value":"IF1"
+                },
+                {
+                  "name":"eth0:IP:ROUTE",
+                  "value":"${ManagementRoutes}"
+                },
+                {
+                  "name":"eth0:0:IP:PORT",
+                  "value":"eth0"
+                }
+              ]
+            }
+          }
+
+          --==BOUNDARY==--
+
+      InstanceType: !Ref 'InstanceType'
+## CXone updated KeyName to import KeypairVoiceTeams from RegionConfig stack
+      KeyName: !ImportValue 'RegionConfig-KeypairVoiceTeams'
+      ImageId: !Ref 'AmiId'
+
+  #EC2::Instance for Master/GR w/ single interface without EIP
+  # w/ existing EBS DB volume provided to be attached to EC2 instance
+  MasterNoEIPHasDBVolEC2Instance:
+    Condition: MasterNoEIPHasDBVol
+    Type: AWS::EC2::Instance
+    Properties:
+
+## CXone updated Tags
+      Tags:
+      -
+        Key: "Name"
+        Value: !Ref Name
+      -
+        Key: "Owner"
+        Value: "Voice Teams"
+      -
+        Key: "ApplicationOwner"
+        Value: "Voice Teams"
+      -
+        Key: "InfrastructureOwner"
+        Value: "Voice Teams"
+      -
+        Key: "Product"
+        Value: "Infrastructure"
+      -
+        Key: "Service"
+        Value: "AWS Voice POP"
+      -
+        Key: "DeviceType"
+        Value: "Ribbon PSX"
+      -
+        Key: "Cluster"
+        Value: "Global"
+      BlockDeviceMappings:
+      -
+        DeviceName: /dev/sda1
+        Ebs:
+          DeleteOnTermination: false
+          VolumeSize: !Ref VolumeSize
+          VolumeType: !Ref VolumeType
+          Iops: !If [UseIops, !Ref Iops, !Ref "AWS::NoValue"]
+
+      NetworkInterfaces:
+      -
+        NetworkInterfaceId : !Ref mgtXface
+        DeviceIndex : "0"
+
+
+      PlacementGroupName: !Ref PlacementGroup
+      UserData:
+       Fn::Base64:
+        Fn::Sub: |
+          Content-Type: multipart/mixed; boundary="==BOUNDARY=="
+          MIME-Version: 1.0
+          --==BOUNDARY==
+          MIME-Version: 1.0
+          Content-Type: text/cloud-config; charset="us-ascii"
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="cloud_config_data"
+
+          #cloud-config
+          timezone: ${TimeZone}
+          manage_resolv_conf: true
+          resolv_conf:
+            nameservers:
+              - ${DnsServer1}
+              - ${DnsServer2}
+            searchdomains:
+              - ${DnsSearchPath}
+          ntp:
+            enabled: true
+            ntp_client: chrony
+            config:
+              confpath: /etc/chrony.conf
+              check_exe: chronyd
+              packages:
+                - chrony
+              service_name: chronyd
+            pools: [0.int.pool.ntp.org, 1.int.pool.ntp.org, ntp.myorg.org]
+            servers:
+              - ${NtpServer1}
+              - ${NtpServer2}
+          users:
+          - name: ssuser
+            ssh_authorized_keys:
+            - ${SsuserSshKey}
+            - ${EmsSshKey1}
+            - ${EmsSshKey2}
+          - name: admin
+            ssh_authorized_keys:
+            - ${AdminSshKey}
+
+          runcmd:
+            - usermod -p '${AdminPasswordHash}' admin
+
+          #
+          # Uncomment the lines below and populate the example content with your specific data 
+          # if deploying with a known encrypted Postgres ssh key,
+          #
+          # write_files:
+          #  - path: /var/lib/pgsql/.ssh/new_keypair.enc 
+          #    permissions: 0600
+          #    content: |
+          #      @@FiItEw7X4x9AAFoEIZ/8wg==QD+Y4zUbJ6JPLygdakI91w==
+          #      @@abrM3Mcszm4sMpBrXqRalA==MIvVfK591Hm03lZTFcPVAw==
+          #      @@eEHL8ybbngW+3GFF/TUqZQ==ufMNn4TQ8ksjak5oHO3o9A==
+          #      @@05zmttFEGvh0tNh5HIFvkg==uOSiZEiWVK+SG/+jMybBUw==
+          #      @@iHGqGUtFD8JXNZiG5rAJeQ==0lZuVUWYxLjSvDo5tAZlCQ==
+          #      @@kVCGrvy8vjT0ikptFMgHPg==I+6D1r6nXEa4Ai3VjierFQ==             
+          --==BOUNDARY==
+          MIME-Version: 1.0
+          Content-Type: text/text; charset="us-ascii"
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="vnfm.txt"
+          {
+            "InstanceName": "${Name}",
+            "SignalingInterface": "eth0",
+            "EnumInterface": "eth0",
+            "EmsUsername": "${EmsUsername}",
+            "EmsPassword": "${EmsPassword}",
+            "EmsPrivateNodeParameters": "${EmsPrivateNodeParameters}",
+            "PreviousOracleNodeId": "${PreviousOracleNodeId}",
+            "PreviousOracleNodeName": "${PreviousOracleNodeName}",
+            "TDAEnabled": "${TDAEnabled}",
+            "ProcessManagerId":"${ProcessManagerId}",
+            "MasterUpgrade":"${Upgrade}",
+            "UseCinder": "Y",
+            "SdRegistry": "${SdRegistry}",
+            "SdRegistryType": "${SdRegistryType}",
+            "EmsFqdn": "${EmsFqdn}",
+            "DbIpAddress": "${DbIpAddress}",
+            "DbHostname": "${DbHostname}",
+            "BdrNodeType": "${BdrNodeType}",
+            "BdrFirstNode": "${BdrFirstNode}",
+            "BdrUpStreamHostname": "${BdrUpStreamHostname}",
+            "BdrUpStreamIp": "${BdrUpStreamIp}",
+            "PgAuditLogLevel": "${PgAuditLogLevel}",
+            "GenPgSshKey": "${GenPgSshKey}",
+            "PgGenericKey": "${PgGenericKey}",
+            "LicenseMode": "${LicenseMode}",
+            "LicenseProfileId": "${LicenseProfileId}",
+            "growpart": {"export": 65, "var": 35},
+            "EnableHttpsProxy": "${EnableHttpsProxy}",
+            "PrimHttpsProxyIpAddress": "${PrimHttpsProxyIpAddress}",
+            "PrimHttpsProxyPortNumber": "${PrimHttpsProxyPortNumber}",
+            "PrimHttpsProxyUserName": "${PrimHttpsProxyUserName}",
+            "PrimHttpsProxyPassword": "${PrimHttpsProxyPassword}",
+            "PrimHttpsProxyCertificateDomainName": "${PrimHttpsProxyCertificateDomainName}",
+            "SecHttpsProxyIpAddress": "${SecHttpsProxyIpAddress}",
+            "SecHttpsProxyPortNumber": "${SecHttpsProxyPortNumber}",
+            "SecHttpsProxyUserName": "${SecHttpsProxyUserName}",
+            "SecHttpsProxyPassword": "${SecHttpsProxyPassword}",
+            "SecHttpsProxyCertificateDomainName": "${SecHttpsProxyCertificateDomainName}",
+            "customData": {
+              "attributes": [
+                {
+                  "name": "EMS:IP:PUBLIC:1",
+                  "value": "${EmsIp1}"
+                },
+                {
+                  "name": "EMS:IP:PUBLIC:2",
+                  "value": "${EmsIp2}"
+                },
+                {
+                  "name": "eth0:IP:ROUTE:IFNAME",
+                  "value":"IF1"
+                },
+                {
+                  "name":"eth0:IP:ROUTE",
+                  "value":"${ManagementRoutes}"
+                },
+                {
+                  "name":"eth0:0:IP:PORT",
+                  "value":"eth0"
+                }
+              ]
+            }
+          }
+
+          --==BOUNDARY==--
+
+      InstanceType: !Ref 'InstanceType'
+## CXone updated KeyName to import KeypairVoiceTeams from RegionConfig stack
+      KeyName: !ImportValue 'RegionConfig-KeypairVoiceTeams'
+      ImageId: !Ref 'AmiId'
+
+
+
+Outputs:
+
+  MasterEIPHasDBVolEC2Instance:
+    Condition: MasterEIPHasDBVol
+    Description: InstanceId of the newly created EC2 instance
+    Value: !Ref 'MasterEIPHasDBVolEC2Instance'
+
+  MasterExistingEIPHasDBVolEC2Instance:
+    Condition: MasterExistingEIPHasDBVol
+    Description: InstanceId of the newly created EC2 instance
+    Value: !Ref 'MasterExistingEIPHasDBVolEC2Instance'
+
+  MasterEIPNoDBVolEC2Instance:
+    Condition: MasterEIPNoDBVol
+    Description: InstanceId of the newly created EC2 instance
+    Value: !Ref 'MasterEIPNoDBVolEC2Instance'
+
+  MasterExistingEIPNoDBVolEC2Instance:
+    Condition: MasterExistingEIPNoDBVol
+    Description: InstanceId of the newly created EC2 instance
+    Value: !Ref 'MasterExistingEIPNoDBVolEC2Instance'
+
+  MasterNoEIPHasDBVolEC2Instance:
+    Condition: MasterNoEIPHasDBVol
+    Description: InstanceId of the newly created EC2 instance
+    Value: !Ref 'MasterNoEIPHasDBVolEC2Instance'
+
+  MasterNoEIPNoDBVolEC2Instance:
+    Condition: MasterNoEIPNoDBVol
+    Description: InstanceId of the newly created EC2 instance
+    Value: !Ref 'MasterNoEIPNoDBVolEC2Instance'
+
+  InstanceIPAddress:
+    Description: IP address of the newly created EC2 instance
+    Value: { "Fn::GetAtt": ["mgtXface", "PrimaryPrivateIpAddress"]}
+
+  MgmtEIPAddress:
+    Condition: AllocEIP
+#   Condition: UseMgmtEIP
+    Description: EIP address of the newly created EC2 instance
+    Value: !Ref 'MgmtIPAddress'
+
+  ExistingEIPAddress:
+    Condition: HasExistingEIP
+    Description: Existing EIP provided for EC2 instance
+    Value: !Ref MgmtExistingEIP

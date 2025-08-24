@@ -1,0 +1,13 @@
+endpoint_service_data:
+  service1:
+    network_load_balancer_arns:
+      - arn:aws:elasticloadbalancing:us-west-2:837589194720:loadbalancer/net/monitoring-otel-ingress/6c2836a4f5603b4d
+    acceptance_required: true
+    private_dns_name: apm-na1.service.nicecxone-test.com
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+      Name: "mon-test-openapm-endpoint"

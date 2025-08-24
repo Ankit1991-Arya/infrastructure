@@ -1,0 +1,46 @@
+alerts_data:
+  packetsDropped_PrivateLinkendpoint:
+    alarm_name           : "ic-test-openapm-openAPMInfra-endpoint-PrivateLink-OpenAPM-PacketsDropped-minor"
+    description           : "The number of packets dropped by the endpoint is greated than 0"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    metric_name               : "PacketsDropped"
+    namespace                 : "AWS/PrivateLinkEndpoints"
+    period                    : 300
+    statistic                 : "Sum"    
+    threshold                 : 0
+    dimensions                : 
+      VPC Endpoint Id : "vpce-04ba8feaa6b9305a6"  
+      Endpoint Type   : "Interface"
+      Service Name    : "com.amazonaws.vpce.us-west-2.vpce-svc-011eb15fce6c508d7"
+      VPC Id          : "vpc-77a41710"
+    sns_topic_arn             : "arn:aws:sns:us-west-2:837589194720:mon-test-na1-cloudwatch-bmc-minor"     
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+
+  packetsDropped_shared_eks01endpoint:
+    alarm_name           : "ic-test-openapm-openAPMInfra-endpoint-shared_eks01-PacketsDropped-minor"
+    description           : "The number of packets dropped by the endpoint is greated than 0"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    metric_name               : "PacketsDropped"
+    namespace                 : "AWS/PrivateLinkEndpoints"
+    period                    : 300
+    statistic                 : "Sum"    
+    threshold                 : 0
+    dimensions                : 
+      VPC Endpoint Id : "vpce-009742ff322ad2a33"  
+      Endpoint Type   : "Interface"
+      Service Name    : "com.amazonaws.vpce.us-west-2.vpce-svc-011eb15fce6c508d7"
+      VPC Id          : "vpc-0bb03ebf1d84c3678"
+    sns_topic_arn             : "arn:aws:sns:us-west-2:837589194720:mon-test-na1-cloudwatch-bmc-minor"     
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"

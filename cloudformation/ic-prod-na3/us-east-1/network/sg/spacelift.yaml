@@ -1,0 +1,11 @@
+cloudformation:
+  entry_template_file: main.cf.yaml
+  region: us-east-1
+  stack_name: GlobalSystemsSgUpdate
+  template_bucket: cf-templates-47q5tvgo9ei7-us-east-1
+integrations:
+  aws: ic-prod-na3
+maintainers:
+- email: networkarchitecture@nice.com
+  name: network-architecture
+platform: cloudformation

@@ -1,0 +1,46 @@
+private_link_data:
+# This is Test private link data
+  testing-private-link:
+    vpc_id: vpc-0adcf43698ae90137
+    subnet_ids:
+      - subnet-0f7b61419fce27387
+      - subnet-0530f8139b18a4d1d
+    security_group_ids:
+      - sg-0b9ed6abcfca2f210
+    # security_groups:
+    #   test-sg-1:
+    #     security_group_description: This is test SG for Private Link
+    #     security_group_revoke_rules_on_delete: true
+    #     ingress_rules:
+    #       test-ingress-rule: 
+    #         cidr_blocks: 
+    #           - 10.0.0.0/8
+    #         # from_port: "0"
+    #         # to_port: "0"
+    #         protocol: "-1" # https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_IpPermission.html
+    #         # prefix_list_ids:
+    service_name: "com.amazonaws.vpce.us-west-2.vpce-svc-09c74e21e2e6969d5"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: false
+    route53_record_name: "private-link-test.devops.internal"
+    private_route53_hosted_zone: true # boolean | to indentify if hosted zone where route53 record is created is private or public
+    route53_record_type: A
+    # route53_records:
+    # "10 5 80 hostname.example.com" # SRV
+    # "v=spf1 ip4:192.168.0.1/16 -all" # SPF
+    # "ns-2048.awsdns-64.net hostmaster.awsdns.com 1 1 1 1 60" # SOA
+    # "ns-1.example.com" # NS
+    # "10 mail.example.com" # MX
+    # "123 4 5 1234567890abcdef1234567890absdef" # DS
+    # "String 3" # TXT
+    # "0 issue \"ca.example.net; account=123456\"" ## CAA
+    route53_record_ttl: 300
+    route53_record_alias: 
+      alias_name: "test-alias-record.devops.internal"
+      private_route53_alias_hosted_zone: true # boolean | to indentify if hosted zone where route53 record is created is private or public
+      evaluate_target_health: true
+    tags: 
+      JIRA: "CNC-3977"
+      Owner: "API_fascade"
+      InfrastructureOwner: "cloudNativeCore"
+      Product: "API-fascade"

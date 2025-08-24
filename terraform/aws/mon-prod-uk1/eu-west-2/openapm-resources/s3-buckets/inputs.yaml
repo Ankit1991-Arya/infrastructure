@@ -1,0 +1,67 @@
+s3_bucket_data:
+  loki_bucket:
+    bucket_name: "mon-prod-uk1-openapm-loki"
+    force_destroy: true
+    enable_kms_encryption: true  # Enable KMS encryption
+    kms_master_key_id: "alias/aws/s3"
+    tags:
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  mimir_bucket_ruler:
+    bucket_name: "mon-prod-uk1-openapm-mimir-ruler"
+    force_destroy: true
+    enable_kms_encryption: true  # Enable KMS encryption
+    kms_master_key_id: "alias/aws/s3"
+    tags:
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  mimir_bucket_alerts:
+    bucket_name: "mon-prod-uk1-openapm-mimir-alerts"
+    force_destroy: true
+    enable_kms_encryption: true  # Enable KMS encryption
+    kms_master_key_id: "alias/aws/s3"    
+    tags:
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  mimir_bucket_blocks:
+    bucket_name: "mon-prod-uk1-openapm-mimir-blocks"
+    force_destroy: true
+    enable_kms_encryption: true  # Enable KMS encryption
+    kms_master_key_id: "alias/aws/s3"
+    tags:
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  tempo_bucket:
+    bucket_name: "mon-prod-uk1-openapm-tempo"
+    force_destroy: true
+    enable_kms_encryption: true  # Enable KMS encryption
+    kms_master_key_id: "alias/aws/s3"    
+    tags:
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  s3control_storage_lens_export_bucket:
+    bucket_name: "mon-prod-uk1-openapm-s3control-storage-lens-export"
+    force_destroy: true
+    enable_kms_encryption: true  # Enable KMS encryption
+    kms_master_key_id: "alias/aws/s3"    
+    tags:
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"

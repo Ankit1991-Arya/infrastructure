@@ -1,0 +1,11 @@
+maintainers:
+  - name: network-architecture
+    email: networkarchitecture@nice.com
+platform: cloudformation
+cloudformation:
+  stack_name:  "WfoPeering"
+  entry_template_file: "main.cf.yaml"
+  region: "me-central-1"
+  template_bucket: cf-templates-y708piwubrpt-me-central-1
+integrations:
+  aws: "ic-prod-ae1"

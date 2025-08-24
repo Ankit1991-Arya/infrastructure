@@ -1,0 +1,84 @@
+#dummycommit
+alerts_data:
+  BytesProcessed_endpointServices:
+    alarm_name           : "mon-prod-kr1-openapm-openAPMInfra-endpointServices-mon-prod-kr1-openapm-endpointService-BytesProcessed-minor"
+    description           : "The number of bytes exchanged between endpoint services and endpoints, in both directions is zero"
+    comparison_operator       : "LessThanOrEqualToThreshold"
+    evaluation_periods        : 1
+    metric_name               : "BytesProcessed"
+    namespace                 : "AWS/PrivateLinkServices"
+    period                    : 300
+    statistic                 : "Sum"    
+    threshold                 : 0
+    dimensions                : 
+      Service Id : "vpce-svc-0aeb5428d45b956a7"  
+    sns_topic_arn             : "arn:aws:sns:ap-northeast-2:744126299712:mon-prod-kr1-cloudwatch-bmc-minor"     
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+
+  UnHealthyHostCount_ALB_HTTP:
+    alarm_name           : "mon-prod-kr1-openapm-openAPMInfra-ALB-grafana-ingress-UnHealthyHostCount-critical"
+    description           : "The number of targets that are considered unhealthy are greater than zero"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 5
+    metric_name               : "UnHealthyHostCount"
+    namespace                 : "AWS/ApplicationELB"
+    period                    : 60
+    statistic                 : "Sum"    
+    threshold                 : 0
+    dimensions                : 
+      TargetGroup  : "targetgroup/k8s-grafana-grafanaa-1b1f0a0745/ea1b1722d4c0462a"  
+      LoadBalancer : "app/mon-prod-openapm-grafana-ingress/aad7bb10b9828613"
+    sns_topic_arn             : "arn:aws:sns:ap-northeast-2:744126299712:mon-prod-kr1-cloudwatch-bmc-critical"     
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+     
+
+  UnHealthyHostCount_NLB_TLS_4317:
+    alarm_name           : "mon-prod-kr1-openapm-openAPMInfra-NLB-TLS-4317-UnHealthyHostCount-critical"
+    description           : "The number of targets (k8s-otelcoll-otelcoll-ce0fc686cf) that are considered unhealthy are greater than zero ()"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 5
+    metric_name               : "UnHealthyHostCount"
+    namespace                 : "AWS/NetworkELB"
+    period                    : 60
+    statistic                 : "Minimum"    
+    threshold                 : 0
+    dimensions                : 
+      TargetGroup  : "targetgroup/k8s-otelcoll-otelcoll-ce0fc686cf/4010a60578939512"  
+      LoadBalancer : "net/monitoring-otel-ingress/ae133e1c7ed49874"
+    sns_topic_arn             : "arn:aws:sns:ap-northeast-2:744126299712:mon-prod-kr1-cloudwatch-bmc-critical"     
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"   
+
+  RejectedFlowCount_NLB:
+    alarm_name           : "mon-prod-kr1-openapm-openAPMInfra-NLB-monitoring-otel-ingress-RejectedFlowCount-critical"
+    description           : "The total number of flows (or connections) rejected by the load balancer(monitoring-otel-ingress)."
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    metric_name               : "RejectedFlowCount"
+    namespace                 : "AWS/NetworkELB"
+    period                    : 60
+    statistic                 : "Sum"    
+    threshold                 : 0
+    dimensions                :       
+      LoadBalancer : "net/monitoring-otel-ingress/ae133e1c7ed49874"
+    sns_topic_arn             : "arn:aws:sns:ap-northeast-2:744126299712:mon-prod-kr1-cloudwatch-bmc-critical"     
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"       

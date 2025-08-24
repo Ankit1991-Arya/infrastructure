@@ -1,0 +1,45 @@
+allowed_cidrs:
+  - cidr: "18.193.204.252/32"
+    description: "shared_eks-eu-central-1b"
+  - cidr: "3.64.181.164/32"
+    description: "shared_eks-eu-central-1a"
+  - cidr: "18.193.63.197/32"
+    description: "shared_eks-eu-central-1c"
+  - cidr: "52.58.78.128/32"
+    description: "CoreNetwork_eu-central-1a"
+  - cidr: "35.156.38.1/32"
+    description: "CoreNetwork_eu-central-1b"
+  - cidr: "54.214.205.249/32"
+    description: "nice-devops-sandboxCICD-WFO.ToolsNATGatewayA"
+  - cidr: "54.71.107.74/32"
+    description: "nice-devops-sandboxCICD-WFO.ToolsNATGatewayB"
+  - cidr: "54.189.111.43/32"
+    description: "nice-devops-sandboxCICD-WFO.ToolsNATGatewayC"
+  - cidr: "54.149.7.150/32"
+    description: "nice-devops-sandboxCICD-WFO.ToolsNATGatewayD"
+  - cidr: "100.20.86.60/32"
+    description: "NGW for nice-devops us-west-2 shared_eks VPC (kbastion)"
+  - cidr: "44.233.241.98/32"
+    description: "NGW for nice-devops us-west-2 shared_eks VPC (kbastion)"
+  - cidr: "44.231.249.232/32"
+    description: "NGW for nice-devops us-west-2 shared_eks VPC (kbastion)"
+  - cidr: "3.124.156.19/32"
+    description: "DigitalEngagement NAT Gateway eu-central-1a"
+  - cidr: "3.124.243.118/32"
+    description: "DigitalEngagement NAT Gateway eu-central-1b"
+  - cidr: "52.57.173.121/32"
+    description: "DigitalEngagement NAT Gateway eu-central-1c"
+  - cidr: "35.157.142.181/32"
+    description: "WFO PROD NAT Gateway eu-central-1a"
+  - cidr: "3.120.48.58/32"
+    description: "WFO PROD NAT Gateway eu-central-1b"
+  - cidr: "54.71.185.219/32"
+    description: "NGW for ic-dba us-west-2 shared_eks VPC"
+
+prometheus_cidr_blocks: #NAT Gatewy IPs of Shared EKS VPC
+  - "3.64.181.164/32"   # shared_eks-eu-central-1a
+  - "18.193.204.252/32" # shared_eks-eu-central-1b
+  - "18.193.63.197/32"  # shared_eks-eu-central-1c
+
+sasl_iam_cidr_blocks:
+  - "10.0.0.0/16"

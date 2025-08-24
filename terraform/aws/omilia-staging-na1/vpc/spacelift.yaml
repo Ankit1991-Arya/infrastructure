@@ -1,0 +1,19 @@
+maintainers:
+  - name: kubernetes-admins
+    email: devops-cloud-native-core@niceincontact.com
+  - name: systems-engineering
+    email: systemengineering@nice.com
+
+integrations:
+  aws: omilia-staging-na1
+
+terraform_version: 1.5.0
+auto_deploy: false
+branch: wip-omilia-staging-na1-vpc
+
+contexts:
+  cxossp-github-personal-access-token: 0
+
+before_init:
+  - "cat /mnt/workspace/github.netrc >> ~/.netrc"
+  - "chmod 600 ~/.netrc"

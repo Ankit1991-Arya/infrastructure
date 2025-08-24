@@ -1,0 +1,13 @@
+endpoint_service_data:
+  service1:
+    network_load_balancer_arns:
+      - arn:aws:elasticloadbalancing:eu-central-1:498107153657:loadbalancer/net/monitoring-otel-ingress/73892fb80047577b
+    acceptance_required: true
+    private_dns_name: apm-eu1.service.nicecxone.com
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+      Name: "mon-prod-eu1-openapm-endpoint"

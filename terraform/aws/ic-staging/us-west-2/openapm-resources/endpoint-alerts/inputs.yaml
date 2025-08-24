@@ -1,0 +1,46 @@
+alerts_data:
+  packetsDropped_PrivateLinkendpoint:
+    alarm_name           : "ic-staging-openapm-openAPMInfra-endpoint-PrivateLink-OpenAPM-PacketsDropped-minor"
+    description           : "The number of packets dropped by the endpoint is greated than 0"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    metric_name               : "PacketsDropped"
+    namespace                 : "AWS/PrivateLinkEndpoints"
+    period                    : 300
+    statistic                 : "Sum"    
+    threshold                 : 0
+    dimensions                : 
+      VPC Endpoint Id : "vpce-01622ef3c2934f8d8"  
+      Endpoint Type   : "Interface"
+      Service Name    : "com.amazonaws.vpce.us-west-2.vpce-svc-0550c9dd9ae457294"
+      VPC Id          : "vpc-53b04a34"
+    sns_topic_arn             : "arn:aws:sns:us-west-2:747639319642:mon-staging-na1-cloudwatch-bmc-minor"     
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+
+  packetsDropped_shared_eks01endpoint:
+    alarm_name           : "ic-staging-openapm-openAPMInfra-endpoint-shared_eks01-PacketsDropped-minor"
+    description           : "The number of packets dropped by the endpoint is greated than 0"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    metric_name               : "PacketsDropped"
+    namespace                 : "AWS/PrivateLinkEndpoints"
+    period                    : 300
+    statistic                 : "Sum"    
+    threshold                 : 0
+    dimensions                : 
+      VPC Endpoint Id : "vpce-019304d4088a07eff"  
+      Endpoint Type   : "Interface"
+      Service Name    : "com.amazonaws.vpce.us-west-2.vpce-svc-0550c9dd9ae457294"
+      VPC Id          : "vpc-0854ba80fe47cbf1e"
+    sns_topic_arn             : "arn:aws:sns:us-west-2:747639319642:mon-staging-na1-cloudwatch-bmc-minor"     
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"

@@ -1,0 +1,11 @@
+cloudformation:
+  entry_template_file: main.cf.yaml
+  region: af-south-1
+  stack_name: waf
+  template_bucket: cf-templates-3jsbe6vizq4y4-af-south-1
+integrations:
+  aws: ic-prod-za1
+maintainers:
+- email: networkarchitecture@nice.com
+  name: network-architecture
+platform: cloudformation

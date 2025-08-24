@@ -1,0 +1,13 @@
+cloudformation:
+  entry_template_file: "main.cf.yaml"
+  region: "us-west-2"
+  stack_name: "ec2-security-group-port-range-all-prohibited"
+  template_bucket: "cf-templates-1lmg33q24wj4d-us-west-2"
+env:
+  CF_CAPABILITY_IAM: "1"
+integrations:
+  aws: ic-dev
+maintainers:
+  - name: architecture-team
+    email: Inco_ATL_Architects@nice.com
+platform: cloudformation

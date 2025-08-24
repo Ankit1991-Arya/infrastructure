@@ -1,0 +1,75 @@
+maintainers:
+  - name: voice-team
+    email: voiceeng@nice.com
+stack_defaults:
+  maintainers:
+    - name: voice-team
+      email: voiceeng@nice.com
+  platform: cloudformation
+  cloudformation:
+    region: "eu-west-2"
+    template_bucket: cf-templates-im1erhrc6yo9-eu-west-2
+  integrations:
+    aws: "ic-uksov1-uk2"
+  contexts:
+    psx-restuser-password: 0
+  project_root: cloudformation-templates/voice/psxp
+  trigger_on_stack_changes: true
+  allow_resource_deletion: true
+  after_apply:
+    - ec2Id=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=${CF_PARAM_Name}" "Name=instance-state-name,Values=running,pending" --query "Reservations[].Instances[].InstanceId" --output text)
+    - volId=$(aws ec2 describe-volumes --filters "Name=attachment.instance-id,Values=${ec2Id}" --query "Volumes[?Attachments[0].Device=='/dev/sda1'].VolumeId" --output text)
+    - aws ec2 create-tags --resources ${volId} --tags Key=Name,Value="${CF_PARAM_Name} / root /dev/sda1" Key=Owner,Value="Voice Teams" Key=ApplicationOwner,Value="Voice Teams" Key=InfrastructureOwner,Value="Voice Teams" Key=Product,Value="Infrastructure" Key=Service,Value="AWS Voice POP" Key=DeviceType,Value="Ribbon PSX" Key=Cluster,Value="Global"
+stacks:
+  ukloarbpsx00:
+    cloudformation:
+      stack_name: "VoiceRibbonPSXPrimary-ukloarbpsx00"
+      entry_template_file: "1.0.2/main.cf.yaml"
+    env:
+      CF_PARAM_Name: "ukloarbpsx00"
+      CF_PARAM_SsuserSshKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCXu6gaithXgYaCYJTfyvZPYaps+101jvKUZDTCAjb6vTz6dVg4T0LZEIxf32q6qXRlv1kASZ6oD2xZj6NOa9Za4YQfb2XdPBDMiGeJIN9dHSMZEsnzqaR7c236otBGIYxwDqKoWQzciisb2kOy48gVGYYwe9w2SjkZeHQtANsBbh3feHXsi9ti0D8mwGD0/a87WoxKyuy+1lE7zHesOuV/WdoEb3OMHjz5sOgWN2KikDrVN4XuwDO2M8+WmNvUCDkzPCrDFyT87ZGqVMuSekzOCP6tMyiHZ0W3C18wu93n8d0UR7IV8StNAp1qxdONlwxRENJdo0heauFf/w7IzIxYtRMyvGwia4KacgEVlhSdHjK5nsCv/wyqLUs/ipjX3Y4V2WW603Dm76aLUau0Fn0XWfXMAwvTaobGf9B4DISed3LOuKLKIYXSPiYoKY958QHabG/sz4sCUfFsPQiWnMfBO4+MyOIxjCbJ5PL/uGlVj9aPpVcGrFW1+71OVgO2nuSgK1EwAhOL9x08jrZR3WTW4Zr/Xubmbq5KNWMgY1lVLV5HiDDB1voPGuaI4TTegOXI6PqgKjly+HzSRZZFAHk7qfXX1XupF68J3F2UUC5xeCizYvGtdD8o/Z6iBQ/bcNvo6wxxhWssOQpXm0tsCPPoUmPe7HZ+gAATA9ywEf9nbQ== VoiceTeamsUKSov1@PSX"
+      CF_PARAM_NtpServer1: "10.232.152.60"
+      CF_PARAM_NtpServer2: "10.232.156.55"
+      CF_PARAM_DnsServer1: "10.232.152.60"
+      CF_PARAM_DnsServer2: "10.232.156.55"
+      CF_PARAM_EmsSshKey1: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDJKKeOfQe2awgIEgKj069VT97HrBorln1GfkDH6b7d+Y4mQ5WLmAccAH3HDpH3QAxl+JZpcpYPnVxLbYNGu6HEco4HjlSWTSrrdK2vhXyzY1mIc5hzEcic4XYU8I8VnbRt+ZBCwd3z90TRnyX92/BXL5KWSYSe0LYCiHVtxXa/LSEtcJWCQ3HxiGQkcvBpB/AjUnlMtpoL16VUreTKtZNue5Kc6RBvPvwAeal6TDJEZ5qHE8huWGMAtZkneXEwJH0jQ9GuXp6TpNAG/UWju/PqJ+ff+D9v3ZGAHSygmUrkst2pTJP6AoOCZf588kw1GMCURyA8fc8Wtmy9/IDKE/5NrEdMbUZ9rkojV5jsPQW82sCcLjyHIshGHvtjYDkEANTOnAqE4l0Uqq26XVaI3qgtqO+an8H5gN6XviOrbzDqqrgKJ4rEZsMl7qit5bOgv7ytL1iPXJaNVno6WUE5VHu4sn/2Gr7M9ytgdU2ZIxRk6G6NTQwyerT7apxDrUSxxh0= insight@s1ld5rbrmp01"
+      CF_PARAM_EmsSshKey2: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDHcDH7e4Ro/1am24ngJoiHDRkX7TPoIXU3YysV++eixMvDXVU9v1LFu62S34fkJ0kvwswRbw8yiit3e2YSqtikEr2CB0+qZONK0gd/z2jWK2sStlrX2cragrgnU5jypFSI6/RIdijdj9p2fA+YGtuKIOhfqaHGCd1MpPimsdRI2odsvOAv6pWdV6M6ccmUYNgwvenUpXzPXSXhiTlXeLUhMXN3EuuN4An0CWhqHvRqvhM88sMflIuPIUCz3/Cmr7npcPpok5G+Y7qo3trSRIvW5kqgU5bMy0Loy2qEtOGDIekZXsQd2Ysi5Q8mCFZ86XbhPt6J1NfEH1PuTw3kqDyPszlvP4itKkFd4QSqsm5znRJ8MYEdtX+3YdFm6ooTHK6vyX02uVMuq1458Ly7v4XOi/F60kPySa9smeau3e4Bopmjc9dxrgp/GoXLTfs+yURKW6ubrqll3i5vX3+2UYw5+Yhpg66QLdiE8nJ36mAg6z5xxqXIVQsKerUZs6r2c+M= insight@s1ma4rbrmp01"
+      CF_PARAM_AdminSshKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCXu6gaithXgYaCYJTfyvZPYaps+101jvKUZDTCAjb6vTz6dVg4T0LZEIxf32q6qXRlv1kASZ6oD2xZj6NOa9Za4YQfb2XdPBDMiGeJIN9dHSMZEsnzqaR7c236otBGIYxwDqKoWQzciisb2kOy48gVGYYwe9w2SjkZeHQtANsBbh3feHXsi9ti0D8mwGD0/a87WoxKyuy+1lE7zHesOuV/WdoEb3OMHjz5sOgWN2KikDrVN4XuwDO2M8+WmNvUCDkzPCrDFyT87ZGqVMuSekzOCP6tMyiHZ0W3C18wu93n8d0UR7IV8StNAp1qxdONlwxRENJdo0heauFf/w7IzIxYtRMyvGwia4KacgEVlhSdHjK5nsCv/wyqLUs/ipjX3Y4V2WW603Dm76aLUau0Fn0XWfXMAwvTaobGf9B4DISed3LOuKLKIYXSPiYoKY958QHabG/sz4sCUfFsPQiWnMfBO4+MyOIxjCbJ5PL/uGlVj9aPpVcGrFW1+71OVgO2nuSgK1EwAhOL9x08jrZR3WTW4Zr/Xubmbq5KNWMgY1lVLV5HiDDB1voPGuaI4TTegOXI6PqgKjly+HzSRZZFAHk7qfXX1XupF68J3F2UUC5xeCizYvGtdD8o/Z6iBQ/bcNvo6wxxhWssOQpXm0tsCPPoUmPe7HZ+gAATA9ywEf9nbQ== VoiceTeamsUKSov1@PSX"
+      CF_PARAM_AdminPasswordHash: "$6$ukloarbpsx00$zChjmXVhR2sA1IrbpLZUIZS8JplqG/sNfwWn451fpHo72Yo11BppBp0h6ygZbd0vpby13t9BP5qxjlHPJU8F31"
+      CF_PARAM_MgmtSecurityGroup: "sg-015c685d5c65a54de"
+      CF_PARAM_AmiId: "ami-0dda95482028be374"
+      CF_PARAM_MgmtSubnetId: "subnet-08a734d959de63647"
+      CF_PARAM_MgmtPrivIP: ""
+      CF_PARAM_EmsFqdn: ""
+      CF_PARAM_EmsIp1: "10.8.42.180"
+      CF_PARAM_EmsIp2: "10.8.58.180"
+      CF_PARAM_EmsPrivateNodeParameters: "vnfc_id=PrimaryPSX-ukloarbpsx00,cluster_id=AWS-uksov1-psxPrimary"
+      CF_PARAM_BdrFirstNode: "Y"
+      CF_PARAM_PgAuditLogLevel: "56"
+
+  uklobrbpsx00:
+    cloudformation:
+      stack_name: "VoiceRibbonPSXPrimary-uklobrbpsx00"
+      entry_template_file: "1.0.2/main.cf.yaml"
+    env:
+      CF_PARAM_Name: "uklobrbpsx00"
+      CF_PARAM_SsuserSshKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCXu6gaithXgYaCYJTfyvZPYaps+101jvKUZDTCAjb6vTz6dVg4T0LZEIxf32q6qXRlv1kASZ6oD2xZj6NOa9Za4YQfb2XdPBDMiGeJIN9dHSMZEsnzqaR7c236otBGIYxwDqKoWQzciisb2kOy48gVGYYwe9w2SjkZeHQtANsBbh3feHXsi9ti0D8mwGD0/a87WoxKyuy+1lE7zHesOuV/WdoEb3OMHjz5sOgWN2KikDrVN4XuwDO2M8+WmNvUCDkzPCrDFyT87ZGqVMuSekzOCP6tMyiHZ0W3C18wu93n8d0UR7IV8StNAp1qxdONlwxRENJdo0heauFf/w7IzIxYtRMyvGwia4KacgEVlhSdHjK5nsCv/wyqLUs/ipjX3Y4V2WW603Dm76aLUau0Fn0XWfXMAwvTaobGf9B4DISed3LOuKLKIYXSPiYoKY958QHabG/sz4sCUfFsPQiWnMfBO4+MyOIxjCbJ5PL/uGlVj9aPpVcGrFW1+71OVgO2nuSgK1EwAhOL9x08jrZR3WTW4Zr/Xubmbq5KNWMgY1lVLV5HiDDB1voPGuaI4TTegOXI6PqgKjly+HzSRZZFAHk7qfXX1XupF68J3F2UUC5xeCizYvGtdD8o/Z6iBQ/bcNvo6wxxhWssOQpXm0tsCPPoUmPe7HZ+gAATA9ywEf9nbQ== VoiceTeamsUKSov1@PSX"
+      CF_PARAM_NtpServer1: "10.232.152.60"
+      CF_PARAM_NtpServer2: "10.232.156.55"
+      CF_PARAM_DnsServer1: "10.232.152.60"
+      CF_PARAM_DnsServer2: "10.232.156.55"
+      CF_PARAM_EmsSshKey1: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDJKKeOfQe2awgIEgKj069VT97HrBorln1GfkDH6b7d+Y4mQ5WLmAccAH3HDpH3QAxl+JZpcpYPnVxLbYNGu6HEco4HjlSWTSrrdK2vhXyzY1mIc5hzEcic4XYU8I8VnbRt+ZBCwd3z90TRnyX92/BXL5KWSYSe0LYCiHVtxXa/LSEtcJWCQ3HxiGQkcvBpB/AjUnlMtpoL16VUreTKtZNue5Kc6RBvPvwAeal6TDJEZ5qHE8huWGMAtZkneXEwJH0jQ9GuXp6TpNAG/UWju/PqJ+ff+D9v3ZGAHSygmUrkst2pTJP6AoOCZf588kw1GMCURyA8fc8Wtmy9/IDKE/5NrEdMbUZ9rkojV5jsPQW82sCcLjyHIshGHvtjYDkEANTOnAqE4l0Uqq26XVaI3qgtqO+an8H5gN6XviOrbzDqqrgKJ4rEZsMl7qit5bOgv7ytL1iPXJaNVno6WUE5VHu4sn/2Gr7M9ytgdU2ZIxRk6G6NTQwyerT7apxDrUSxxh0= insight@s1ld5rbrmp01"
+      CF_PARAM_EmsSshKey2: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDHcDH7e4Ro/1am24ngJoiHDRkX7TPoIXU3YysV++eixMvDXVU9v1LFu62S34fkJ0kvwswRbw8yiit3e2YSqtikEr2CB0+qZONK0gd/z2jWK2sStlrX2cragrgnU5jypFSI6/RIdijdj9p2fA+YGtuKIOhfqaHGCd1MpPimsdRI2odsvOAv6pWdV6M6ccmUYNgwvenUpXzPXSXhiTlXeLUhMXN3EuuN4An0CWhqHvRqvhM88sMflIuPIUCz3/Cmr7npcPpok5G+Y7qo3trSRIvW5kqgU5bMy0Loy2qEtOGDIekZXsQd2Ysi5Q8mCFZ86XbhPt6J1NfEH1PuTw3kqDyPszlvP4itKkFd4QSqsm5znRJ8MYEdtX+3YdFm6ooTHK6vyX02uVMuq1458Ly7v4XOi/F60kPySa9smeau3e4Bopmjc9dxrgp/GoXLTfs+yURKW6ubrqll3i5vX3+2UYw5+Yhpg66QLdiE8nJ36mAg6z5xxqXIVQsKerUZs6r2c+M= insight@s1ma4rbrmp01"
+      CF_PARAM_AdminSshKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCXu6gaithXgYaCYJTfyvZPYaps+101jvKUZDTCAjb6vTz6dVg4T0LZEIxf32q6qXRlv1kASZ6oD2xZj6NOa9Za4YQfb2XdPBDMiGeJIN9dHSMZEsnzqaR7c236otBGIYxwDqKoWQzciisb2kOy48gVGYYwe9w2SjkZeHQtANsBbh3feHXsi9ti0D8mwGD0/a87WoxKyuy+1lE7zHesOuV/WdoEb3OMHjz5sOgWN2KikDrVN4XuwDO2M8+WmNvUCDkzPCrDFyT87ZGqVMuSekzOCP6tMyiHZ0W3C18wu93n8d0UR7IV8StNAp1qxdONlwxRENJdo0heauFf/w7IzIxYtRMyvGwia4KacgEVlhSdHjK5nsCv/wyqLUs/ipjX3Y4V2WW603Dm76aLUau0Fn0XWfXMAwvTaobGf9B4DISed3LOuKLKIYXSPiYoKY958QHabG/sz4sCUfFsPQiWnMfBO4+MyOIxjCbJ5PL/uGlVj9aPpVcGrFW1+71OVgO2nuSgK1EwAhOL9x08jrZR3WTW4Zr/Xubmbq5KNWMgY1lVLV5HiDDB1voPGuaI4TTegOXI6PqgKjly+HzSRZZFAHk7qfXX1XupF68J3F2UUC5xeCizYvGtdD8o/Z6iBQ/bcNvo6wxxhWssOQpXm0tsCPPoUmPe7HZ+gAATA9ywEf9nbQ== VoiceTeamsUKSov1@PSX"
+      CF_PARAM_AdminPasswordHash: "$6$uklobrbpsx00$MG7cICHHrF65oyyCw7NmZo8cs0Z0jBMJ5885Zo7nQfUA0FFU.KCuMola2CjzosJJ7kAwyW5XRZyjzBj7/NhUG."
+      CF_PARAM_MgmtSecurityGroup: "sg-07431cc6316d12fea"
+      CF_PARAM_AmiId: "ami-0dda95482028be374"
+      CF_PARAM_MgmtSubnetId: "subnet-0666a32219402b74e"
+      CF_PARAM_EmsFqdn: ""
+      CF_PARAM_EmsIp1: "10.8.42.180"
+      CF_PARAM_EmsIp2: "10.8.58.180"
+      CF_PARAM_EmsPrivateNodeParameters: "vnfc_id=PrimaryPSX-uklobrbpsx00,cluster_id=AWS-uksov1-psxPrimary"
+      CF_PARAM_BdrFirstNode: "N"
+      CF_PARAM_BdrUpStreamHostname: "ukloarbpsx00"
+      CF_PARAM_BdrUpStreamIp: "10.232.194.227"
+      CF_PARAM_PgAuditLogLevel: "56"

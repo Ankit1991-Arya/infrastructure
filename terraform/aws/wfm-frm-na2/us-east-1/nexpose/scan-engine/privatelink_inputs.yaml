@@ -1,0 +1,14 @@
+private_link_data:
+  # Private link for Nexpose
+  nexpose-console:
+    vpc_id: vpc-0b9cf0524a7a85373
+    subnet_ids:
+      - subnet-0ef5cc8e5fe5adc60
+      - subnet-039e2c12a73caa01b
+    security_group_ids: []
+    resource_configuration_arn: "arn:aws:vpc-lattice:us-east-1:975050239252:resourceconfiguration/rcfg-0b0d040f01cc68fe6"
+    vpc_endpoint_type: "Resource"
+    route53_record_name: ""
+    tags:
+      Product: "Nexpose"
+      VPC: "production-fm-wfm"

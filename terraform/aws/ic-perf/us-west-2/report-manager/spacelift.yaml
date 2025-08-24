@@ -1,0 +1,7 @@
+integrations:
+  aws: ic-perf
+maintainers:
+- name: Reporting
+  email: CXoneACDReportingBoliviaTeam@nice.com
+
+terraform_version: 1.3.7

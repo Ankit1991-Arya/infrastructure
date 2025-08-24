@@ -1,0 +1,6 @@
+create_stack: false
+
+# Setting the default maintainer of this repository
+maintainers:
+  - name: spacelift-admin
+    email: devops-cloud-native-core@niceincontact.com

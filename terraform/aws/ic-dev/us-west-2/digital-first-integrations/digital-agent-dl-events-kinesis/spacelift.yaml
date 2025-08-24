@@ -1,0 +1,7 @@
+integrations:
+  aws: ic-dev
+maintainers:
+- name: digifirstintegrations
+  email: digitalfirst-integrations@NiceinContact.com
+
+terraform_version: 1.4.5

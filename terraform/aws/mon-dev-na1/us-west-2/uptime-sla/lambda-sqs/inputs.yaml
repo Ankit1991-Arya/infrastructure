@@ -1,0 +1,12 @@
+data:
+  role:
+    arn: "arn:aws:iam::300101013673:role/ServiceAccess-sre-uptime-calculation-mon-role"
+  sqs:
+    batch_size: 10
+    enabled: true
+    maxReceiveCount: 3
+    message_retention_seconds: 60
+    sqs_managed_sse_enabled: true
+  layer:
+    arn: "arn:aws:lambda:us-west-2:300101013673:layer:node_modules_layer:2"
+   

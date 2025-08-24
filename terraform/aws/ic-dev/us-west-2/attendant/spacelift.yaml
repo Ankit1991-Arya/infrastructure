@@ -1,0 +1,7 @@
+integrations:
+  aws: ic-dev
+maintainers:
+- name: auto-attendant
+  email: R&DAttendantTeam@nice.com
+
+terraform_version: 1.3.7

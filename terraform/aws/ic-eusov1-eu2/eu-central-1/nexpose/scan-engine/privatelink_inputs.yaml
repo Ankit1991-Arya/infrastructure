@@ -1,0 +1,80 @@
+private_link_data_corenetwork:
+  # Private link for Nexpose
+  nexpose-console-corenetwork:
+    vpc_id: vpc-049053c0decb4f27e
+    subnet_ids:
+      - subnet-0de4a2613329ac08a
+      - subnet-007f52b4dba727bf3
+    security_group_ids: []
+    service_name: "com.amazonaws.vpce.eu-central-1.vpce-svc-04397038d2fbb7e1d"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: true
+    route53_record_name: ""
+    tags:
+      Product: "Nexpose"
+      VPC: "CoreNetwork-eusov1"
+
+route53-verification-data:
+  private-link-service-id: vpce-svc-04397038d2fbb7e1d
+  route53_zone_name: "service.nicecxone-sov1.eu."
+  route53_record_type: "TXT"
+  service_domain_verification_name: "_wocrpfgfpqknncpsfbyj"
+  service_domain_verification_value: "vpce:HmdyxhrixlkVBviIqfof"
+
+security-group-data:
+  nexpose-console-corenetwork-sg:
+    tags:
+      VPC: "CoreNetwork-eusov1"
+    ### Security Group Details ###
+    vpc_id: vpc-049053c0decb4f27e
+    create_new_security_group: true
+    # security_group_ids: ["sg-09e77093ff956277f"]
+    security_group_name: "nexpose-corenetwork-vpce-sg"
+    aws_vpc_security_group_ingress_rules:
+      ingress_rule1:
+        ip_protocol: "tcp"
+        cidr_ipv4: "10.0.0.0/8"
+        from_port: 3780
+        to_port: 3780
+      ingress_rule2:
+        ip_protocol: "tcp"
+        cidr_ipv4: "172.16.0.0/12"
+        from_port: 3780
+        to_port: 3780
+      ingress_rule3:
+        ip_protocol: "tcp"
+        cidr_ipv4: "172.16.0.0/12"
+        from_port: 40815
+        to_port: 40815
+      ingress_rule4:
+        ip_protocol: "tcp"
+        cidr_ipv4: "10.0.0.0/8"
+        from_port: 40815
+        to_port: 40815
+    aws_vpc_security_group_egress_rules:
+      egress_rule2:
+        ip_protocol: "-1"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+        cidr_ipv4: "0.0.0.0/0"
+  nexpose-console-standaloneservices-sg:
+    tags:
+      VPC: "StandaloneServices VPC"
+    ### Security Group Details ###
+    vpc_id: vpc-07c9852668d5fc988
+    create_new_security_group: true
+    # security_group_ids: ["sg-09e77093ff956277f"]
+    security_group_name: "nexpose-standaloneservices-vpce-sg"
+    aws_vpc_security_group_ingress_rules:
+      ingress_rule3:
+        ip_protocol: "tcp"
+        cidr_ipv4: "172.16.0.0/12"
+        from_port: 40815
+        to_port: 40815
+      ingress_rule4:
+        ip_protocol: "tcp"
+        cidr_ipv4: "10.0.0.0/8"
+        from_port: 40815
+        to_port: 40815
+    aws_vpc_security_group_egress_rules:
+      egress_rule2:
+        ip_protocol: "-1"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+        cidr_ipv4: "0.0.0.0/0"

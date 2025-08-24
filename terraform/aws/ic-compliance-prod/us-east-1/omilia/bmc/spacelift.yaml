@@ -1,0 +1,17 @@
+before_init:
+  - "cat /mnt/workspace/github.netrc >> ~/.netrc"
+  - "chmod 600 ~/.netrc"
+
+contexts:
+  cxossp-github-personal-access-token: 0
+
+integrations:
+  aws: ic-compliance-prod
+
+maintainers:
+  - name: kubernetes-admins
+    email: devops-cloud-native-core@niceincontact.com
+  - name: systems-engineering
+    email: systemengineering@nice.com
+
+terraform_version: 1.5.7

@@ -1,0 +1,6 @@
+- principal: "User:acd-script-engine-user"
+  resource_name: "*"
+  operations: ["Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"

@@ -1,0 +1,22 @@
+---
+prefix: cxone-cw-db-dev
+environment: development
+test_kinesis_stream_name: SRE_KINESIS_DEMO
+python_runtime_version: "python3.13"
+sns_topic_name: cxone-monitoring-dev
+
+# The kms module needs a list of org_ids to craft the permissions properly
+# ic-dev and mon-dev
+kms_org_ids:
+  - 300813158921
+  - 300101013673
+
+tags:
+  Product: "Kinesis Dashboard"
+  Service: "Kinesis Dashboard"
+  Environment: dev
+  ServiceOwner: "SRE"
+  ApplicationOwner: "SRE"
+  Owner: "SRE"
+  InfrastructureOwner: "SRE"
+  MonitoredBySRE: "True"

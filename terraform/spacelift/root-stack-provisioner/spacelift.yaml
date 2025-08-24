@@ -1,0 +1,15 @@
+after_plan:
+  - "terraform show -json spacelift.plan | jq '.configuration' > configuration.custom.spacelift.json"
+before_init:
+  - "cat /mnt/workspace/github.netrc >> ~/.netrc"
+  - "chmod 600 ~/.netrc"
+contexts:
+  cxossp-github-personal-access-token: 0
+drift_detection:
+  reconcile: true
+  schedule:
+    - "0 7 * * *" # This is UTC time, this will be midnight Mountain Time
+maintainers:
+  - name: kubernetes-admins
+    email: devops-cloud-native-core@niceincontact.com
+terraform_version: 1.3.7

@@ -1,0 +1,11 @@
+before_init:
+  - "cat /mnt/workspace/github.netrc >> ~/.netrc"
+  - "chmod 600 ~/.netrc"
+contexts:
+  cxossp-github-personal-access-token: 0
+integrations:
+  aws: ic-dev
+maintainers:
+  - name: orch-team
+    email: R&DESCWorkstream@niceincontact.com
+terraform_version: 1.3.7

@@ -1,0 +1,9 @@
+integrations:
+  aws: ic-compliance-prod
+maintainers:
+  - name: digital-first-workflow
+    email: DigitalFirstWorkflow@niceincontact.com
+  - name: digifirstintegrations
+    email: digitalfirst-integrations@NiceinContact.com
+
+terraform_version: 1.4.5

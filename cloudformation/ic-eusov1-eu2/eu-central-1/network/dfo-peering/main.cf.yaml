@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: AWS CloudFormation Template for Network Only
+
+
+Mappings:
+  Data:
+    values:
+      DfoVPC: "vpc-0b1303c092c474f19"
+      dfoCIDR: "10.232.96.0/20"
+      CoreToDFOPeering: 'Core_DFO'
+
+
+Resources:
+  CoreDFOVPCPeeringConnection:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      VpcId: !ImportValue 'CoreNetwork-Vpc'
+      PeerVpcId: !FindInMap [ Data,values,DfoVPC ]
+      Tags:
+        - Key: Name
+          Value: !FindInMap [ Data,values, CoreToDFOPeering ]
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: PeeringConnection
+
+
+#ROUTES TO BE ADDED IN CORE RT
+
+  DFOVPCPeeringRouteCore1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az1CoreRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,dfoCIDR ]
+      VpcPeeringConnectionId: !Ref CoreDFOVPCPeeringConnection
+
+  DFOVPCPeeringRouteCore2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az1LambdaRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,dfoCIDR ]
+      VpcPeeringConnectionId: !Ref CoreDFOVPCPeeringConnection
+
+  DFOVPCPeeringRouteCore3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az1VIPRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,dfoCIDR ]
+      VpcPeeringConnectionId: !Ref CoreDFOVPCPeeringConnection
+
+  DFOVPCPeeringRouteCore4:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az2CoreRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,dfoCIDR ]
+      VpcPeeringConnectionId: !Ref CoreDFOVPCPeeringConnection
+
+  DFOVPCPeeringRouteCore5:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az2LambdaRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,dfoCIDR ]
+      VpcPeeringConnectionId: !Ref CoreDFOVPCPeeringConnection
+
+  DFOVPCPeeringRouteCore6:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az2VIPRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,dfoCIDR ]
+      VpcPeeringConnectionId: !Ref CoreDFOVPCPeeringConnection
+
+Outputs:
+  CoreDFOVPCPeeringConnectionID:
+    Value: !Ref CoreDFOVPCPeeringConnection
+
+
+

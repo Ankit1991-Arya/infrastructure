@@ -1,0 +1,223 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS CloudFormation Template for Standalone Services Network Only
+
+Mappings:
+  VPCaddressPrefix:
+    values:
+      VPCaddressPrefix: "10.0"
+      AvailabilityZone1: 'eu-west-2a'
+      AvailabilityZone2: 'eu-west-2b'
+      Owner: 'Network Teams'
+
+Resources:
+  Vpc:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,VPCaddressPrefix ]
+          - '0'
+          - 0/16
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Ref 'AWS::StackName'
+  S3Endpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: '*'
+            Effect: Allow
+            Resource: '*'
+            Principal: '*'
+      RouteTableIds:
+        - !Ref BaseNGWRouteTable
+        - !Ref BaseIGWRouteTable
+      ServiceName: !Join
+        - ''
+        - - com.amazonaws.
+          - !Ref 'AWS::Region'
+          - .s3
+      VpcId: !Ref Vpc
+  BaseIGWDefaultRoute:
+    DependsOn: AttachGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref BaseIGWRouteTable
+    Type: 'AWS::EC2::Route'
+  BaseIGWRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: Base IGW Route Table
+  InternetGateway:
+    Properties:
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+    Type: 'AWS::EC2::InternetGateway'
+  AttachGateway:
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+  BaseNGWRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Base NGW Route Table
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  BaseNGWDefaultRoute:
+    DependsOn: NATGateway1
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref BaseNGWRouteTable
+    Type: 'AWS::EC2::Route'
+  NATGW1RouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: Az1 NAT Gateway Route Table
+  NATGW2RouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: Az2 NAT Gateway Route Table
+  NATGateway1:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt
+        - EIP1
+        - AllocationId
+      SubnetId: !Ref Az1NATGWSubnet
+  EIP1:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+  NATGateway2:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt
+        - EIP2
+        - AllocationId
+      SubnetId: !Ref Az2NATGWSubnet
+  EIP2:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+  Az1NATGWSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,VPCaddressPrefix ]
+          - '0'
+          - 0/25
+      Tags:
+        - Key: Name
+          Value: Az1 NAT GW Subnet
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1NATGWSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref NATGW1RouteTable
+      SubnetId: !Ref Az1NATGWSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az2NATGWSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,VPCaddressPrefix ]
+          - '0'
+          - 128/25
+      Tags:
+        - Key: Name
+          Value: Az2 NAT GW Subnet
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az2NATGWSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref NATGW2RouteTable
+      SubnetId: !Ref Az2NATGWSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  BaseNGWDefaultRoute1:
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref NATGW1RouteTable
+    Type: 'AWS::EC2::Route'
+  BaseNGWDefaultRoute2:
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref NATGW2RouteTable
+    Type: 'AWS::EC2::Route'
+
+Outputs:
+  Vpc:
+    Description: VPC ID
+    Value: !Ref Vpc
+    Export:
+      Name: StandaloneServices-Vpc
+  S3Endpoint:
+    Description: ''
+    Value: !Ref S3Endpoint
+    Export:
+      Name: StandaloneServices-S3Endpoint
+  BaseIGWRouteTable:
+    Description: Route Table with Internet Gateway
+    Value: !Ref BaseIGWRouteTable
+    Export:
+      Name: StandaloneServices-BaseIGWRouteTable
+  InternetGateway:
+    Description: Internet Gateway
+    Value: !Ref InternetGateway
+    Export:
+      Name: StandaloneServices-BaseIGW
+  BaseNGW1RouteTable:
+    Description: Route Table with Nat Gateway
+    Value: !Ref BaseNGWRouteTable
+    Export:
+      Name: StandaloneServices-BaseNGW1RouteTable
+  Az1NATGWSubnet:
+    Description: ''
+    Value: !Ref Az1NATGWSubnet
+    Export:
+      Name: StandaloneServices-Az1NATGWSubnet
+  Az2NATGWSubnet:
+    Description: ''
+    Value: !Ref Az2NATGWSubnet
+    Export:
+      Name: StandaloneServices-Az2NATGWSubnet
+  NATGW1RouteTable:
+    Description: Az1 Nat Gateway Route Table
+    Value: !Ref NATGW1RouteTable
+    Export:
+      Name: StandaloneServices-NATGW1RouteTable
+  NATGW2RouteTable:
+    Description: Az2 Nat Gateway Route Table
+    Value: !Ref NATGW2RouteTable
+    Export:
+      Name: StandaloneServices-NATGW2RouteTable
+  NATGateway1:
+    Description: Az1 Nat Gateway
+    Value: !Ref NATGateway1
+    Export:
+      Name: StandaloneServices-Az1NATGateway
+  NATGateway2:
+    Description: Az2 Nat Gateway
+    Value: !Ref NATGateway2
+    Export:
+      Name: StandaloneServices-Az2NATGateway

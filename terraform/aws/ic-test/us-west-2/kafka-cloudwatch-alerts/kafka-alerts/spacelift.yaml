@@ -1,0 +1,10 @@
+before_init:
+- cat /mnt/workspace/github.netrc >> ~/.netrc
+- chmod 600 ~/.netrc
+contexts:
+  cxossp-github-personal-access-token: 0
+integrations:
+  aws: ic-test
+maintainers:
+- email: SRE-Platform@niceincontact.com
+  name: platform-sre

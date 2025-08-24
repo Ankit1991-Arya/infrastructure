@@ -1,0 +1,20 @@
+maintainers:
+  - name: systems-engineering
+    email: systemengineering@nice.com
+  - name: kubernetes-admins
+    email: devops-cloud-native-core@niceincontact.com
+
+integrations:
+  aws: omilia-ausov1-au2
+
+worker_pool_name: omilia-ec2-ausov1
+terraform_version: 1.6.2
+auto_deploy: false
+branch: wip-omilia-ausov1-au2-extras
+
+contexts:
+  cxossp-github-personal-access-token: 0
+
+before_init:
+  - "cat /mnt/workspace/github.netrc >> ~/.netrc"
+  - "chmod 600 ~/.netrc"

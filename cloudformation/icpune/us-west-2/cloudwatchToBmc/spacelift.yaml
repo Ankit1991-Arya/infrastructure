@@ -1,0 +1,13 @@
+maintainers:
+  - name: devops_pune
+    email: PipelineInfraAutomationEast@nice.com
+  - name: spacelift-admin
+    email: devops-cloud-native-core@niceincontact.com
+platform: cloudformation
+cloudformation:
+  stack_name:  "cloudwatchToBmc"
+  entry_template_file: "main.cf.yaml"
+  region: "us-west-2"
+  template_bucket: cf-templates-cloudwatchtobmc-icpune
+integrations:
+  aws: "icpune"

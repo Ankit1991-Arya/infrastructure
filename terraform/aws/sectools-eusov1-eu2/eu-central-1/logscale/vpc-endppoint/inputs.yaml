@@ -1,0 +1,21 @@
+logscale-sg-config:
+  logscale:
+    tags:
+      Environment: "eusov1"
+    create_new_nlb_security_group: true
+    logscale_nlb_sg_name: "nlb-logscale-ui-sg"
+    aws_vpc_security_group_ingress_rules:
+      ingress_rule1:
+        ip_protocol: "tcp"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+        cidr_ipv4: "0.0.0.0/0"
+        from_port: 443
+        to_port: 443
+      ingress_rule2:
+        ip_protocol: "tcp"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+        cidr_ipv4: "0.0.0.0/0"
+        from_port: 80
+        to_port: 80
+    aws_vpc_security_group_egress_rules:
+      egress_rule2:
+        ip_protocol: "-1"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+        cidr_ipv4: "0.0.0.0/0"

@@ -1,0 +1,2002 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+    "Description" : "AWS CloudFormation Template to setup and deploy vSBC HA instances for CXone derived from Ribbon SBC Core V12.01.00R000 AWS_HA_template.json",
+
+    "Parameters" : {
+
+      "AMIID" : {
+        "Description" : "AMI ID of SBC : copy of ic-prod private image: ami-0dba269f4c1b5cc9f ",
+        "Type" : "AWS::EC2::Image::Id",
+        "MaxLength": "21",
+        "Default" : "ami-3f22b428",
+        "AllowedPattern" : "ami-[a-z0-9]*",
+        "ConstraintDescription" : "Must be a valid AMI ID"
+      },
+
+      "AdminSshKey": {
+        "Description" : "Enter Public Key to enable SSH access to CLI via admin user",
+        "Type": "String",
+        "Default" : "ssh-rsa <key>",
+        "AllowedPattern" : "ssh-rsa .*",
+        "ConstraintDescription" : "Must be a valid public key - Format: ssh-rsa <key>."
+      },
+
+      "IAMRole" : {
+        "Description" : "IAM role for instances, check installation guide for more details",
+        "Type" : "String",
+        "MinLength" : "1",
+        "Default": "voice_ribbonsbc"
+      },
+
+      "VpcId" : {
+        "Description" : "Select a VPC with four subnets : mgt0, ha0, pkt0 and pkt1",
+        "Type" : "AWS::EC2::VPC::Id",
+        "Default" : ""
+      },
+
+      "InstanceType" : {
+        "Description" : "EC2 instance type",
+        "Type" : "String",
+        "Default" : "c5.4xlarge",
+        "AllowedValues" : [ "m5.xlarge", "m5.2xlarge", "c5.2xlarge","c5.4xlarge", "c5.9xlarge", "c5n.2xlarge","c5n.4xlarge", "c5n.9xlarge", "p3.2xlarge", "g3.4xlarge" ],
+        "ConstraintDescription" : "Must be a valid EC2 instance type."
+      },
+
+      "SBCPersonality" : {
+        "Description" : "SBC Personality type",
+        "Type" : "String",
+        "Default" : "isbc",
+        "AllowedValues" : [ "isbc", "ssbc", "msbc", "slb" ],
+        "ConstraintDescription" : "Must be a valid SBC Personality type."
+      },
+
+      "ActiveInstanceName" : {
+        "Description" : "CE name of the active instance",
+        "Type" : "String",
+        "Default" : "rbswe01a",
+        "MaxLength" : "63",
+        "AllowedPattern" : "^[A-Za-z]{1}[-A-Za-z0-9.]*[A-Za-z0-9]{1}$",
+        "ConstraintDescription" : "Enter valid ceName(instance name).  Regex: ^[A-Za-z]{1}[-A-Za-z0-9.]*[A-Za-z0-9]{1}$"
+      },
+
+      "StandbyInstanceName" : {
+        "Description" : "CE name of the standby instance",
+        "Type" : "String",
+        "Default" : "rbswe01b",
+        "MaxLength" : "63",
+        "AllowedPattern" : "^[A-Za-z]{1}[-A-Za-z0-9.]*[A-Za-z0-9]{1}$",
+        "ConstraintDescription" : "Enter valid ceName(instance name).  Regex: ^[A-Za-z]{1}[-A-Za-z0-9.]*[A-Za-z0-9]{1}$"
+      },
+
+
+      "SystemName" : {
+        "Description" : "System Name",
+        "Type" : "String",
+        "Default" : "rbswe01",
+        "MaxLength" : "26",
+        "AllowedPattern" : "^[A-Za-z]{1}[-A-Za-z0-9]*[A-Za-z0-9]{1}$",
+        "ConstraintDescription" : "Enter valid system name.  Regex: ^[A-Za-z]{1}[-A-Za-z0-9]*[A-Za-z0-9]{1}$ "
+      },
+
+
+      "SecurityGrpMgt0" : {
+        "Description" : "Select security Group for mgt0",
+        "Default": "",
+        "Type" : "AWS::EC2::SecurityGroup::Id"
+      },
+
+      "SecurityGrpHa0" : {
+        "Description" : "Select security Group for ha0",
+        "Default": "",
+        "Type" : "AWS::EC2::SecurityGroup::Id"
+      },
+
+      "SecurityGrpPkt0" : {
+        "Description" : "Select security Group for pkt0 (pktSG)",
+        "Default": "",
+        "Type" : "AWS::EC2::SecurityGroup::Id"
+      },
+
+      "SecurityGrpPkt1" : {
+        "Description" : "Select security Group for pkt1 (pktSG)",
+        "Default": "",
+        "Type" : "AWS::EC2::SecurityGroup::Id"
+      },
+
+      "SubnetIdMgt0" : {
+        "Description" : "SubnetId of an existing subnet in your Virtual Private Cloud (VPC) for Mgt0. (Mgmt Subnet)",
+        "Default": "",
+        "Type" : "AWS::EC2::Subnet::Id"
+      },
+
+      "SubnetIdHA0" : {
+        "Description" : "SubnetId of an existing subnet in your Virtual Private Cloud (VPC) for HA0. (HA Subnet)",
+        "Default": "",
+        "Type" : "AWS::EC2::Subnet::Id"
+      },
+
+      "SubnetIdPkt0" : {
+        "Description" : "SubnetId of an existing subnet in your Virtual Private Cloud (VPC) for Pkt0. (Untrust Subnet)",
+        "Default": "",
+        "Type" : "AWS::EC2::Subnet::Id"
+      },
+
+      "SubnetIdPkt1" : {
+        "Description" : "SubnetId of an existing subnet in your Virtual Private Cloud (VPC) for Pkt1. (Trust Subnet)",
+        "Default": "",
+        "Type" : "AWS::EC2::Subnet::Id"
+      },
+
+      "NumberOfAlternateIPv4OnPkt0" : {
+        "Description" : "Enter Number of IPs required on PKT0 port",
+        "Type" : "Number",
+        "Default"  : "4",
+        "MaxValue" : "29",
+        "MinValue" : "0"
+      },
+
+      "NumberOfAlternateIPv4OnPkt1" : {
+        "Description" : "Enter Number of IPs required on PKT1 port",
+        "Type" : "Number",
+        "Default"  : "4",
+        "MaxValue" : "29",
+        "MinValue" : "0"
+      },
+
+      "NumberOfEIPV4OnPkt0" : {
+        "Description" : "Enter Number of IPv4 EIP required on PKT0 port",
+        "Type" : "Number",
+        "Default"  : "4",
+        "MaxValue" : "29",
+        "MinValue" : "0"
+      },
+
+      "NumberOfEIPV4OnPkt1" : {
+        "Description" : "Enter Number of IPv4 EIP required on PKT1 port",
+        "Type" : "Number",
+        "Default"  : "0",
+        "MaxValue" : "29",
+        "MinValue" : "0"
+      },
+
+      "NumberOfAlternateIpV6Pkt0" : {
+        "Description" : "Enter Number of IPv6 required on PKT0 port",
+        "Type" : "Number",
+        "Default"  : "0",
+        "MaxValue" : "30",
+        "MinValue" : "0"
+      },
+
+      "NumberOfAlternateIpV6Pkt1" : {
+        "Description" : "Enter Number of IPv6 required on PKT1 port",
+        "Type" : "Number",
+        "Default"  : "0",
+        "MaxValue" : "30",
+        "MinValue" : "0"
+      },
+
+      "EipAssociationOnMgt" : {
+        "Description" : "Link Mgt0 interface with an EIP to login to the instance from public network",
+        "Type" : "String",
+        "Default"  : "No",
+        "AllowedValues" : ["No", "Yes"]
+      },
+
+      "ReveseNatEnablePkt0" : {
+        "Description" : "Enable the Reverse NAT functionality for pkt0 interface",
+        "Type" : "String",
+        "Default"  : "True",
+        "AllowedValues" : ["True", "False"]
+      },
+
+      "ReveseNatEnablePkt1" : {
+        "Description" : "Enable the Reverse NAT functionality for pkt1 interface",
+        "Type" : "String",
+        "Default"  : "False",
+        "AllowedValues" : ["True", "False"]
+      },
+
+      "Tenancy" : {
+        "Description" : "Tenancy attribute for instance",
+        "Type" : "String",
+        "Default" : "default",
+        "AllowedValues" : ["default", "dedicated"]
+      },
+
+      "VolumeType" : {
+        "Description" : "Select Type of Volume for SBC",
+        "Type" : "String",
+        "Default"  : "io1",
+        "AllowedValues" : ["gp2", "io1"]
+      },
+
+      "IOPS" : {
+        "Description" : "Enter IOPS reservation for io1 type EBS volume [<= 1950], for gp2 EBS volumes this value is ignored by template.",
+        "Type" : "Number",
+        "Default"  : "1750",
+        "MaxValue" : "1950"
+      },
+
+      "VolumeSize" : {
+        "Description" : "Enter size of disk in GiB. Minimum disk required is 65 GiB",
+        "Type" : "Number",
+        "Default"  : "100",
+        "MinValue" : "65",
+        "MaxValue" : "1000"
+      },
+
+      "DeleteVolumesOnTermination" : {
+        "Description" : "Enable this to delete the instance volume when the Stack is deleted",
+        "Type" : "String",
+        "Default" : "False",
+        "AllowedValues" : [ "True", "False"]
+      },
+
+      "ThirdPartyCpus" : {
+        "Description" : "Enter number of CPUs to be reserved for use with third party apps.",
+        "Type" : "Number",
+        "Default" : "0",
+        "MinValue" : "0",
+        "MaxValue" : "4"
+      },
+
+      "UseAnonymizationFeature" : {
+        "Description" : "Enable this feature for log Anonymization.",
+        "Type": "String",
+        "Default": "False",
+        "AllowedValues": [ "True", "False"]
+      },
+
+      "EnableCloudWatchMetrics" : {
+        "Description" : "Enable this for capturing instance metrics at cloudwatch.",
+        "Type": "String",
+        "Default": "False",
+        "AllowedValues": ["True", "False"]
+      },
+
+      "ThirdPartyMem" : {
+        "Description" : "Enter how many MB of memory to allow for use with third party apps.",
+        "Type" : "Number",
+        "Default" : "0",
+        "MinValue" : "0",
+        "MaxValue" : "4096"
+      },
+
+      "EmsUsername": {
+        "Description": "User name for registering with EMS",
+        "Type": "String",
+        "Default": "restuser"
+      },
+      "EmsPassword": {
+        "Description": "EMS registration password",
+        "Type": "String",
+        "Default": ""
+      },
+      "EmsFqdn": {
+        "Description": "EMS Fully Qualified Domain Name - e.g. instance1._ems._tcp.example.com",
+        "Type": "String",
+        "Default": "",
+        "MaxLength": "128"
+      },
+      "EmsIP1": {
+        "Description": "EMS IP Address 1",
+        "Type": "String",
+        "Default": "",
+        "MaxLength": "26"
+      },
+      "EmsIP2": {
+        "Description": "EMS IP Address 2",
+        "Type": "String",
+        "Default": "",
+        "MaxLength": "26"
+      },
+      "ClusterID": {
+        "Description": "Cluster/VNF ID value from EMS Cluster Mgmt.",
+        "Type": "String",
+        "Default": "",
+        "MaxLength": "63"
+      },
+      "EmsDownloadConfig": {
+        "Description": "Download Configuration from EMS",
+        "Type": "String",
+        "Default"  : "False",
+        "AllowedValues" : [ "True", "False" ]
+      },
+      "SdRegistry": {
+        "Description": "Service Discovery Registry",
+        "Type": "String",
+        "Default"  : "",
+        "MaxLength": "63"
+      }
+    },
+
+    "Conditions" : {
+      "MatchingCeNames" : {"Fn::Equals" : [{"Ref" : "ActiveInstanceName"}, {"Ref" : "StandbyInstanceName"}]},
+      "MatchingActiveCeAndSystemName"  : {"Fn::Equals" : [{"Ref" : "SystemName"}, {"Ref" : "ActiveInstanceName"}]},
+      "MatchingStandbyCeAndSystemName" : {"Fn::Equals" : [{"Ref" : "SystemName"}, {"Ref" : "StandbyInstanceName"}]},
+
+      "NameMismatchError"    : {"Fn::Or"  : [ {"Condition": "MatchingCeNames"}, {"Condition": "MatchingActiveCeAndSystemName"}, {"Condition": "MatchingStandbyCeAndSystemName"} ] },
+      "NameValidationPassed" : {"Fn::Not" : [ {"Condition": "NameMismatchError"} ]},
+
+      "VolumeTypeIO1"      : { "Fn::Equals" : [{"Ref" : "VolumeType"}, "io1"] },
+      "EipOnMgt"           : { "Fn::And" : [ { "Fn::Equals" : [{"Ref" : "EipAssociationOnMgt"}, "Yes" ] }, {"Condition": "NameValidationPassed"} ]},
+
+      "EipOnPkt0_01" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "1"]},
+      "EipOnPkt0_02" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "2"]},
+      "EipOnPkt0_03" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "3"]},
+      "EipOnPkt0_04" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "4"]},
+      "EipOnPkt0_05" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "5"]},
+      "EipOnPkt0_06" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "6"]},
+      "EipOnPkt0_07" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "7"]},
+      "EipOnPkt0_08" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "8"]},
+      "EipOnPkt0_09" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "9"]},
+      "EipOnPkt0_10" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "10"]},
+      "EipOnPkt0_11" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "11"]},
+      "EipOnPkt0_12" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "12"]},
+      "EipOnPkt0_13" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "13"]},
+      "EipOnPkt0_14" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "14"]},
+      "EipOnPkt0_15" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "15"]},
+      "EipOnPkt0_16" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "16"]},
+      "EipOnPkt0_17" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "17"]},
+      "EipOnPkt0_18" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "18"]},
+      "EipOnPkt0_19" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "19"]},
+      "EipOnPkt0_20" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "20"]},
+      "EipOnPkt0_21" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "21"]},
+      "EipOnPkt0_22" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "22"]},
+      "EipOnPkt0_23" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "23"]},
+      "EipOnPkt0_24" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "24"]},
+      "EipOnPkt0_25" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "25"]},
+      "EipOnPkt0_26" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "26"]},
+      "EipOnPkt0_27" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "27"]},
+      "EipOnPkt0_28" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "28"]},
+      "EipOnPkt0_29" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt0"}, "29"]},
+
+      "AssociateEipOnPkt0_01": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_01"}, {"Condition": "EipOnPkt0_02"}, {"Condition": "EipOnPkt0_03"}, {"Condition": "EipOnPkt0_04"}, {"Condition": "EipOnPkt0_05"}, {"Condition": "EipOnPkt0_06"}, {"Condition": "EipOnPkt0_07"}, {"Condition": "EipOnPkt0_08"}, {"Condition": "EipOnPkt0_09"}, {"Condition": "EipOnPkt0_10"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_11"}, {"Condition": "EipOnPkt0_12"}, {"Condition": "EipOnPkt0_13"}, {"Condition": "EipOnPkt0_14"}, {"Condition": "EipOnPkt0_15"}, {"Condition": "EipOnPkt0_16"}, {"Condition": "EipOnPkt0_17"}, {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_02": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_02"}, {"Condition": "EipOnPkt0_03"}, {"Condition": "EipOnPkt0_04"}, {"Condition": "EipOnPkt0_05"}, {"Condition": "EipOnPkt0_06"}, {"Condition": "EipOnPkt0_07"}, {"Condition": "EipOnPkt0_08"}, {"Condition": "EipOnPkt0_09"}, {"Condition": "EipOnPkt0_10"}, {"Condition": "EipOnPkt0_11"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_12"}, {"Condition": "EipOnPkt0_13"}, {"Condition": "EipOnPkt0_14"}, {"Condition": "EipOnPkt0_15"}, {"Condition": "EipOnPkt0_16"}, {"Condition": "EipOnPkt0_17"}, {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_03": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_03"}, {"Condition": "EipOnPkt0_04"}, {"Condition": "EipOnPkt0_05"}, {"Condition": "EipOnPkt0_06"}, {"Condition": "EipOnPkt0_07"}, {"Condition": "EipOnPkt0_08"}, {"Condition": "EipOnPkt0_09"}, {"Condition": "EipOnPkt0_10"}, {"Condition": "EipOnPkt0_11"}, {"Condition": "EipOnPkt0_12"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_13"}, {"Condition": "EipOnPkt0_14"}, {"Condition": "EipOnPkt0_15"}, {"Condition": "EipOnPkt0_16"}, {"Condition": "EipOnPkt0_17"}, {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_04": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_04"}, {"Condition": "EipOnPkt0_05"}, {"Condition": "EipOnPkt0_06"}, {"Condition": "EipOnPkt0_07"}, {"Condition": "EipOnPkt0_08"}, {"Condition": "EipOnPkt0_09"}, {"Condition": "EipOnPkt0_10"}, {"Condition": "EipOnPkt0_11"}, {"Condition": "EipOnPkt0_12"}, {"Condition": "EipOnPkt0_13"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_14"}, {"Condition": "EipOnPkt0_15"}, {"Condition": "EipOnPkt0_16"}, {"Condition": "EipOnPkt0_17"}, {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_05": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_05"}, {"Condition": "EipOnPkt0_06"}, {"Condition": "EipOnPkt0_07"}, {"Condition": "EipOnPkt0_08"}, {"Condition": "EipOnPkt0_09"}, {"Condition": "EipOnPkt0_10"}, {"Condition": "EipOnPkt0_11"}, {"Condition": "EipOnPkt0_12"}, {"Condition": "EipOnPkt0_13"}, {"Condition": "EipOnPkt0_14"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_15"}, {"Condition": "EipOnPkt0_16"}, {"Condition": "EipOnPkt0_17"}, {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_06": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_06"}, {"Condition": "EipOnPkt0_07"}, {"Condition": "EipOnPkt0_08"}, {"Condition": "EipOnPkt0_09"}, {"Condition": "EipOnPkt0_10"}, {"Condition": "EipOnPkt0_11"}, {"Condition": "EipOnPkt0_12"}, {"Condition": "EipOnPkt0_13"}, {"Condition": "EipOnPkt0_14"}, {"Condition": "EipOnPkt0_15"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_16"}, {"Condition": "EipOnPkt0_17"}, {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_07": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_07"}, {"Condition": "EipOnPkt0_08"}, {"Condition": "EipOnPkt0_09"}, {"Condition": "EipOnPkt0_10"}, {"Condition": "EipOnPkt0_11"}, {"Condition": "EipOnPkt0_12"}, {"Condition": "EipOnPkt0_13"}, {"Condition": "EipOnPkt0_14"}, {"Condition": "EipOnPkt0_15"}, {"Condition": "EipOnPkt0_16"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_17"}, {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_08": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_08"}, {"Condition": "EipOnPkt0_09"}, {"Condition": "EipOnPkt0_10"}, {"Condition": "EipOnPkt0_11"}, {"Condition": "EipOnPkt0_12"}, {"Condition": "EipOnPkt0_13"}, {"Condition": "EipOnPkt0_14"}, {"Condition": "EipOnPkt0_15"}, {"Condition": "EipOnPkt0_16"}, {"Condition": "EipOnPkt0_17"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_09": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_09"}, {"Condition": "EipOnPkt0_10"}, {"Condition": "EipOnPkt0_11"}, {"Condition": "EipOnPkt0_12"}, {"Condition": "EipOnPkt0_13"}, {"Condition": "EipOnPkt0_14"}, {"Condition": "EipOnPkt0_15"}, {"Condition": "EipOnPkt0_16"}, {"Condition": "EipOnPkt0_17"}, {"Condition": "EipOnPkt0_18"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"} ]},  {"Condition": "EipOnPkt0_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_10": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_10"}, {"Condition": "EipOnPkt0_11"}, {"Condition": "EipOnPkt0_12"}, {"Condition": "EipOnPkt0_13"}, {"Condition": "EipOnPkt0_14"}, {"Condition": "EipOnPkt0_15"}, {"Condition": "EipOnPkt0_16"}, {"Condition": "EipOnPkt0_17"}, {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_11": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_11"}, {"Condition": "EipOnPkt0_12"}, {"Condition": "EipOnPkt0_13"}, {"Condition": "EipOnPkt0_14"}, {"Condition": "EipOnPkt0_15"}, {"Condition": "EipOnPkt0_16"}, {"Condition": "EipOnPkt0_17"}, {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_12": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_12"}, {"Condition": "EipOnPkt0_13"}, {"Condition": "EipOnPkt0_14"}, {"Condition": "EipOnPkt0_15"}, {"Condition": "EipOnPkt0_16"}, {"Condition": "EipOnPkt0_17"}, {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_13": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_13"}, {"Condition": "EipOnPkt0_14"}, {"Condition": "EipOnPkt0_15"}, {"Condition": "EipOnPkt0_16"}, {"Condition": "EipOnPkt0_17"}, {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_14": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_14"}, {"Condition": "EipOnPkt0_15"}, {"Condition": "EipOnPkt0_16"}, {"Condition": "EipOnPkt0_17"}, {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_15": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_15"}, {"Condition": "EipOnPkt0_16"}, {"Condition": "EipOnPkt0_17"}, {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_16": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_16"}, {"Condition": "EipOnPkt0_17"}, {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_17": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_17"}, {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_18": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_18"}, {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_19": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt0_19"}, {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"} ]},  {"Condition": "EipOnPkt0_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_20": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt0_20"}, {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_21": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt0_21"}, {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_22": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt0_22"}, {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_23": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt0_23"}, {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_24": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt0_24"}, {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_25": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt0_25"}, {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_26": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt0_26"}, {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_27": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt0_27"}, {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_28": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt0_28"}, {"Condition": "EipOnPkt0_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt0_29": { "Fn::And" : [{ "Condition": "EipOnPkt0_29"}, {"Condition": "NameValidationPassed"} ]},
+
+      "EipOnPkt1_01" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "1"]},
+      "EipOnPkt1_02" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "2"]},
+      "EipOnPkt1_03" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "3"]},
+      "EipOnPkt1_04" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "4"]},
+      "EipOnPkt1_05" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "5"]},
+      "EipOnPkt1_06" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "6"]},
+      "EipOnPkt1_07" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "7"]},
+      "EipOnPkt1_08" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "8"]},
+      "EipOnPkt1_09" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "9"]},
+      "EipOnPkt1_10" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "10"]},
+      "EipOnPkt1_11" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "11"]},
+      "EipOnPkt1_12" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "12"]},
+      "EipOnPkt1_13" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "13"]},
+      "EipOnPkt1_14" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "14"]},
+      "EipOnPkt1_15" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "15"]},
+      "EipOnPkt1_16" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "16"]},
+      "EipOnPkt1_17" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "17"]},
+      "EipOnPkt1_18" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "18"]},
+      "EipOnPkt1_19" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "19"]},
+      "EipOnPkt1_20" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "20"]},
+      "EipOnPkt1_21" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "21"]},
+      "EipOnPkt1_22" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "22"]},
+      "EipOnPkt1_23" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "23"]},
+      "EipOnPkt1_24" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "24"]},
+      "EipOnPkt1_25" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "25"]},
+      "EipOnPkt1_26" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "26"]},
+      "EipOnPkt1_27" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "27"]},
+      "EipOnPkt1_28" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "28"]},
+      "EipOnPkt1_29" : { "Fn::Equals" : [{"Ref" : "NumberOfEIPV4OnPkt1"}, "29"]},
+
+      "AssociateEipOnPkt1_01": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_01"}, {"Condition": "EipOnPkt1_02"}, {"Condition": "EipOnPkt1_03"}, {"Condition": "EipOnPkt1_04"}, {"Condition": "EipOnPkt1_05"}, {"Condition": "EipOnPkt1_06"}, {"Condition": "EipOnPkt1_07"}, {"Condition": "EipOnPkt1_08"}, {"Condition": "EipOnPkt1_09"}, {"Condition": "EipOnPkt1_10"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_11"}, {"Condition": "EipOnPkt1_12"}, {"Condition": "EipOnPkt1_13"}, {"Condition": "EipOnPkt1_14"}, {"Condition": "EipOnPkt1_15"}, {"Condition": "EipOnPkt1_16"}, {"Condition": "EipOnPkt1_17"}, {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_02": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_02"}, {"Condition": "EipOnPkt1_03"}, {"Condition": "EipOnPkt1_04"}, {"Condition": "EipOnPkt1_05"}, {"Condition": "EipOnPkt1_06"}, {"Condition": "EipOnPkt1_07"}, {"Condition": "EipOnPkt1_08"}, {"Condition": "EipOnPkt1_09"}, {"Condition": "EipOnPkt1_10"}, {"Condition": "EipOnPkt1_11"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_12"}, {"Condition": "EipOnPkt1_13"}, {"Condition": "EipOnPkt1_14"}, {"Condition": "EipOnPkt1_15"}, {"Condition": "EipOnPkt1_16"}, {"Condition": "EipOnPkt1_17"}, {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_03": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_03"}, {"Condition": "EipOnPkt1_04"}, {"Condition": "EipOnPkt1_05"}, {"Condition": "EipOnPkt1_06"}, {"Condition": "EipOnPkt1_07"}, {"Condition": "EipOnPkt1_08"}, {"Condition": "EipOnPkt1_09"}, {"Condition": "EipOnPkt1_10"}, {"Condition": "EipOnPkt1_11"}, {"Condition": "EipOnPkt1_12"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_13"}, {"Condition": "EipOnPkt1_14"}, {"Condition": "EipOnPkt1_15"}, {"Condition": "EipOnPkt1_16"}, {"Condition": "EipOnPkt1_17"}, {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_04": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_04"}, {"Condition": "EipOnPkt1_05"}, {"Condition": "EipOnPkt1_06"}, {"Condition": "EipOnPkt1_07"}, {"Condition": "EipOnPkt1_08"}, {"Condition": "EipOnPkt1_09"}, {"Condition": "EipOnPkt1_10"}, {"Condition": "EipOnPkt1_11"}, {"Condition": "EipOnPkt1_12"}, {"Condition": "EipOnPkt1_13"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_14"}, {"Condition": "EipOnPkt1_15"}, {"Condition": "EipOnPkt1_16"}, {"Condition": "EipOnPkt1_17"}, {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_05": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_05"}, {"Condition": "EipOnPkt1_06"}, {"Condition": "EipOnPkt1_07"}, {"Condition": "EipOnPkt1_08"}, {"Condition": "EipOnPkt1_09"}, {"Condition": "EipOnPkt1_10"}, {"Condition": "EipOnPkt1_11"}, {"Condition": "EipOnPkt1_12"}, {"Condition": "EipOnPkt1_13"}, {"Condition": "EipOnPkt1_14"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_15"}, {"Condition": "EipOnPkt1_16"}, {"Condition": "EipOnPkt1_17"}, {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_06": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_06"}, {"Condition": "EipOnPkt1_07"}, {"Condition": "EipOnPkt1_08"}, {"Condition": "EipOnPkt1_09"}, {"Condition": "EipOnPkt1_10"}, {"Condition": "EipOnPkt1_11"}, {"Condition": "EipOnPkt1_12"}, {"Condition": "EipOnPkt1_13"}, {"Condition": "EipOnPkt1_14"}, {"Condition": "EipOnPkt1_15"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_16"}, {"Condition": "EipOnPkt1_17"}, {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_07": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_07"}, {"Condition": "EipOnPkt1_08"}, {"Condition": "EipOnPkt1_09"}, {"Condition": "EipOnPkt1_10"}, {"Condition": "EipOnPkt1_11"}, {"Condition": "EipOnPkt1_12"}, {"Condition": "EipOnPkt1_13"}, {"Condition": "EipOnPkt1_14"}, {"Condition": "EipOnPkt1_15"}, {"Condition": "EipOnPkt1_16"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_17"}, {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_08": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_08"}, {"Condition": "EipOnPkt1_09"}, {"Condition": "EipOnPkt1_10"}, {"Condition": "EipOnPkt1_11"}, {"Condition": "EipOnPkt1_12"}, {"Condition": "EipOnPkt1_13"}, {"Condition": "EipOnPkt1_14"}, {"Condition": "EipOnPkt1_15"}, {"Condition": "EipOnPkt1_16"}, {"Condition": "EipOnPkt1_17"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_09": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_09"}, {"Condition": "EipOnPkt1_10"}, {"Condition": "EipOnPkt1_11"}, {"Condition": "EipOnPkt1_12"}, {"Condition": "EipOnPkt1_13"}, {"Condition": "EipOnPkt1_14"}, {"Condition": "EipOnPkt1_15"}, {"Condition": "EipOnPkt1_16"}, {"Condition": "EipOnPkt1_17"}, {"Condition": "EipOnPkt1_18"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"} ]},  {"Condition": "EipOnPkt1_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_10": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_10"}, {"Condition": "EipOnPkt1_11"}, {"Condition": "EipOnPkt1_12"}, {"Condition": "EipOnPkt1_13"}, {"Condition": "EipOnPkt1_14"}, {"Condition": "EipOnPkt1_15"}, {"Condition": "EipOnPkt1_16"}, {"Condition": "EipOnPkt1_17"}, {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_11": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_11"}, {"Condition": "EipOnPkt1_12"}, {"Condition": "EipOnPkt1_13"}, {"Condition": "EipOnPkt1_14"}, {"Condition": "EipOnPkt1_15"}, {"Condition": "EipOnPkt1_16"}, {"Condition": "EipOnPkt1_17"}, {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_12": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_12"}, {"Condition": "EipOnPkt1_13"}, {"Condition": "EipOnPkt1_14"}, {"Condition": "EipOnPkt1_15"}, {"Condition": "EipOnPkt1_16"}, {"Condition": "EipOnPkt1_17"}, {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_13": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_13"}, {"Condition": "EipOnPkt1_14"}, {"Condition": "EipOnPkt1_15"}, {"Condition": "EipOnPkt1_16"}, {"Condition": "EipOnPkt1_17"}, {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_14": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_14"}, {"Condition": "EipOnPkt1_15"}, {"Condition": "EipOnPkt1_16"}, {"Condition": "EipOnPkt1_17"}, {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_15": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_15"}, {"Condition": "EipOnPkt1_16"}, {"Condition": "EipOnPkt1_17"}, {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_16": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_16"}, {"Condition": "EipOnPkt1_17"}, {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_17": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_17"}, {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_18": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_18"}, {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"} ]},  { "Fn::Or" : [  {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"} ]}   ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_19": { "Fn::And" : [ { "Fn::Or" : [ { "Fn::Or" : [  {"Condition": "EipOnPkt1_19"}, {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"} ]},  {"Condition": "EipOnPkt1_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_20": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt1_20"}, {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_21": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt1_21"}, {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_22": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt1_22"}, {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_23": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt1_23"}, {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_24": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt1_24"}, {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_25": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt1_25"}, {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_26": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt1_26"}, {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_27": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt1_27"}, {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_28": { "Fn::And" : [ { "Fn::Or" : [ {"Condition": "EipOnPkt1_28"}, {"Condition": "EipOnPkt1_29"}  ]}, {"Condition": "NameValidationPassed"} ]},
+      "AssociateEipOnPkt1_29": { "Fn::And" : [{ "Condition": "EipOnPkt1_29"}, {"Condition": "NameValidationPassed"} ]}
+    },
+
+    "Metadata" : {
+      "AWS::CloudFormation::Interface" : {
+        "ParameterGroups" : [{
+          "Label" : {"default": "Network configuration"},
+          "Parameters" : ["VpcId", "SecurityGrpMgt0", "SecurityGrpHa0", "SecurityGrpPkt0", "SecurityGrpPkt1", "SubnetIdMgt0", "SubnetIdHA0", "SubnetIdPkt0", "SubnetIdPkt1"]
+        },
+        {
+          "Label" : {"default": "System configuration."},
+          "Parameters" : ["AMIID", "SBCPersonality", "IAMRole", "ActiveInstanceName", "StandbyInstanceName", "SystemName", "InstanceType", "UseAnonymizationFeature","EnableCloudWatchMetrics"]
+        },
+        {
+          "Label" : {"default": "Storage configuration"},
+          "Parameters" : ["VolumeType", "IOPS", "VolumeSize", "DeleteVolumesOnTermination"]
+        },
+        {
+          "Label" : {"default": "Secondary IP configuration for PKT0 and PKT1"},
+          "Parameters" : ["NumberOfAlternateIPv4OnPkt0", "NumberOfAlternateIPv4OnPkt1"]
+        },
+        {
+          "Label" : {"default": "Elastic IP configuration"},
+          "Parameters" : ["NumberOfEIPV4OnPkt0", "NumberOfEIPV4OnPkt1", "EipAssociationOnMgt", "NumberOfAlternateIpV6Pkt0", "NumberOfAlternateIpV6Pkt1"]
+        },
+        {
+          "Label" : {"default": "Reverse NAT configuration"},
+          "Parameters" : ["ReveseNatEnablePkt0", "ReveseNatEnablePkt1"]
+        },
+        {
+          "Label" : {"default": "Security configuration"},
+          "Parameters" : ["AdminSshKey"]
+        },
+        {
+          "Label" : {"default": "Placement of Instance"},
+          "Parameters" : ["Tenancy", "PlacementId"]
+        },
+        {
+          "Label": {"default": "Third Party Applications Provisioning"},
+          "Parameters" : ["ThirdPartyCpus", "ThirdPartyMem"]
+        },
+        {
+          "Label": {"default": "EMS Registration configuration"},
+          "Parameters" : ["EmsUsername", "EmsPassword", "EmsFqdn", "EmsIP1", "EmsIP2", "ClusterID", "EmsDownloadConfig"]
+        }
+
+        ]
+      }
+    },
+
+    "Rules": {
+      "ValidNumberOfIPs": {
+        "RuleCondition": {
+          "Fn::Contains": [
+            [
+              "m5.xlarge",
+              "m5.2xlarge",
+              "c5.2xlarge",
+              "c5n.2xlarge",
+              "p3.2xlarge"
+            ],
+            {
+              "Ref": "InstanceType"
+            }
+          ]
+        },
+        "Assertions": [
+          {
+            "Assert": {
+                "Fn::Not": [ { "Fn::Contains": [ ["15","16","17","18","19","20","21","22","23","24","25","26","27","28","29"], {"Ref": "NumberOfAlternateIPv4OnPkt0"} ] } ]
+            },
+            "AssertDescription": "xlarge/2xlarge instance types only support up to 15 IPv4 addresses attached per interface (including primary IP)"
+          },
+          {
+            "Assert": {
+                "Fn::Not": [ { "Fn::Contains": [ ["15","16","17","18","19","20","21","22","23","24","25","26","27","28","29"], {"Ref": "NumberOfAlternateIPv4OnPkt1"} ] } ]
+            },
+            "AssertDescription": "xlarge/2xlarge instance types only support up to 15 IPv4 addresses attached per interface (including primary IP)"
+          },
+          {
+            "Assert": {
+                "Fn::Not": [ { "Fn::Contains": [ ["16","17","18","19","20","21","22","23","24","25","26","27","28","29","30"], {"Ref": "NumberOfAlternateIpV6Pkt0"} ] } ]
+            },
+            "AssertDescription": "xlarge/2xlarge instance types only support up to 15 IPv6 addresses attached per interface"
+          },
+          {
+            "Assert": {
+                "Fn::Not": [ { "Fn::Contains": [ ["16","17","18","19","20","21","22","23","24","25","26","27","28","29","30"], {"Ref": "NumberOfAlternateIpV6Pkt1"} ] } ]
+            },
+            "AssertDescription": "xlarge/2xlarge instance types only support up to 15 IPv6 addresses attached per interface"
+          }
+        ]
+      }
+    },
+
+    "Resources" : {
+      "mgtXfaceA" : {
+        "Type" : "AWS::EC2::NetworkInterface",
+        "Condition" : "NameValidationPassed",
+        "Properties" : {
+          "SubnetId" : {"Ref": "SubnetIdMgt0" } ,
+          "Description" : { "Fn::Join" : [ "-", [ { "Ref" : "SystemName" }, "mgt0A"] ] },
+          "GroupSet" : [ {"Ref" : "SecurityGrpMgt0"} ],
+          "SecondaryPrivateIpAddressCount" : 1,
+          "SourceDestCheck" : "true",
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "-", [ { "Ref" : "SystemName" }, "mgt0A"] ] }}, { "Key": "Owner", "Value": "Voice Teams" }, { "Key": "ApplicationOwner", "Value": "Voice Teams" }, { "Key": "InfrastructureOwner", "Value": "Voice Teams" }, { "Key": "Cluster", "Value": "Global" }, { "Key": "Product", "Value": "Infrastructure" }, { "Key": "Service", "Value": "AWS Voice POP" }, { "Key": "DeviceType", "Value": "Ribbon SBC" }]
+        }
+      },
+      "SBCPlacementGroup": { 
+          "Type": "AWS::EC2::PlacementGroup",
+          "Properties": {
+              "Strategy": "spread",
+              "GroupName": {
+                  "Fn::Join": [
+                      "-",
+                      [
+                          {
+                              "Ref": "SystemName"
+                          },
+                          "sbc-placementGroup"
+                      ]
+                  ]
+              }
+          }
+      },
+
+
+      "haXfaceA" : {
+        "Type" : "AWS::EC2::NetworkInterface",
+        "Condition" : "NameValidationPassed",
+        "Properties" : {
+          "SubnetId" : {"Ref": "SubnetIdHA0" } ,
+          "Description" : { "Fn::Join" : [ "-", [ { "Ref" : "SystemName" }, "ha0A"] ] } ,
+          "GroupSet" : [ {"Ref" : "SecurityGrpHa0"} ],
+          "SourceDestCheck" : "true",
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "-", [ { "Ref" : "SystemName" }, "ha0A"] ] }}, { "Key": "Owner", "Value": "Voice Teams" }, { "Key": "ApplicationOwner", "Value": "Voice Teams" }, { "Key": "InfrastructureOwner", "Value": "Voice Teams" }, { "Key": "Cluster", "Value": "Global" }, { "Key": "Product", "Value": "Infrastructure" }, { "Key": "Service", "Value": "AWS Voice POP" }, { "Key": "DeviceType", "Value": "Ribbon SBC" }]
+        }
+      },
+
+
+      "pktXface0A" : {
+        "Type" : "AWS::EC2::NetworkInterface",
+        "Condition" : "NameValidationPassed",
+        "Properties" : {
+          "SubnetId" : {"Ref": "SubnetIdPkt0"} ,
+          "Description" : { "Fn::Join" : [ "-", [ { "Ref" : "SystemName" }, "pkt0A"] ] } ,
+          "GroupSet" : [ {"Ref" : "SecurityGrpPkt0"} ],
+          "Ipv6AddressCount" : {"Ref" : "NumberOfAlternateIpV6Pkt0"},
+          "SecondaryPrivateIpAddressCount" : {"Ref" : "NumberOfAlternateIPv4OnPkt0"},
+          "SourceDestCheck" : "true",
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "-", [ { "Ref" : "SystemName" }, "pkt0A"] ] }}, { "Key": "Owner", "Value": "Voice Teams" }, { "Key": "ApplicationOwner", "Value": "Voice Teams" }, { "Key": "InfrastructureOwner", "Value": "Voice Teams" }, { "Key": "Cluster", "Value": "Global" }, { "Key": "Product", "Value": "Infrastructure" }, { "Key": "Service", "Value": "AWS Voice POP" }, { "Key": "DeviceType", "Value": "Ribbon SBC" }]
+        }
+      },
+
+
+      "pktXface1A" : {
+        "Type" : "AWS::EC2::NetworkInterface",
+        "Condition" : "NameValidationPassed",
+        "Properties" : {
+          "SubnetId" : {"Ref": "SubnetIdPkt1"} ,
+          "Description" : { "Fn::Join" : [ "-", [ { "Ref" : "SystemName" }, "pkt1A"] ] },
+          "GroupSet" : [ {"Ref" : "SecurityGrpPkt1"} ],
+          "Ipv6AddressCount" : {"Ref" : "NumberOfAlternateIpV6Pkt1"},
+          "SecondaryPrivateIpAddressCount" : {"Ref" : "NumberOfAlternateIPv4OnPkt1"},
+          "SourceDestCheck" : "true",
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "-", [ { "Ref" : "SystemName" }, "pkt1A"] ] }}, { "Key": "Owner", "Value": "Voice Teams" }, { "Key": "ApplicationOwner", "Value": "Voice Teams" }, { "Key": "InfrastructureOwner", "Value": "Voice Teams" }, { "Key": "Cluster", "Value": "Global" }, { "Key": "Product", "Value": "Infrastructure" }, { "Key": "Service", "Value": "AWS Voice POP" }, { "Key": "DeviceType", "Value": "Ribbon SBC" }]
+        }
+      },
+
+
+      "mgtXfaceB" : {
+        "Type" : "AWS::EC2::NetworkInterface",
+        "Condition" : "NameValidationPassed",
+        "Properties" : {
+          "SubnetId" : {"Ref": "SubnetIdMgt0" } ,
+          "Description" : { "Fn::Join" : [ "-", [ { "Ref" : "SystemName" }, "mgt0B"] ] },
+          "GroupSet" : [ {"Ref" : "SecurityGrpMgt0"} ],
+          "SourceDestCheck" : "true",
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "-", [ { "Ref" : "SystemName" }, "mgt0B"] ] }}, { "Key": "Owner", "Value": "Voice Teams" }, { "Key": "ApplicationOwner", "Value": "Voice Teams" }, { "Key": "InfrastructureOwner", "Value": "Voice Teams" }, { "Key": "Cluster", "Value": "Global" }, { "Key": "Product", "Value": "Infrastructure" }, { "Key": "Service", "Value": "AWS Voice POP" }, { "Key": "DeviceType", "Value": "Ribbon SBC" }]
+        }
+      },
+
+
+      "haXfaceB" : {
+        "Type" : "AWS::EC2::NetworkInterface",
+        "Condition" : "NameValidationPassed",
+        "Properties" : {
+          "SubnetId" : {"Ref": "SubnetIdHA0" } ,
+          "Description" : { "Fn::Join" : [ "-", [ { "Ref" : "SystemName" }, "ha0B"] ] },
+          "GroupSet" : [ {"Ref" : "SecurityGrpHa0"} ],
+          "SourceDestCheck" : "true",
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "-", [ { "Ref" : "SystemName" }, "ha0B"] ] }}, { "Key": "Owner", "Value": "Voice Teams" }, { "Key": "ApplicationOwner", "Value": "Voice Teams" }, { "Key": "InfrastructureOwner", "Value": "Voice Teams" }, { "Key": "Cluster", "Value": "Global" }, { "Key": "Product", "Value": "Infrastructure" }, { "Key": "Service", "Value": "AWS Voice POP" }, { "Key": "DeviceType", "Value": "Ribbon SBC" }]
+        }
+      },
+
+
+
+      "pktXface0B" : {
+        "Type" : "AWS::EC2::NetworkInterface",
+        "Condition" : "NameValidationPassed",
+        "Properties" : {
+          "SubnetId" : {"Ref": "SubnetIdPkt0"} ,
+          "Description" : { "Fn::Join" : [ "-", [ { "Ref" : "SystemName" }, "pkt0B"] ] } ,
+          "GroupSet" : [ {"Ref" : "SecurityGrpPkt0"} ],
+          "SourceDestCheck" : "true",
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "-", [ { "Ref" : "SystemName" }, "pkt0B"] ] }}, { "Key": "Owner", "Value": "Voice Teams" }, { "Key": "ApplicationOwner", "Value": "Voice Teams" }, { "Key": "InfrastructureOwner", "Value": "Voice Teams" }, { "Key": "Cluster", "Value": "Global" }, { "Key": "Product", "Value": "Infrastructure" }, { "Key": "Service", "Value": "AWS Voice POP" }, { "Key": "DeviceType", "Value": "Ribbon SBC" }]
+        }
+      },
+
+
+      "pktXface1B" : {
+        "Type" : "AWS::EC2::NetworkInterface",
+        "Condition" : "NameValidationPassed",
+        "Properties" : {
+          "SubnetId" : {"Ref": "SubnetIdPkt1"} ,
+          "Description" : { "Fn::Join" : [ "-", [ { "Ref" : "SystemName" }, "pkt1B"] ] },
+          "GroupSet" : [ {"Ref" : "SecurityGrpPkt1"} ],
+          "SourceDestCheck" : "true",
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "-", [ { "Ref" : "SystemName" }, "pkt1B"] ] }}, { "Key": "Owner", "Value": "Voice Teams" }, { "Key": "ApplicationOwner", "Value": "Voice Teams" }, { "Key": "InfrastructureOwner", "Value": "Voice Teams" }, { "Key": "Cluster", "Value": "Global" }, { "Key": "Product", "Value": "Infrastructure" }, { "Key": "Service", "Value": "AWS Voice POP" }, { "Key": "DeviceType", "Value": "Ribbon SBC" }]
+        }
+      },
+
+      "mgt0EIPActive" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "EipOnMgt",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "mgt0EIPActiveAssocaition" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "EipOnMgt",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "mgt0EIPActive", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "mgtXfaceA"},
+          "PrivateIpAddress": { "Fn::GetAtt" : [ "mgtXfaceA" , "PrimaryPrivateIpAddress"]}
+        }
+      },
+
+      "mgt0EIPStandby" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "EipOnMgt",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "mgt0EIPStandbyAssociation" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "EipOnMgt",
+        "DependsOn": "Ec2InstanceB",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "mgt0EIPStandby", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "mgtXfaceB"},
+          "PrivateIpAddress": { "Fn::GetAtt" : [ "mgtXfaceB" , "PrimaryPrivateIpAddress"]}
+        }
+      },
+
+      "pkt0EIP01" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_01",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation01" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_01",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP01", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "0", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP02" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_02",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation02" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_02",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP02", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "1", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP03" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_03",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation03" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_03",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP03", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "2", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP04" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_04",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation04" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_04",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP04", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "3", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP05" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_05",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation05" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_05",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP05", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "4", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP06" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_06",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation06" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_06",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP06", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "5", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP07" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_07",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation07" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_07",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP07", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "6", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP08" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_08",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation08" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_08",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP08", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "7", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP09" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_09",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation09" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_09",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP09", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "8", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP10" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_10",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation10" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_10",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP10", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "9", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP11" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_11",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation11" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_11",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP11", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "10", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP12" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_12",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation12" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_12",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP12", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "11", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP13" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_13",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation13" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_13",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP13", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "12", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP14" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_14",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation14" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_14",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP14", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "13", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP15" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_15",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation15" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_15",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP15", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "14", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP16" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_16",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation16" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_16",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP16", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "15", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP17" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_17",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation17" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_17",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP17", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "16", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP18" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_18",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation18" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_18",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP18", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "17", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP19" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_19",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation19" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_19",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP19", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "18", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP20" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_20",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation20" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_20",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP20", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "19", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP21" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_21",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation21" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_21",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP21", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "20", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP22" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_22",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation22" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_22",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP22", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "21", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP23" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_23",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation23" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_23",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP23", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "22", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP24" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_24",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation24" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_24",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP24", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "23", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP25" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_25",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation25" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_25",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP25", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "24", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP26" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_26",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation26" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_26",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP26", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "25", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP27" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_27",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation27" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_27",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP27", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "26", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP28" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_28",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation28" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_28",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP28", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "27", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt0EIP29" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt0_29",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt0EIPAssociation29" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt0_29",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt0EIP29", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface0A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "28", { "Fn::GetAtt" : [ "pktXface0A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+
+      "mgt0EIPLogical" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "EipOnMgt",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "mgt0EIPLogicalAssocaition" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "EipOnMgt",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "mgt0EIPLogical", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "mgtXfaceA"},
+          "PrivateIpAddress": { "Fn::Select" : [ "0", { "Fn::GetAtt" : [ "mgtXfaceA" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP01" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_01",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation01" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_01",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP01", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "0", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP02" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_02",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation02" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_02",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP02", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "1", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP03" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_03",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation03" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_03",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP03", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "2", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP04" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_04",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation04" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_04",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP04", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "3", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP05" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_05",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation05" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_05",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP05", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "4", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP06" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_06",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation06" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_06",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP06", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "5", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP07" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_07",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation07" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_07",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP07", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "6", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP08" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_08",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation08" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_08",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP08", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "7", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP09" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_09",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation09" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_09",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP09", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "8", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP10" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_10",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation10" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_10",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP10", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "9", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP11" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_11",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation11" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_11",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP11", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "10", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP12" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_12",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation12" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_12",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP12", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "11", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP13" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_13",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation13" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_13",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP13", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "12", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP14" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_14",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation14" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_14",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP14", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "13", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP15" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_15",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation15" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_15",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP15", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "14", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP16" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_16",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation16" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_16",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP16", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "15", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP17" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_17",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation17" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_17",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP17", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "16", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP18" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_18",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation18" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_18",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP18", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "17", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP19" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_19",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation19" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_19",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP19", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "18", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP20" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_20",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation20" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_20",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP20", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "19", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP21" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_21",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation21" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_21",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP21", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "20", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP22" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_22",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation22" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_22",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP22", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "21", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP23" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_23",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation23" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_23",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP23", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "22", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP24" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_24",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation24" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_24",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP24", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "23", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP25" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_25",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation25" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_25",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP25", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "24", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP26" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_26",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation26" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_26",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP26", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "25", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP27" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_27",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation27" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_27",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP27", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "26", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP28" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_28",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation28" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_28",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP28", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "27", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+      "pkt1EIP29" : {
+        "Type" : "AWS::EC2::EIP",
+        "Condition" : "AssociateEipOnPkt1_29",
+        "Properties" : {
+          "Domain" : "vpc"
+        }
+      },
+
+      "pkt1EIPAssociation29" : {
+        "Type" : "AWS::EC2::EIPAssociation",
+        "Condition" : "AssociateEipOnPkt1_29",
+        "DependsOn": "Ec2InstanceA",
+        "Properties": {
+          "AllocationId": { "Fn::GetAtt" : [ "pkt1EIP29", "AllocationId" ]},
+          "NetworkInterfaceId": {"Ref": "pktXface1A"},
+          "PrivateIpAddress": { "Fn::Select" : [ "28", { "Fn::GetAtt" : [ "pktXface1A" , "SecondaryPrivateIpAddresses"]} ] }
+        }
+      },
+
+
+      "Ec2InstanceA" : {
+        "Type" : "AWS::EC2::Instance",
+        "Condition" : "NameValidationPassed",
+        "Properties" : {
+          "ImageId" : { "Ref" : "AMIID" },
+          "IamInstanceProfile" : { "Ref" : "IAMRole" },
+          "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sda1", "Ebs" : { "VolumeType": {"Ref": "VolumeType"}, "VolumeSize": {"Ref": "VolumeSize"}, "Iops" : {"Fn::If" : [ "VolumeTypeIO1", {"Ref": "IOPS"}, {"Ref" : "AWS::NoValue"} ]}  , "DeleteOnTermination": { "Ref": "DeleteVolumesOnTermination" } } } ],
+          "InstanceType" : {"Ref" : "InstanceType"} ,
+          "Tenancy" : {"Ref" : "Tenancy"},
+          "PlacementGroupName" : {"Ref" : "SBCPlacementGroup"},
+          "EbsOptimized" : "True",
+          "KeyName" : { "Fn::ImportValue": "RegionConfig-KeypairVoiceTeams" },
+          "NetworkInterfaces" : [ { "NetworkInterfaceId" : { "Ref": "mgtXfaceA"} , "DeviceIndex" : "0" }, { "NetworkInterfaceId" : {"Ref": "haXfaceA"} , "DeviceIndex" : "1" }, { "NetworkInterfaceId" :  {"Ref": "pktXface0A"} , "DeviceIndex" : "2" }, { "NetworkInterfaceId" : {"Ref": "pktXface1A"} , "DeviceIndex" : "3" }],
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "-", [ { "Ref" : "AWS::StackName" }, "A"] ] }}, { "Key": "Owner", "Value": "Voice Teams" }, { "Key": "ApplicationOwner", "Value": "Voice Teams" }, { "Key": "InfrastructureOwner", "Value": "Voice Teams" }, { "Key": "Cluster", "Value": "Global" }, { "Key": "Product", "Value": "Infrastructure" }, { "Key": "Service", "Value": "AWS Voice POP" }, { "Key": "DeviceType", "Value": "Ribbon SBC" }],
+          "UserData" : { "Fn::Base64" : { "Fn::Join" : [ "", [ "{ \"", "CERole", "\" : \"", "ACTIVE", "\"",
+            ", \"ReverseNatPkt0\"           : \"", { "Ref" : "ReveseNatEnablePkt0" }, "\"",
+            ", \"ReverseNatPkt1\"           : \"", { "Ref" : "ReveseNatEnablePkt1" }, "\"",
+            ", \"IAM_ROLE\"                 : \"", { "Ref" : "IAMRole" }, "\"",
+            ", \"ALT_Mgt0_00\"              : \"LOGICAL_MGMT_IP\"",
+            ", \"ALT_Pkt0_00\"              : \"VIP1\"",
+            ", \"ALT_Pkt1_00\"              : \"VIP2\"",
+            ", \"ClusterIp\"                : \"", { "Fn::GetAtt" : [ "haXfaceB" , "PrimaryPrivateIpAddress"] } ,"\"",
+            ", \"SbcPersonalityType\"       : \"", { "Ref" : "SBCPersonality" }, "\"",
+            ", \"SbcHaMode\"                : \"1to1\"",
+            ", \"TemplateName\"             : \"AWS_HA_template.json\"",
+            ", \"TemplateVersion\"          : \"V12.01.00R000\"",
+            ", \"CEName\"                   : \"", { "Ref" : "ActiveInstanceName" }, "\"",
+            ", \"PeerCEName\"               : \"", { "Ref" : "StandbyInstanceName" }, "\"",
+            ", \"PeerCEHa0IPv4Address\"     : \"", { "Fn::GetAtt" : [ "haXfaceB" , "PrimaryPrivateIpAddress"] } ,"\"",
+            ", \"SystemName\"               : \"", { "Ref" : "SystemName" }, "\"",
+            ", \"NodeName\"                 : \"", { "Ref" : "AWS::StackName" }, "\"",
+            ", \"AdminSshKey\"              : \"", { "Ref" : "AdminSshKey" }, "\"",
+            ", \"EmsUsername\"              : \"", { "Ref" : "EmsUsername" }, "\"",
+            ", \"EmsPassword\"              : \"", { "Ref" : "EmsPassword" }, "\"",
+            ", \"EmsFqdn\"                  : \"", { "Ref" : "EmsFqdn" }, "\"",
+            ", \"EmsIP\"                    : [\"", { "Ref": "EmsIP1" }, "\",\"", { "Ref": "EmsIP2" }, "\"]",
+            ", \"EmsPrivateNodeParameters\" : {\"cluster_id\" : \"", { "Ref": "ClusterID" }, "\",\"vnfc_id\" : \"",
+            { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName" }, { "Ref": "ClusterID" }, "1" ] ] }, "\"}",
+            ", \"EmsDownloadConfig\"        : \"", { "Ref" : "EmsDownloadConfig" }, "\"",
+            ", \"SdRegistry\"               : [{\"type\": \"", "dns", "\" ,\"servers\" : [\"",{"Ref": "SdRegistry" }, "\"]}]",
+            ", \"ThirdPartyCpuAlloc\"       : \"", { "Ref" : "ThirdPartyCpus" }, "\"",
+            ", \"UseAnonymizationFeature\"  : \"", { "Ref" : "UseAnonymizationFeature" }, "\" ",
+            ", \"EnableCloudWatchMetrics\"  : \"", { "Ref" : "EnableCloudWatchMetrics" }, "\" ",
+            ", \"ThirdPartyMemAlloc\"       : \"", { "Ref" : "ThirdPartyMem" }, "\" }" ]
+            ] }}
+        }
+      },
+
+
+      "Ec2InstanceB" : {
+        "Type" : "AWS::EC2::Instance",
+        "Condition" : "NameValidationPassed",
+        "Properties" : {
+          "ImageId" : { "Ref" : "AMIID" },
+          "BlockDeviceMappings" : [ { "DeviceName" : "/dev/sda1", "Ebs" : { "VolumeType": {"Ref": "VolumeType"}, "VolumeSize": {"Ref": "VolumeSize"}, "Iops" : {"Fn::If" : [ "VolumeTypeIO1", {"Ref": "IOPS"}, {"Ref" : "AWS::NoValue"} ]}  , "DeleteOnTermination": { "Ref": "DeleteVolumesOnTermination" } } } ],
+          "IamInstanceProfile" : { "Ref" : "IAMRole" },
+          "InstanceType" : {"Ref" : "InstanceType"} ,
+          "Tenancy" : {"Ref" : "Tenancy"},
+          "PlacementGroupName" : {"Ref" : "SBCPlacementGroup"},
+          "EbsOptimized" : "True",
+          "KeyName" : { "Fn::ImportValue": "RegionConfig-KeypairVoiceTeams" },
+          "NetworkInterfaces" : [ { "NetworkInterfaceId" : { "Ref": "mgtXfaceB"} , "DeviceIndex" : "0" }, { "NetworkInterfaceId" : {"Ref": "haXfaceB"} , "DeviceIndex" : "1" }, { "NetworkInterfaceId" :  {"Ref": "pktXface0B"} , "DeviceIndex" : "2" }, { "NetworkInterfaceId" : {"Ref": "pktXface1B"} , "DeviceIndex" : "3" }],
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "-", [ { "Ref" : "AWS::StackName" }, "B" ] ] }}, { "Key": "Owner", "Value": "Voice Teams" }, { "Key": "ApplicationOwner", "Value": "Voice Teams" }, { "Key": "InfrastructureOwner", "Value": "Voice Teams" }, { "Key": "Cluster", "Value": "Global" }, { "Key": "Product", "Value": "Infrastructure" }, { "Key": "Service", "Value": "AWS Voice POP" }, { "Key": "DeviceType", "Value": "Ribbon SBC" }],
+          "UserData" : { "Fn::Base64" : { "Fn::Join" : [ "", [ "{ \"", "CERole", "\" : \"", "STANDBY", "\"",
+            ", \"ReverseNatPkt0\"           : \"", { "Ref" : "ReveseNatEnablePkt0" }, "\"",
+            ", \"ReverseNatPkt1\"           : \"", { "Ref" : "ReveseNatEnablePkt1" }, "\"",
+            ", \"IAM_ROLE\"                 : \"", { "Ref" : "IAMRole" }, "\"",
+            ", \"ALT_Mgt0_00\"              : \"LOGICAL_MGMT_IP\"",
+            ", \"ALT_Pkt0_00\"              : \"VIP1\"",
+            ", \"ALT_Pkt1_00\"              : \"VIP2\"",
+            ", \"ClusterIp\"                : \"", { "Fn::GetAtt" : [ "haXfaceA" , "PrimaryPrivateIpAddress"] } ,"\"",
+            ", \"SbcPersonalityType\"       : \"", { "Ref" : "SBCPersonality" }, "\"",
+            ", \"SbcHaMode\"                : \"1to1\"",
+            ", \"TemplateName\"             : \"AWS_HA_template.json\"",
+            ", \"TemplateVersion\"          : \"V12.01.00R000\"",
+            ", \"CEName\"                   : \"", { "Ref" : "StandbyInstanceName" }, "\"",
+            ", \"PeerCEName\"               : \"", { "Ref" : "ActiveInstanceName" }, "\"",
+            ", \"PeerCEHa0IPv4Address\"     : \"", { "Fn::GetAtt" : [ "haXfaceA" , "PrimaryPrivateIpAddress"] } ,"\"",
+            ", \"SystemName\"               : \"", { "Ref" : "SystemName" }, "\"",
+            ", \"NodeName\"                 : \"", { "Ref" : "AWS::StackName" }, "\"",
+            ", \"AdminSshKey\"              : \"", { "Ref" : "AdminSshKey" }, "\"",
+            ", \"EmsUsername\"              : \"", { "Ref" : "EmsUsername" }, "\"",
+            ", \"EmsPassword\"              : \"", { "Ref" : "EmsPassword" }, "\"",
+            ", \"EmsFqdn\"                  : \"", { "Ref" : "EmsFqdn" }, "\"",
+            ", \"EmsIP\"                    : [\"", { "Ref": "EmsIP1" }, "\",\"", { "Ref": "EmsIP2" }, "\"]",
+            ", \"EmsPrivateNodeParameters\" : {\"cluster_id\" : \"", { "Ref": "ClusterID" }, "\",\"vnfc_id\" : \"",
+            { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName" }, { "Ref": "ClusterID" }, "2" ] ] }, "\"}",
+            ", \"EmsDownloadConfig\"        : \"", { "Ref" : "EmsDownloadConfig" }, "\"",
+            ", \"SdRegistry\"               : [{\"type\": \"", "dns", "\" ,\"servers\" : [\"",{"Ref": "SdRegistry" }, "\"]}]",
+            ", \"ThirdPartyCpuAlloc\"       : \"", { "Ref" : "ThirdPartyCpus" }, "\"",
+            ", \"UseAnonymizationFeature\"  : \"", { "Ref" : "UseAnonymizationFeature" }, "\" ",
+            ", \"EnableCloudWatchMetrics\"  : \"", { "Ref" : "EnableCloudWatchMetrics" }, "\" ",
+            ", \"ThirdPartyMemAlloc\"       : \"", { "Ref" : "ThirdPartyMem" }, "\" }" ]
+            ] }}
+        }
+      }
+
+    },
+
+    "Outputs" : {
+      "InstanceIdActive" : {
+        "Condition" : "NameValidationPassed",
+        "Value" : { "Ref" : "Ec2InstanceA" }
+      },
+
+      "DefaultCliAdminPassword" : {
+        "Description" : "It is eth0 interface-id of instance which has assigned active role in the template. This is used as default CLI admin password ",
+        "Value" : { "Ref" : "mgtXfaceA" }
+      },
+
+      "Mgt0InterfaceIDActive" : {
+        "Condition" : "NameValidationPassed",
+        "Value" : { "Ref" : "mgtXfaceA" }
+      },
+
+      "HA0InterfaceIDActive" : {
+        "Condition" : "NameValidationPassed",
+        "Value" : { "Ref" : "haXfaceA" }
+      },
+
+      "Pkt0InterfaceIDActive" : {
+        "Condition" : "NameValidationPassed",
+        "Value" : { "Ref" : "pktXface0A" }
+      },
+
+      "Pkt1InterfaceIDActive" : {
+        "Condition" : "NameValidationPassed",
+        "Value" : { "Ref" : "pktXface1A" }
+      },
+
+      "InstanceIdStandby" : {
+        "Condition" : "NameValidationPassed",
+        "Value" : { "Ref" : "Ec2InstanceB" }
+      },
+
+      "Mgt0InterfaceIDStandby" : {
+        "Condition" : "NameValidationPassed",
+        "Value" : { "Ref" : "mgtXfaceB" }
+      },
+
+      "HA0InterfaceIDStandby" : {
+        "Condition" : "NameValidationPassed",
+        "Value" : { "Ref" : "haXfaceB" }
+      },
+
+      "Pkt0InterfaceIDStandby" : {
+        "Condition" : "NameValidationPassed",
+        "Value" : { "Ref" : "pktXface0B" }
+      },
+
+      "Pkt1InterfaceIDStandby" : {
+        "Condition" : "NameValidationPassed",
+        "Value" : { "Ref" : "pktXface1B" }
+      },
+
+      "NameValidationError" : {
+        "Condition" : "NameMismatchError",
+        "Value" : "Name Validation Failed"
+      },
+
+      "ceNamesMatching" : {
+        "Condition" : "MatchingCeNames",
+        "Value" : "CE Names of Active and Standby are same. ERROR. Not creating any resources."
+      },
+
+      "ActiveCeAndSystemNameMatching" : {
+        "Condition" : "MatchingActiveCeAndSystemName",
+        "Value" : "CE Name of Active and System Name are same. ERROR. Not creating any resources."
+      },
+
+      "StandbyCeAndSystemNameMatching" : {
+        "Condition" : "MatchingStandbyCeAndSystemName",
+        "Value" : "CE Name of Standby and System Name are same. ERROR. Not creating any resources."
+      }
+
+    }
+}

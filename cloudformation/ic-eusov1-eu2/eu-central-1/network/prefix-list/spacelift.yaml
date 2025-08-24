@@ -1,0 +1,11 @@
+maintainers:
+  - name: network-architecture
+    email: networkarchitecture@nice.com
+platform: cloudformation
+cloudformation:
+  stack_name:  "PrefixList"
+  entry_template_file: "main.cf.yaml"
+  region: "eu-central-1"
+  template_bucket: cf-templates-1mfjzwegi2hk7-eu-central-1
+integrations:
+  aws: "ic-eusov1-eu2"

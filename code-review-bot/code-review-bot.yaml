@@ -1,0 +1,21 @@
+skipKeywords:
+  - pathRegEx: /modules/.*
+    ownerReviewNotRequired: true
+  - pathRegEx: terraform/aws/ic-dev/.*
+  - pathRegEx: terraform/aws/ic-media/.*
+  - pathRegEx: terraform/aws/nice-devops-sandbox/.*
+
+maintainersFileName: "spacelift.yaml"
+
+prAutomations:
+  - titleRegEx: '^\[Automation\].+'
+    autoApprove: true
+    users:
+      - 'infrastructure-live[bot]'
+
+  # See the comments on this PR for details on InfoSec approval for this change. https://github.com/inContact/infrastructure-live/pull/6507
+  - titleRegEx: '^\[ESC Promotion\].+'
+    autoMerge: false
+    autoApprove: true
+    users:
+      - 'esc-workstream[bot]'

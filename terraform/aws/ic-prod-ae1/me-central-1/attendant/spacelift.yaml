@@ -1,0 +1,7 @@
+integrations:
+  aws: ic-prod-ae1
+maintainers:
+- name: attendant
+  email: R&DAttendantTeam@nice.com
+
+terraform_version: 1.3.7

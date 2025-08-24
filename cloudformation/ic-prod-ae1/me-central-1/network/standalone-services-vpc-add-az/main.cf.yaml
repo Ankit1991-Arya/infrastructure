@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS CloudFormation Template for Standalone Services Network Only
+Mappings:
+  VPCaddressPrefix:
+    values:
+      VPCaddressPrefix: "10.0"
+      AvailabilityZone3: 'me-central-1c'
+      Owner: 'Network Teams'
+
+Resources:
+  NATGW3RouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !ImportValue StandaloneServices-Vpc
+      Tags:
+        - Key: Name
+          Value: Az3 NAT Gateway Route Table
+  NATGateway3:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt
+        - EIP3
+        - AllocationId
+      SubnetId: !Ref Az3NATGWSubnet
+  EIP3:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+  Az3NATGWSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone3 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,VPCaddressPrefix ]
+          - '254'
+          - 0/25
+      Tags:
+        - Key: Name
+          Value: Az3 NAT GW Subnet
+      VpcId: !ImportValue StandaloneServices-Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az3NATGWSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref NATGW3RouteTable
+      SubnetId: !Ref Az3NATGWSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az3NATGWSubnetDefaultRoute3:
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !ImportValue StandaloneServices-BaseIGW
+      RouteTableId: !Ref NATGW3RouteTable
+    Type: 'AWS::EC2::Route'
+Outputs:
+  Az3NATGWSubnet:
+    Description: ''
+    Value: !Ref Az3NATGWSubnet
+    Export:
+      Name: "StandaloneServices-Az3NATGWSubnet"
+  NATGW3RouteTable:
+    Description: Az3 Nat Gateway Route Table
+    Value: !Ref NATGW3RouteTable
+    Export:
+      Name: "StandaloneServices-NATGW3RouteTable"
+  NATGateway3:
+    Description: Az3 Nat Gateway
+    Value: !Ref NATGateway3
+    Export:
+      Name: "StandaloneServices-Az3NATGateway"

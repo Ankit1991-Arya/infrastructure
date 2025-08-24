@@ -1,0 +1,354 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "This lambda will check the health of SBC and take actions accrodingly"
+
+Mappings:
+    Environments:
+        dev:
+            MemorySize: 128
+            Timeout: 900
+            # BmcSnsTopic: "arn:aws:sns:us-west-2:934137132601:dev-cloudwatch-bmc-info"
+            HostedZoneId: "Z08915271Y08ESHPE9DP4"
+            SecurityGroupId: "sg-081937311c97d4f41"
+            SubnetId: "subnet-066b7bd2b2612e553"
+
+Resources:
+
+# SSM
+    SbcSsmParameter1:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Name: /sbc-sip/dror-mz-acvce01-trust.na1.openrec.dev.internal
+        Type: String
+        Value: "http://dror-mz-acvce01-eth1-int-f0f3837a25bfe780.elb.us-west-2.amazonaws.com/api/v1/status"            
+        Description: dror-mz-acvce01-trust.na1.openrec.dev.internal ip mapping
+        Tier: Standard
+
+    SbcSsmParameter2:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Name: /sbc-sip/dror-mz-acvce02-trust.na1.openrec.dev.internal
+        Type: String
+        Value: "http://dror-mz-acvce02-eth1-int-7c8249c637fb5fe0.elb.us-west-2.amazonaws.com/api/v1/status"
+        Description: dror-mz-acvce02-trust.na1.openrec.dev.internal ip mapping
+        Tier: Standard
+
+    SbcSecretsManagerSecret:
+      Type: AWS::SecretsManager::Secret
+      Properties:
+        Name: "SbcUserSecret"
+        Description: "Secret for API credentials"
+        SecretString: '{"username": "hctapiuser", "password": "dummy-password"}'
+
+    SBCTeamSNSTopic:
+        Type: AWS::SNS::Topic
+        Properties:
+            DisplayName: "SBC Health Check Alerts"
+            TopicName: "sbc-health-check"
+            Subscription:
+              - Endpoint: 'Rasika.Gaiwal@nice.com'
+                Protocol: 'email'
+              - Endpoint: 'Javier.Lozada@nice.com'
+                Protocol: 'email'
+
+# 5XX Alarms
+    SbcDroraaCvce015XX:
+            Type: 'AWS::CloudWatch::Alarm'
+            Properties:
+              AlarmName: "OpenRecSbcSipUnhealthy-dror-mz-acvce01-trust.na1.openrec.dev.internal-load-balancer-5XX-Alarm"
+              AlarmActions:
+                - !Ref SBCTeamSNSTopic
+              OKActions:
+                - !Ref SBCTeamSNSTopic
+              AlarmDescription: This alarm will trigger on occurence of 5XX errors in dror-mz-acvce01-trust.na1.openrec.dev.internal load balancer
+              ActionsEnabled: 'true'
+              TreatMissingData: notBreaching
+              EvaluationPeriods: 5
+              DatapointsToAlarm: 5
+              Threshold: 0
+              ComparisonOperator: GreaterThanThreshold
+              Metrics:
+                - Id: m1
+                  MetricStat:
+                    Metric:
+                      Dimensions:
+                      - Name: OpenRecSbcSipUnhealthy5XX
+                        Value: dror-mz-acvce01-trust.na1.openrec.dev.internal
+                      MetricName: OpenRecSbcSipUnhealthy5XXError
+                      Namespace: OpenRecSbcSipUnhealthy
+                    Period: 60
+                    Stat: Sum
+                  ReturnData: False
+                - Id: e1
+                  Expression: FILL(m1, 0)
+                  Label: OpenRecSbcSipUnhealthy5XXErrorExpression
+                  ReturnData: True
+
+    SbcDroraaCvce025XX:
+            Type: 'AWS::CloudWatch::Alarm'
+            Properties:
+              AlarmName: "OpenRecSbcSipUnhealthy-dror-mz-acvce02-trust.na1.openrec.dev.internal-5XX-Alarm"
+              AlarmActions:
+                - !Ref SBCTeamSNSTopic
+              OKActions:
+                - !Ref SBCTeamSNSTopic
+              AlarmDescription: This alarm will trigger on occurence of 5XX errors in dror-mz-acvce02-trust.na1.openrec.dev.internal
+              ActionsEnabled: 'true'
+              TreatMissingData: notBreaching
+              EvaluationPeriods: 5
+              DatapointsToAlarm: 5
+              Threshold: 0
+              ComparisonOperator: GreaterThanThreshold
+              Metrics:
+                - Id: m1
+                  MetricStat:
+                    Metric:
+                      Dimensions:
+                      - Name: OpenRecSbcSipUnhealthy5XX
+                        Value: dror-mz-acvce02-trust.na1.openrec.dev.internal
+                      MetricName: OpenRecSbcSipUnhealthy5XXError
+                      Namespace: OpenRecSbcSipUnhealthy
+                    Period: 60
+                    Stat: Sum
+                  ReturnData: False
+                - Id: e1
+                  Expression: FILL(m1, 0)
+                  Label: OpenRecSbcSipUnhealthy5XXErrorExpression
+                  ReturnData: True
+
+# LockedOperationalState Alarms
+    SbcDroraaCvce01LockedOperationalState:
+            Type: 'AWS::CloudWatch::Alarm'
+            Properties:
+              AlarmName: "OpenRecSbcSipUnhealthy-dror-mz-acvce01-trust.na1.openrec.dev.internal-load-balancer-LockedOperationalState-Alarm"
+              AlarmActions:
+                - !Ref SBCTeamSNSTopic
+              OKActions:
+                - !Ref SBCTeamSNSTopic
+              AlarmDescription: This alarm will trigger on occurence of LockedOperationalState errors in dror-mz-acvce01-trust.na1.openrec.dev.internal load balancer
+              ActionsEnabled: 'true'
+              TreatMissingData: notBreaching
+              EvaluationPeriods: 1
+              DatapointsToAlarm: 1
+              Threshold: 0
+              ComparisonOperator: GreaterThanThreshold
+              Metrics:
+                - Id: m1
+                  MetricStat:
+                    Metric:
+                      Dimensions:
+                      - Name: OpenRecSbcSipUnhealthyLockedOperationalState
+                        Value: dror-mz-acvce01-trust.na1.openrec.dev.internal
+                      MetricName: OpenRecSbcSipUnhealthyLockedOperationalStateError
+                      Namespace: OpenRecSbcSipUnhealthy
+                    Period: 60
+                    Stat: Sum
+                  ReturnData: False
+                - Id: e1
+                  Expression: FILL(m1, 0)
+                  Label: OpenRecSbcSipUnhealthyLockedOperationalStateErrorExpression
+                  ReturnData: True
+
+    SbcDroraaCvce02LockedOperationalState:
+            Type: 'AWS::CloudWatch::Alarm'
+            Properties:
+              AlarmName: "OpenRecSbcSipUnhealthy-dror-mz-acvce02-trust.na1.openrec.dev.internal-LockedOperationalState-Alarm"
+              AlarmActions:
+                - !Ref SBCTeamSNSTopic
+              OKActions:
+                - !Ref SBCTeamSNSTopic
+              AlarmDescription: This alarm will trigger on occurence of LockedOperationalState errors in dror-mz-acvce02-trust.na1.openrec.dev.internal
+              ActionsEnabled: 'true'
+              TreatMissingData: notBreaching
+              EvaluationPeriods: 1
+              DatapointsToAlarm: 1
+              Threshold: 0
+              ComparisonOperator: GreaterThanThreshold
+              Metrics:
+                - Id: m1
+                  MetricStat:
+                    Metric:
+                      Dimensions:
+                      - Name: OpenRecSbcSipUnhealthyLockedOperationalState
+                        Value: dror-mz-acvce02-trust.na1.openrec.dev.internal
+                      MetricName: OpenRecSbcSipUnhealthyLockedOperationalStateError
+                      Namespace: OpenRecSbcSipUnhealthy
+                    Period: 60
+                    Stat: Sum
+                  ReturnData: False
+                - Id: e1
+                  Expression: FILL(m1, 0)
+                  Label: OpenRecSbcSipUnhealthyLockedOperationalStateErrorExpression
+                  ReturnData: True
+
+# 4XX Alarms
+    SbcDroraaCvce014XX:
+            Type: 'AWS::CloudWatch::Alarm'
+            Properties:
+              AlarmName: "OpenRecSbcSipUnhealthy-dror-mz-acvce01-trust.na1.openrec.dev.internal-load-balancer-4XX-Alarm"
+              AlarmActions:
+                - !Ref SBCTeamSNSTopic
+              OKActions:
+                - !Ref SBCTeamSNSTopic
+              AlarmDescription: This alarm will trigger on occurence of 4XX errors in dror-mz-acvce01-trust.na1.openrec.dev.internal load balancer
+              ActionsEnabled: 'true'
+              MetricName: OpenRecSbcSipUnhealthy4XXError
+              TreatMissingData: notBreaching
+              Namespace: OpenRecSbcSipUnhealthy
+              Dimensions:
+                - Name: OpenRecSbcSipUnhealthy4XX
+                  Value: dror-mz-acvce01-trust.na1.openrec.dev.internal
+              Statistic: Sum
+              Period: 60
+              EvaluationPeriods: 5
+              DatapointsToAlarm: 5
+              Threshold: 0
+              ComparisonOperator: GreaterThanThreshold
+
+    SbcDroraaCvce024XX:
+            Type: 'AWS::CloudWatch::Alarm'
+            Properties:
+              AlarmName: "OpenRecSbcSipUnhealthy-dror-mz-acvce02-trust.na1.openrec.dev.internal-4XX-Alarm"
+              AlarmActions:
+                - !Ref SBCTeamSNSTopic
+              OKActions:
+                - !Ref SBCTeamSNSTopic
+              AlarmDescription: This alarm will trigger on occurence of 4XX errors in dror-mz-acvce02-trust.na1.openrec.dev.internal
+              ActionsEnabled: 'true'
+              MetricName: OpenRecSbcSipUnhealthy4XXError
+              TreatMissingData: notBreaching
+              Namespace: OpenRecSbcSipUnhealthy
+              Dimensions:
+                - Name: OpenRecSbcSipUnhealthy4XX
+                  Value: dror-mz-acvce02-trust.na1.openrec.dev.internal
+              Statistic: Sum
+              Period: 60
+              EvaluationPeriods: 5
+              DatapointsToAlarm: 5
+              Threshold: 0
+              ComparisonOperator: GreaterThanThreshold
+
+# Lambda Role
+    LambdaSBCHealthCheckRole:
+        Type: AWS::IAM::Role
+        Properties:
+          AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Principal:
+                  Service:
+                    - lambda.amazonaws.com
+                    - events.amazonaws.com
+                Action:
+                  - sts:AssumeRole
+          ManagedPolicyArns:
+            - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+            - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+          Policies:
+            - PolicyName: AWSLambdaBasicExecutionRole
+              PolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Sid: cloudwatch
+                      Effect: Allow
+                      Action:
+                        - cloudwatch:PutMetricData
+                      Resource: "*"
+                      Condition:
+                        StringLike:
+                          cloudwatch:namespace: "OpenRecSbc*"
+                    - Sid: route53
+                      Effect: Allow
+                      Action:
+                        - route53:ListResourceRecordSets
+                        - route53:ChangeResourceRecordSets
+                      Resource: "arn:aws:route53::*:hostedzone/Z08915271Y08ESHPE9DP4"
+                    - Sid: sns
+                      Effect: Allow
+                      Action:
+                        - sns:Publish
+                      Resource: 
+                        - !Ref SBCTeamSNSTopic
+                    - Sid: ssm
+                      Effect: Allow
+                      Action:
+                        - ssm:GetParametersByPath
+                        - ssm:GetParameter
+                      Resource:
+                        - "arn:aws:ssm:*:*:parameter/sbc-sip/*"
+                    - Sid: secretmanager
+                      Effect: Allow
+                      Action:
+                        - secretsmanager:GetSecretValue
+                      Resource:
+                        - "arn:aws:secretsmanager:*:*:secret:SbcUserSecret-*"
+                    - Sid: ses
+                      Effect: Allow
+                      Action:
+                        - ses:SendEmail
+                        - ses:SendRawEmail
+                      Resource: "*"
+
+# Lambda Function
+    LambdaSBCHealthCheckFunction:
+        Type: AWS::Lambda::Function
+        Properties:
+            FunctionName:   "sre-openrec-sbc-healthcheck"
+            Description:    "This Lambda will will check the health of SBC."
+            Handler:        app/lambda_function.lambda_handler
+            Runtime:        python3.10
+            MemorySize:     128
+            Timeout:        900
+            Role:           !GetAtt LambdaSBCHealthCheckRole.Arn
+            Environment:
+                Variables:
+                    envName: "openrec-dev-na1"
+                    hostedZoneId: "Z08915271Y08ESHPE9DP4"
+            Runtime: "python3.10"
+            Code:
+              ZipFile:
+                Fn::Join:
+                  - "\n"
+                  -
+                    - ""
+                    - "import boto3"
+                    - "import json"
+                    - ""
+                    - "def lambda_handler(event, context):"
+                    - ""
+                    - "    print('Hello')"
+                    - ""
+            VpcConfig:
+                SecurityGroupIds:
+                  - "sg-081937311c97d4f41"
+                SubnetIds:
+                  - "subnet-066b7bd2b2612e553"
+
+# Health Check Rule
+    SBCHealthCheckRule:
+        Type: AWS::Events::Rule
+        Properties: 
+            Description: This event rule will invoke lambda function lambda-SBCHealthCheck.
+            EventBusName: default
+            Name: "SBCHealthCheckRule"
+            ScheduleExpression: cron(*/1 * * * ? *)
+            State: ENABLED
+            Targets:
+                -
+                  Arn:
+                    Fn::GetAtt:
+                    - "LambdaSBCHealthCheckFunction"
+                    - "Arn"
+                  Id: "TargetFunctionV1"
+
+    LambdaSBCHealthCheckInvokePermissionForCWRule:
+       Type: 'AWS::Lambda::Permission'
+       Properties:
+          FunctionName: !GetAtt
+            - LambdaSBCHealthCheckFunction
+            - Arn
+          Action: 'lambda:InvokeFunction'
+          Principal: events.amazonaws.com
+          SourceArn: !GetAtt
+            - SBCHealthCheckRule
+            - Arn

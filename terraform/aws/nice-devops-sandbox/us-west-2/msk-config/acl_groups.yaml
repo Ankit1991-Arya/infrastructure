@@ -1,0 +1,90 @@
+- principal: "User:sendgrid-integration-user"
+  resource_name: "SendGrid"
+  operations: ["Read"]
+  resource_pattern_type: "Prefixed"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:connect-user"
+  resource_name: "connect"
+  operations: ["Read", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:ui-queue-user"
+  resource_name: "ui-queue-config"
+  operations: ["Read"]
+  resource_pattern_type: "Prefixed"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:suite-data-user"
+  resource_name: "SuiteData"
+  operations: ["Read"]
+  resource_pattern_type: "Prefixed"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:schema-registry-user"
+  resource_name: "schema-registry"
+  operations: ["Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:acd-script-engine-user"
+  resource_name: "Acd.PersonalConnection"
+  operations: ["Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:ui-queue-user"
+  resource_name: "Acd.PersonalConnection"
+  operations: ["Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:routing-ng-user"
+  resource_name: "Routing.Agent"
+  operations: ["Read"]
+  resource_pattern_type: "Prefixed"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:queryable-api-user"
+  resource_name: "queryable-api-config"
+  operations: ["Read"]
+  resource_pattern_type: "Prefixed"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:acd-script-engine-user"
+  resource_name: "Acd.PartnerHub"
+  operations: ["Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:acd-script-engine-user"
+  resource_name: "Acd.Vc"
+  operations: ["Read"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:entity-user"
+  resource_name: "mrc-config"
+  operations: ["Read"]
+  resource_pattern_type: "Prefixed"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:esc-cba-router-user"
+  resource_name: "Esc-Uiq-CellDiscovery"
+  operations: ["Read"]
+  resource_pattern_type: "Prefixed"
+  host: "*"
+  permission_type: "Allow"

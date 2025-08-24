@@ -1,0 +1,11 @@
+before_init:
+- cat /mnt/workspace/github.netrc >> ~/.netrc
+- chmod 600 ~/.netrc
+contexts:
+  cxossp-github-personal-access-token: 0
+integrations:
+  aws: public-data-streams-perf-na1
+maintainers:
+- email: devops-cloud-native-core@niceincontact.com
+  name: kubernetes-admins
+terraform_version: 1.9.1

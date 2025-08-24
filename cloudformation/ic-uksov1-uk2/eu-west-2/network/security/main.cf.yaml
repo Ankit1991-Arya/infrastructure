@@ -1,0 +1,1517 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: This template creates network for UK SOV region Security vpc
+
+# More information follow this link: https://docs.paloaltonetworks.com/vm-series/10-0/vm-series-performance-capacity/vm-series-performance-capacity/vm-series-on-aws-models-and-instances.html
+
+
+Mappings:
+  VPCaddressPrefix:
+    values:
+      RemoteManagementCIDR: '0.0.0.0/0'
+      CoreVPCCIDR: '10.232.152.0/21'
+      DMZVPCCIDR: '10.232.144.0/21'
+      CIDRPrefix: '10.232.200'
+      ASN: '4200002007'
+      VMSeriesInstanceType: 'm5.xlarge'
+      VMSeriesAMI: 'ami-07480eb9a50d2b358'
+      EC2KeyPair2: 'inContactUksov1UK2EUWest2'
+      RegionID: 'uklo'
+      Owner: 'Network Teams'
+      LogicMonitorCIDR: '10.232.72.192/32'
+      SecurityVPCCIDR: '10.232.200.0/24'
+      ASideRadiusIP: '10.232.152.129/32'
+      BSideRadiusIP: '10.232.156.43/32'
+
+
+# ======================================================================================================================
+#   Parameters
+# ======================================================================================================================
+
+# ======================================================================================================================
+#   Metadata
+# ======================================================================================================================
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "Security VPC"
+        Parameters:
+          - SecurityVPCCIDR
+      -
+        Label:
+          default: "VM-Series Deployment"
+        Parameters:
+          - VMSeriesAMI
+          - VMSeriesInstanceType
+          - EC2KeyPair
+      -
+        Label:
+          default: "Transit Gateway Attachment"
+        Parameters:
+          - TGW
+      -
+        Label:
+          default: "Other Parameters"
+        Parameters:
+          - RemoteManagementCIDR
+
+    ParameterLabels:
+      TGW:
+        default: "Specify which AWS Transit Gateway to attach to:"
+      SecurityVPCCIDR:
+        default: "IP CIDR for the Security VPC"
+      VMSeriesAMI:
+        default: "AMI ID of VM-Series"
+      VMSeriesInstanceType:
+        default: "EC2 Instance Type for VM-Series"
+      EC2KeyPair:
+        default: "EC2 Keypair for Authentication to EC2 Instances"
+      RemoteManagementCIDR:
+        default: "IP CIDR for Allowed Remote Management of the VM-Series"
+
+# ======================================================================================================================
+#   Conditions
+# ======================================================================================================================
+
+
+# ======================================================================================================================
+#   Resources
+# ======================================================================================================================
+
+Resources:
+
+# ----------------------------------------------------------------------------------------------------------------------
+# TGW
+# ----------------------------------------------------------------------------------------------------------------------
+  TGW:
+    Type: AWS::EC2::TransitGateway
+    Properties:
+      AutoAcceptSharedAttachments: disable
+      DefaultRouteTableAssociation: disable
+      DefaultRouteTablePropagation: enable
+      DnsSupport: enable
+      Tags:
+        - Key: Name
+          Value: Security-tgw
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: TransitGateway
+      VpnEcmpSupport: enable
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# VPC, IGW, and IGW Attachment
+# ----------------------------------------------------------------------------------------------------------------------
+
+  SecurityVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !FindInMap [ VPCaddressPrefix,values,SecurityVPCCIDR ]
+      Tags:
+        - Key: Name
+          Value: SecurityVPC
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: VPC
+  SecurityIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: SecurityVPC-IGW
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: InternetGateway
+
+  SecurityIGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref SecurityIGW
+      VpcId: !Ref SecurityVPC
+  VGW:
+    Type: 'AWS::EC2::VPNGateway'
+    Properties:
+      AmazonSideAsn: !FindInMap [ VPCaddressPrefix,values,ASN ]
+      Type: ipsec.1
+      Tags:
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+        - Key: Name
+          Value: SecurityVPC-VGW
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: VPNGateway
+  AttachVGWGateway:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref SecurityVPC
+      VpnGatewayId: !Ref VGW
+
+##-----------------------------------------------------------------------------------------------------------------------
+## Subnets
+##-----------------------------------------------------------------------------------------------------------------------
+
+  NATGWSubnetAZ1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SecurityVPC
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,CIDRPrefix ]
+          - 0/28
+      AvailabilityZone: !Select [ 0, !GetAZs  '' ]
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'NATGW-AZ1']]
+
+  NATGWSubnetAZ2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SecurityVPC
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,CIDRPrefix ]
+          - 64/28
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'NATGW-AZ2']]
+
+  NATGWSubnetAZ3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SecurityVPC
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,CIDRPrefix ]
+          - 128/28
+      AvailabilityZone: !Select [ 2, !GetAZs  '' ]
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'NATGW-AZ3']]
+
+  TGWSubnetAZ1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SecurityVPC
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,CIDRPrefix ]
+          - 32/28
+      AvailabilityZone: !Select [ 0, !GetAZs  '' ]
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'TGW-AZ1']]
+
+  TGWSubnetAZ2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SecurityVPC
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,CIDRPrefix ]
+          - 96/28
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'TGW-AZ2']]
+
+  TGWSubnetAZ3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SecurityVPC
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,CIDRPrefix ]
+          - 160/28
+      AvailabilityZone: !Select [ 2, !GetAZs  '' ]
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'TGW-AZ3']]
+
+  GWLBESubnetAZ1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SecurityVPC
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,CIDRPrefix ]
+          - 16/28
+      AvailabilityZone: !Select [ 0, !GetAZs  '' ]
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'GWLBE-AZ1']]
+
+  GWLBESubnetAZ2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SecurityVPC
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,CIDRPrefix ]
+          - 80/28
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'GWLBE-AZ2']]
+
+  GWLBESubnetAZ3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SecurityVPC
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,CIDRPrefix ]
+          - 144/28
+      AvailabilityZone: !Select [ 2, !GetAZs  '' ]
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'GWLBE-AZ3']]
+
+  VMSeriesDataSubnetAZ1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SecurityVPC
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,CIDRPrefix ]
+          - 48/28
+      AvailabilityZone: !Select [ 0, !GetAZs  '' ]
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", '-Data-AZ1']]
+
+  VMSeriesDataSubnetAZ2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SecurityVPC
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,CIDRPrefix ]
+          - 112/28
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", '-Data-AZ2']]
+
+  VMSeriesDataSubnetAZ3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SecurityVPC
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,CIDRPrefix ]
+          - 176/28
+      AvailabilityZone: !Select [ 2, !GetAZs  '' ]
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", '-Data-AZ3']]
+
+  MgmtSubnetAZ1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SecurityVPC
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,CIDRPrefix ]
+          - 192/28
+      AvailabilityZone: !Select [ 0, !GetAZs  '' ]
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'Mgmt-AZ1']]
+
+  MgmtSubnetAZ2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SecurityVPC
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,CIDRPrefix ]
+          - 208/28
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'Mgmt-AZ2']]
+
+  MgmtSubnetAZ3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SecurityVPC
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,CIDRPrefix ]
+          - 224/28
+      AvailabilityZone: !Select [ 2, !GetAZs  '' ]
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'Mgmt-AZ3']]
+
+
+## ----------------------------------------------------------------------------------------------------------------------
+## Route Tables - SecurityVPC - GWLBE
+## ----------------------------------------------------------------------------------------------------------------------
+
+  GWLBERouteTableAZ1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SecurityVPC
+      Tags:
+        - Key : Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'GWLBE-AZ1']]
+
+  GWLBEDefaultRouteAZ1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GWLBERouteTableAZ1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGWAZ1
+
+  GWLBERouteTableAssociationAZ1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref GWLBERouteTableAZ1
+      SubnetId: !Ref GWLBESubnetAZ1
+
+  GWLBEClassARouteAZ1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GWLBERouteTableAZ1
+      DestinationCidrBlock: 10.0.0.0/8
+      TransitGatewayId: !Ref TGW
+    DependsOn: TGWSecurityAttachment
+
+  GWLBEClassBRouteAZ1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GWLBERouteTableAZ1
+      DestinationCidrBlock: 172.16.0.0/12
+      TransitGatewayId: !Ref TGW
+    DependsOn: TGWSecurityAttachment
+
+  GWLBEClassCRouteAZ1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GWLBERouteTableAZ1
+      DestinationCidrBlock: 192.168.0.0/16
+      TransitGatewayId: !Ref TGW
+    DependsOn: TGWSecurityAttachment
+
+  GWLBERouteTableAZ2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SecurityVPC
+      Tags:
+        - Key : Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'GWLBE-AZ2']]
+
+  GWLBEDefaultRouteAZ2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GWLBERouteTableAZ2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGWAZ2
+
+  GWLBERouteTableAssociationAZ2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref GWLBERouteTableAZ2
+      SubnetId: !Ref GWLBESubnetAZ2
+
+  GWLBEClassARouteAZ2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GWLBERouteTableAZ2
+      DestinationCidrBlock: 10.0.0.0/8
+      TransitGatewayId: !Ref TGW
+    DependsOn: TGWSecurityAttachment
+
+  GWLBEClassBRouteAZ2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GWLBERouteTableAZ2
+      DestinationCidrBlock: 172.16.0.0/12
+      TransitGatewayId: !Ref TGW
+    DependsOn: TGWSecurityAttachment
+
+  GWLBEClassCRouteAZ2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GWLBERouteTableAZ2
+      DestinationCidrBlock: 192.168.0.0/16
+      TransitGatewayId: !Ref TGW
+    DependsOn: TGWSecurityAttachment
+
+  GWLBERouteTableAZ3:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SecurityVPC
+      Tags:
+        - Key : Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'GWLBE-AZ3']]
+
+  GWLBEDefaultRouteAZ3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GWLBERouteTableAZ3
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGWAZ3
+
+  GWLBERouteTableAssociationAZ3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref GWLBERouteTableAZ3
+      SubnetId: !Ref GWLBESubnetAZ3
+
+  GWLBEClassARouteAZ3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GWLBERouteTableAZ3
+      DestinationCidrBlock: 10.0.0.0/8
+      TransitGatewayId: !Ref TGW
+    DependsOn: TGWSecurityAttachment
+
+  GWLBEClassBRouteAZ3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GWLBERouteTableAZ3
+      DestinationCidrBlock: 172.16.0.0/12
+      TransitGatewayId: !Ref TGW
+    DependsOn: TGWSecurityAttachment
+
+  GWLBEClassCRouteAZ3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GWLBERouteTableAZ3
+      DestinationCidrBlock: 192.168.0.0/16
+      TransitGatewayId: !Ref TGW
+    DependsOn: TGWSecurityAttachment
+
+
+## ----------------------------------------------------------------------------------------------------------------------
+## Route Tables - SecurityVPC - Nat Gateway
+## ----------------------------------------------------------------------------------------------------------------------
+
+  NATGWRouteTableAZ1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SecurityVPC
+      Tags:
+        - Key : Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'NATGW-AZ1']]
+
+  NATGWRouteTableAZ2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SecurityVPC
+      Tags:
+        - Key : Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'NATGW-AZ2']]
+
+  NATGWRouteTableAZ3:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SecurityVPC
+      Tags:
+        - Key : Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'NATGW-AZ3']]
+
+  NATGWDefaultRouteAZ1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NATGWRouteTableAZ1
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref SecurityIGW
+
+  NATGWDefaultRouteAZ2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NATGWRouteTableAZ2
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref SecurityIGW
+
+  NATGWDefaultRouteAZ3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NATGWRouteTableAZ3
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref SecurityIGW
+
+  NATGWClassARouteAZ1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NATGWRouteTableAZ1
+      DestinationCidrBlock: 10.0.0.0/8
+      VpcEndpointId: !Ref GWLBEAZ1
+
+  NATGWClassBRouteAZ1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NATGWRouteTableAZ1
+      DestinationCidrBlock: 172.16.0.0/12
+      VpcEndpointId: !Ref GWLBEAZ1
+
+  NATGWClassCRouteAZ1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NATGWRouteTableAZ1
+      DestinationCidrBlock: 192.168.0.0/16
+      VpcEndpointId: !Ref GWLBEAZ1
+
+  NATGWClassARouteAZ2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NATGWRouteTableAZ2
+      DestinationCidrBlock: 10.0.0.0/8
+      VpcEndpointId: !Ref GWLBEAZ2
+
+  NATGWClassBRouteAZ2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NATGWRouteTableAZ2
+      DestinationCidrBlock: 172.16.0.0/12
+      VpcEndpointId: !Ref GWLBEAZ2
+
+  NATGWClassCRouteAZ2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NATGWRouteTableAZ2
+      DestinationCidrBlock: 192.168.0.0/16
+      VpcEndpointId: !Ref GWLBEAZ2
+
+  NATGWClassARouteAZ3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NATGWRouteTableAZ3
+      DestinationCidrBlock: 10.0.0.0/8
+      VpcEndpointId: !Ref GWLBEAZ3
+
+  NATGWClassBRouteAZ3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NATGWRouteTableAZ3
+      DestinationCidrBlock: 172.16.0.0/12
+      VpcEndpointId: !Ref GWLBEAZ3
+
+  NATGWClassCRouteAZ3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NATGWRouteTableAZ3
+      DestinationCidrBlock: 192.168.0.0/16
+      VpcEndpointId: !Ref GWLBEAZ3
+
+  NATGWRouteTableAssociationAZ1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NATGWRouteTableAZ1
+      SubnetId: !Ref NATGWSubnetAZ1
+
+  NATGWRouteTableAssociationAZ2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NATGWRouteTableAZ2
+      SubnetId: !Ref NATGWSubnetAZ2
+
+  NATGWRouteTableAssociationAZ3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NATGWRouteTableAZ3
+      SubnetId: !Ref NATGWSubnetAZ3
+
+## ----------------------------------------------------------------------------------------------------------------------
+## Route Tables - SecurityVPC - Mgmt Gateway
+## ----------------------------------------------------------------------------------------------------------------------
+
+  MgmtRouteTableAZ1:
+    DependsOn: AttachVGWGateway
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SecurityVPC
+      Tags:
+        - Key : Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'Mgmt-AZ1']]
+
+  MgmtRouteTableAZ2:
+    DependsOn: AttachVGWGateway
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SecurityVPC
+      Tags:
+        - Key : Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'Mgmt-AZ2']]
+
+  MgmtRouteTableAZ3:
+    DependsOn: AttachVGWGateway
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SecurityVPC
+      Tags:
+        - Key : Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'Mgmt-AZ3']]
+
+  MgmtDefaultRouteAZ1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref MgmtRouteTableAZ1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGWAZ1
+
+  MgmtDefaultRouteAZ2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref MgmtRouteTableAZ2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGWAZ2
+
+  MgmtDefaultRouteAZ3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref MgmtRouteTableAZ3
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGWAZ3
+
+  MgmtRouteTableAssociationAZ1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref MgmtRouteTableAZ1
+      SubnetId: !Ref MgmtSubnetAZ1
+
+  MgmtRouteTableAssociationAZ2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref MgmtRouteTableAZ2
+      SubnetId: !Ref MgmtSubnetAZ2
+
+  MgmtRouteTableAssociationAZ3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref MgmtRouteTableAZ3
+      SubnetId: !Ref MgmtSubnetAZ3
+
+## ----------------------------------------------------------------------------------------------------------------------
+## Route Table - SecurityVPC - TGW
+## ----------------------------------------------------------------------------------------------------------------------
+
+  TGWRouteTableAZ1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SecurityVPC
+      Tags:
+        - Key : Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'TGW-AZ1']]
+
+  TGWRouteTableAZ2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SecurityVPC
+      Tags:
+        - Key : Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'TGW-AZ2']]
+
+  TGWRouteTableAZ3:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SecurityVPC
+      Tags:
+        - Key : Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'TGW-AZ3']]
+
+  TGWDefaultRouteAZ1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref TGWRouteTableAZ1
+      DestinationCidrBlock: 0.0.0.0/0
+      VpcEndpointId: !Ref GWLBEAZ1
+
+  TGWDefaultRouteAZ2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref TGWRouteTableAZ2
+      DestinationCidrBlock: 0.0.0.0/0
+      VpcEndpointId: !Ref GWLBEAZ2
+
+  TGWDefaultRouteAZ3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref TGWRouteTableAZ3
+      DestinationCidrBlock: 0.0.0.0/0
+      VpcEndpointId: !Ref GWLBEAZ3
+
+  TGWRouteTableAssociationAZ1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref TGWRouteTableAZ1
+      SubnetId: !Ref TGWSubnetAZ1
+
+  TGWRouteTableAssociationAZ2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref TGWRouteTableAZ2
+      SubnetId: !Ref TGWSubnetAZ2
+
+  TGWRouteTableAssociationAZ3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref TGWRouteTableAZ3
+      SubnetId: !Ref TGWSubnetAZ3
+
+  SpokeRTTGW:
+    Type: AWS::EC2::TransitGatewayRouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: SpokeRT-Security-TGW
+      TransitGatewayId: !Ref TGW
+
+  SecurityRTTGW:
+    Type: AWS::EC2::TransitGatewayRouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: SecurityRT-Security-TGW
+      TransitGatewayId: !Ref TGW
+
+## ----------------------------------------------------------------------------------------------------------------------
+## SecurityVPC - NAT Gateways with EIPs
+## ----------------------------------------------------------------------------------------------------------------------
+
+  NATGWEIPAZ1:
+    Type: AWS::EC2::EIP
+    DependsOn: SecurityIGWAttachment
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'NATGW-AZ1']]
+
+  NATGWEIPAZ2:
+    Type: AWS::EC2::EIP
+    DependsOn: SecurityIGWAttachment
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'NATGW-AZ2']]
+
+  NATGWEIPAZ3:
+    Type: AWS::EC2::EIP
+    DependsOn: SecurityIGWAttachment
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'NATGW-AZ3']]
+
+  NATGWAZ1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId: !Ref NATGWSubnetAZ1
+      AllocationId: !GetAtt NATGWEIPAZ1.AllocationId
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'NATGW-AZ1']]
+
+  NATGWAZ2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId: !Ref NATGWSubnetAZ2
+      AllocationId: !GetAtt NATGWEIPAZ2.AllocationId
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'NATGW-AZ2']]
+
+  NATGWAZ3:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId: !Ref NATGWSubnetAZ3
+      AllocationId: !GetAtt NATGWEIPAZ3.AllocationId
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'NATGW-AZ3']]
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Route Table - SecurityVPC - Data
+# ----------------------------------------------------------------------------------------------------------------------
+
+  VMSeriesDataRouteTableAZ1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SecurityVPC
+      Tags:
+        - Key : Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'VMSeriesData-AZ1']]
+
+  VMSeriesDataRouteTableAZ2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SecurityVPC
+      Tags:
+        - Key : Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'VMSeriesData-AZ2']]
+
+  VMSeriesDataRouteTableAZ3:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref SecurityVPC
+      Tags:
+        - Key : Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'VMSeriesData-AZ3']]
+
+  VMSeriesDataRouteTableAssociationAZ1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref VMSeriesDataRouteTableAZ1
+      SubnetId: !Ref VMSeriesDataSubnetAZ1
+
+  VMSeriesDataRouteTableAssociationAZ2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref VMSeriesDataRouteTableAZ2
+      SubnetId: !Ref VMSeriesDataSubnetAZ2
+
+  VMSeriesDataRouteTableAssociationAZ3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref VMSeriesDataRouteTableAZ3
+      SubnetId: !Ref VMSeriesDataSubnetAZ3
+
+## ----------------------------------------------------------------------------------------------------------------------
+##  Gateway Load Balancer
+## ----------------------------------------------------------------------------------------------------------------------
+
+  GWLB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Join ['-' , [ !Ref "AWS::StackName", 'GWLB' ]]
+      Type: gateway
+      Subnets: [!Ref VMSeriesDataSubnetAZ1, !Ref VMSeriesDataSubnetAZ2, !Ref VMSeriesDataSubnetAZ3]
+      LoadBalancerAttributes:
+        - Key: load_balancing.cross_zone.enabled
+          Value: true
+
+  GWLBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Join ['-' , [ !Ref "AWS::StackName", 'VMSeries' ]]
+      Port: 6081
+      Protocol: GENEVE
+      HealthCheckPath: /php/login.php
+      HealthCheckPort: '443'
+      HealthCheckProtocol: HTTPS
+      HealthCheckIntervalSeconds: 5
+      HealthCheckTimeoutSeconds: 4
+      HealthyThresholdCount: 5
+      UnhealthyThresholdCount: 2
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 20
+      VpcId: !Ref SecurityVPC
+
+      TargetType: instance
+      Targets:
+        - Id: !Ref VMSeriesInstanceAZ1
+        - Id: !Ref VMSeriesInstanceAZ2
+      Tags:
+        - Key: Name
+          Value: !Join ['-' , [!Ref "AWS::StackName", 'GWLB']]
+
+  GWLBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref GWLBTargetGroup
+      LoadBalancerArn: !Ref GWLB
+
+#  # ----------------------------------------------------------------------------------------------------------------------
+#  #  Gateway Load Balancer - VPC Endpoint Service
+#  # ----------------------------------------------------------------------------------------------------------------------
+
+  GWLBEService:
+    Type: AWS::EC2::VPCEndpointService
+    Properties:
+      GatewayLoadBalancerArns:
+        - !Ref GWLB
+      AcceptanceRequired: false
+
+  DescribeGWLBEService:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: "index.handler"
+      Role: !Join
+        - ''
+        - - 'arn:'
+          - !Ref 'AWS::Partition'
+          - ':iam::'
+          - !Ref 'AWS::AccountId'
+          - ':role/network_paloaltolambda'
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import json
+          import logging
+          import time
+          def handler(event, context):
+            time.sleep(600)
+            logger = logging.getLogger()
+            logger.setLevel(logging.INFO)
+            responseData = {}
+            responseStatus = cfnresponse.FAILED
+            logger.info('Received event: {}'.format(json.dumps(event)))
+            if event["RequestType"] == "Delete":
+              responseStatus = cfnresponse.SUCCESS
+              cfnresponse.send(event, context, responseStatus, responseData)
+            if event["RequestType"] == "Create":
+              try:
+                VpceServiceId = event["ResourceProperties"]["Input"]
+              except Exception as e:
+                logger.info('VPC Endpoint Service Id retrival failure: {}'.format(e))
+              try:
+                ec2 = boto3.client('ec2')
+              except Exception as e:
+                logger.info('boto3.client failure: {}'.format(e))
+              try:
+                response = ec2.describe_vpc_endpoint_service_configurations(
+                  Filters=[
+                    {
+                      'Name': 'service-id',
+                      'Values': [VpceServiceId]
+                    }
+                  ]
+                )
+              except Exception as e:
+                logger.info('ec2.describe_vpc_endpoint_service_configurations fa: {}'.format(e))
+              ServiceName = response['ServiceConfigurations'][0]['ServiceName']
+              logger.info('service name: {}'.format(ServiceName))
+              responseData['Data'] = ServiceName
+              responseStatus = cfnresponse.SUCCESS
+              cfnresponse.send(event, context, responseStatus, responseData)
+      Runtime: python3.12
+      Timeout: 900
+
+  GWLBESerivceName:
+    DependsOn: GWLBEService
+    Type: Custom::DescribeVpcEndpointServiceConfigurations
+    Properties:
+      ServiceToken: !GetAtt DescribeGWLBEService.Arn
+      Input: !Ref GWLBEService
+
+## ----------------------------------------------------------------------------------------------------------------------
+## Security VPC - Gateway Load Balancer Endpoint
+## ----------------------------------------------------------------------------------------------------------------------
+
+  GWLBEAZ1:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref SecurityVPC
+      ServiceName: !GetAtt GWLBESerivceName.Data
+      VpcEndpointType: GatewayLoadBalancer
+      SubnetIds: [ !Ref GWLBESubnetAZ1 ]
+
+  GWLBEAZ2:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref SecurityVPC
+      ServiceName: !GetAtt GWLBESerivceName.Data
+      VpcEndpointType: GatewayLoadBalancer
+      SubnetIds: [ !Ref GWLBESubnetAZ2 ]
+
+  GWLBEAZ3:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref SecurityVPC
+      ServiceName: !GetAtt GWLBESerivceName.Data
+      VpcEndpointType: GatewayLoadBalancer
+      SubnetIds: [ !Ref GWLBESubnetAZ3 ]
+
+## ----------------------------------------------------------------------------------------------------------------------
+## Security VPC - Management & Data Security Group
+## ----------------------------------------------------------------------------------------------------------------------
+
+  VMSeriesManagementSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref SecurityVPC
+      GroupDescription: VM-Series Management Security Group
+      SecurityGroupIngress:
+        - CidrIp: !FindInMap [ VPCaddressPrefix,values,RemoteManagementCIDR ]
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+        - CidrIp: !FindInMap [ VPCaddressPrefix,values,RemoteManagementCIDR ]
+          FromPort: 443
+          ToPort: 443
+          IpProtocol: tcp
+        - CidrIp: !FindInMap [ VPCaddressPrefix,values,SecurityVPCCIDR ]
+          FromPort: 443
+          ToPort: 443
+          IpProtocol: tcp
+        - CidrIp: !FindInMap [ VPCaddressPrefix,values,RemoteManagementCIDR ]
+          IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+        - CidrIp: !FindInMap [ VPCaddressPrefix,values,LogicMonitorCIDR ]
+          IpProtocol: '-1'
+          FromPort: -1
+          ToPort: -1
+        - CidrIp: !FindInMap [ VPCaddressPrefix,values,ASideRadiusIP]
+          IpProtocol: '-1'
+          FromPort: -1
+          ToPort: -1
+          Description: Allow all traffic from Radius server
+        - CidrIp: !FindInMap [ VPCaddressPrefix,values,BSideRadiusIP]
+          IpProtocol: '-1'
+          FromPort: -1
+          ToPort: -1
+          Description: Allow all traffic from Radius server          
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Join [ '-' , [ !Ref "AWS::StackName", '-Management'] ]
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: SecurityGroup
+
+  VMSeriesDataSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref SecurityVPC
+      GroupDescription: VM-Series Data Security Group
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: -1
+          ToPort: -1
+          IpProtocol: -1
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Join [ '-' , [ !Ref "AWS::StackName", 'V-Data'] ]
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: SecurityGroup
+
+#Have to run again after security VPC has been deployed. Erroring out while deploying sec vpc as Jump server SG is not built
+  VMSeriesManagementSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VMSeriesManagementSecurityGroup
+      IpProtocol: -1   #Jump Servers All In
+      SourceSecurityGroupId: !ImportValue GlobalSecurityGroups-JumpServersSG
+  VMSeriesManagementSGInfratoolsRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VMSeriesManagementSecurityGroup
+      IpProtocol: -1   #Infratools Servers All In
+      SourceSecurityGroupId: !ImportValue GlobalSecurityGroups-InfraToolsServersSG
+
+## ----------------------------------------------------------------------------------------------------------------------
+## VM-Series Deployment
+## ----------------------------------------------------------------------------------------------------------------------
+
+  VMSeriesManagementENIAZ1:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      Description: VM-Series Management - AZ1
+      GroupSet: [ !Ref VMSeriesManagementSecurityGroup ]
+      SubnetId: !Ref MgmtSubnetAZ1
+      Tags:
+        - Key: Name
+          Value: !Join [ '-' , [ !Ref "AWS::StackName", 'VMSeriesManagement-AZ1'] ]
+
+  #VMSeriesManagementEIPAZ1:
+    #Type: AWS::EC2::EIP
+    #DependsOn: SecurityIGWAttachment
+    #Properties:
+      #Domain: vpc
+      #Tags:
+        #- Key: Name
+          #Value: !Join [ '-' , [ !Ref "AWS::StackName", 'VMSeriesManagement-AZ1'] ]
+
+  #VMSeriesManagementEIPAssociationAZ1:
+    #Type: AWS::EC2::EIPAssociation
+    #Properties:
+      #AllocationId: !GetAtt VMSeriesManagementEIPAZ1.AllocationId
+      #NetworkInterfaceId: !Ref VMSeriesManagementENIAZ1
+
+  VMSeriesDataENIAZ1:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      Description: VM-Series Data - AZ1
+      SourceDestCheck: No
+      GroupSet: [ !Ref VMSeriesDataSecurityGroup ]
+      SubnetId: !Ref VMSeriesDataSubnetAZ1
+      Tags:
+        - Key: Name
+          Value: !Join [ '-' , [ !Ref "AWS::StackName", 'VMSeries-Data-AZ1'] ]
+
+  VMSeriesManagementENIAZ2:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      Description: VM-Series Management - AZ2
+      GroupSet: [ !Ref VMSeriesManagementSecurityGroup ]
+      SubnetId: !Ref MgmtSubnetAZ2
+      Tags:
+        - Key: Name
+          Value: !Join [ '-' , [ !Ref "AWS::StackName", 'VMSeries-Management-AZ2'] ]
+
+  #VMSeriesManagementEIPAZ2:
+    #Type: AWS::EC2::EIP
+    #DependsOn: SecurityIGWAttachment
+    #Properties:
+      #Domain: vpc
+      #Tags:
+        #- Key: Name
+          #Value: !Join [ '-' , [ !Ref "AWS::StackName", 'VMSeries-Management-AZ2'] ]
+
+  #VMSeriesManagementEIPAssociationAZ2:
+    #Type: AWS::EC2::EIPAssociation
+    #Properties:
+      #AllocationId: !GetAtt VMSeriesManagementEIPAZ2.AllocationId
+      #NetworkInterfaceId: !Ref VMSeriesManagementENIAZ2
+
+  VMSeriesDataENIAZ2:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      Description: VM-Series Data - AZ2
+      SourceDestCheck: No
+      GroupSet: [ !Ref VMSeriesDataSecurityGroup ]
+      SubnetId: !Ref VMSeriesDataSubnetAZ2
+      Tags:
+        - Key: Name
+          Value: !Join [ '-' , [ !Ref "AWS::StackName", 'VMSeries-Data-AZ2'] ]
+
+  VMSeriesInstanceAZ1:
+    Type: AWS::EC2::Instance
+    Properties:
+      DisableApiTermination: false
+      InstanceInitiatedShutdownBehavior: stop
+      EbsOptimized: true
+      ImageId: !FindInMap [ VPCaddressPrefix,values,VMSeriesAMI ]
+      InstanceType: !FindInMap [ VPCaddressPrefix,values,VMSeriesInstanceType ]
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp2
+            DeleteOnTermination: true
+            VolumeSize: 60
+      KeyName: !ImportValue 'RegionConfig-Keypair'
+      Monitoring: false
+      Tags:
+        - Key: Name
+          Value: !Join [ '' , [ !FindInMap [ VPCaddressPrefix,values,RegionID ], 'a-tgw-fw01'] ]
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: Network Palo Alto Firewall
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref VMSeriesManagementENIAZ1
+          DeviceIndex: '1'
+        - NetworkInterfaceId: !Ref VMSeriesDataENIAZ1
+          DeviceIndex: '0'
+      UserData:
+        Fn::Base64: type=dhcp-client;mgmt-interface-swap=enable;plugin-op-commands=aws-gwlb-inspect:enable;op-cmd-dpdk-pkt-io=on;dhcp-send-hostname=yes;dhcp-send-client-id=yes;dhcp-accept-server-hostname=yes;dhcp-accept-server-domain=yes
+
+  VMSeriesInstanceAZ2:
+    Type: AWS::EC2::Instance
+    Properties:
+      DisableApiTermination: false
+      InstanceInitiatedShutdownBehavior: stop
+      EbsOptimized: true
+      ImageId: !FindInMap [ VPCaddressPrefix,values,VMSeriesAMI ]
+      InstanceType: !FindInMap [ VPCaddressPrefix,values,VMSeriesInstanceType ]
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp2
+            DeleteOnTermination: true
+            VolumeSize: 60
+      KeyName: !ImportValue 'RegionConfig-Keypair'
+      Monitoring: false
+      Tags:
+        - Key: Name
+          Value: !Join [ '' , [ !FindInMap [ VPCaddressPrefix,values,RegionID ] , 'b-tgw-fw01'] ]
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: Network Palo Alto Firewall
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref VMSeriesManagementENIAZ2
+          DeviceIndex: '1'
+        - NetworkInterfaceId: !Ref VMSeriesDataENIAZ2
+          DeviceIndex: '0'
+      UserData:
+        Fn::Base64: type=dhcp-client;mgmt-interface-swap=enable;plugin-op-commands=aws-gwlb-inspect:enable;op-cmd-dpdk-pkt-io=on;dhcp-send-hostname=yes;dhcp-send-client-id=yes;dhcp-accept-server-hostname=yes;dhcp-accept-server-domain=yes
+
+
+## ----------------------------------------------------------------------------------------------------------------------
+## Transit Gateway and Attachment to Security VPC
+## ----------------------------------------------------------------------------------------------------------------------
+
+  TGWSecurityAttachment:
+    Type: AWS::EC2::TransitGatewayAttachment
+    Properties:
+      VpcId: !Ref SecurityVPC
+      SubnetIds: [!Ref TGWSubnetAZ1,!Ref TGWSubnetAZ2,!Ref TGWSubnetAZ3]
+      TransitGatewayId: !Ref TGW
+#      ApplianceModeSupport: enable
+      Tags:
+        - Key: Name
+          Value: !Join [ '-' , [ !Ref "AWS::StackName", 'TGW-Attachment'] ]
+## ----------------------------------------------------------------------------------------------------------------------
+##  VPC Peering between Security and Core VPC's (This is only for Sovereign clouds)
+## ----------------------------------------------------------------------------------------------------------------------
+  SecurityToCorePeeringConnection:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      VpcId: !Ref SecurityVPC
+      PeerVpcId: !ImportValue 'CoreNetwork-Vpc'
+      Tags:
+        - Key: Name
+          Value: Security_Core
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: PeeringConnection
+
+## ----------------------------------------------------------------------------------------------------------------------
+##   RoutePropegation
+## ----------------------------------------------------------------------------------------------------------------------
+
+  RoutePropegation:
+    DependsOn: AttachVGWGateway
+    Type: AWS::EC2::VPNGatewayRoutePropagation
+    Properties:
+      RouteTableIds:
+        - !Ref MgmtRouteTableAZ1
+        - !Ref MgmtRouteTableAZ2
+        - !Ref MgmtRouteTableAZ3
+      VpnGatewayId: !Ref VGW
+
+## Below peering RT table update is only for sovereign Cloud, Normal cloud doesnt need Core to Security peering
+  VPCPeeringRouteSecurityMgmt1CoreAz1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref MgmtRouteTableAZ1
+      DestinationCidrBlock: 10.232.152.0/24
+      VpcPeeringConnectionId: !Ref SecurityToCorePeeringConnection
+
+  VPCPeeringRouteSecurityMgmt1CoreAz2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref MgmtRouteTableAZ1
+      DestinationCidrBlock: 10.232.156.0/24
+      VpcPeeringConnectionId: !Ref SecurityToCorePeeringConnection
+
+  VPCPeeringRouteSecurityMgmt2CoreAz1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref MgmtRouteTableAZ2
+      DestinationCidrBlock: 10.232.152.0/24
+      VpcPeeringConnectionId: !Ref SecurityToCorePeeringConnection
+
+  VPCPeeringRouteSecurityMgmt2CoreAz2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref MgmtRouteTableAZ2
+      DestinationCidrBlock: 10.232.156.0/24
+      VpcPeeringConnectionId: !Ref SecurityToCorePeeringConnection
+
+  VPCPeeringRouteSecurityMgmt3CoreAz1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref MgmtRouteTableAZ3
+      DestinationCidrBlock: 10.232.152.0/24
+      VpcPeeringConnectionId: !Ref SecurityToCorePeeringConnection
+
+  VPCPeeringRouteSecurityMgmt3CoreAz2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref MgmtRouteTableAZ3
+      DestinationCidrBlock: 10.232.156.0/24
+      VpcPeeringConnectionId: !Ref SecurityToCorePeeringConnection
+
+  VPCPeeringCoreAz1CoreSecurityRoute1:
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1CoreRouteTable'
+        DestinationCidrBlock: 10.232.200.0/24
+        VpcPeeringConnectionId: !Ref SecurityToCorePeeringConnection
+
+  VPCPeeringCoreAz2CoreSecurityRoute1:
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2CoreRouteTable'
+        DestinationCidrBlock: 10.232.200.0/24
+        VpcPeeringConnectionId: !Ref SecurityToCorePeeringConnection
+
+#NOTE: MAKE THESE CHANGES BELOW AFTER DEPLOYING/COMPLETING PA FIREWALL CONFIG FROM ENGG TEAM.
+#NEED TO COMMENT THE BELOW CONFIG WHILE RUNNING THE SEC VPC STACK FOR NEW REGION.
+#Addding route with TGW as Destination/Target in Core VPC Route tables
+
+  TGWCoreAz1LambdaRoute:
+       DependsOn: TGWSecurityAttachment
+       Type: AWS::EC2::Route
+       Properties:
+         RouteTableId: !ImportValue 'CoreNetwork-Az1LambdaRouteTable'
+         DestinationCidrBlock: !FindInMap [ VPCaddressPrefix,values,DMZVPCCIDR ]
+         TransitGatewayId: !Ref TGW
+
+
+  TGWCoreAz2LambdaRoute1:
+       DependsOn: TGWSecurityAttachment
+       Type: AWS::EC2::Route
+       Properties:
+         RouteTableId: !ImportValue 'CoreNetwork-Az2LambdaRouteTable'
+         DestinationCidrBlock: !FindInMap [ VPCaddressPrefix,values,DMZVPCCIDR ]
+         TransitGatewayId: !Ref TGW
+
+
+  TGWCoreAz1CoreRoute1:
+       DependsOn: TGWSecurityAttachment
+       Type: AWS::EC2::Route
+       Properties:
+         RouteTableId: !ImportValue 'CoreNetwork-Az1CoreRouteTable'
+         DestinationCidrBlock: !FindInMap [ VPCaddressPrefix,values,DMZVPCCIDR ]
+         TransitGatewayId: !Ref TGW
+
+  TGWCoreAz2CoreRoute1:
+       DependsOn: TGWSecurityAttachment
+       Type: AWS::EC2::Route
+       Properties:
+         RouteTableId: !ImportValue 'CoreNetwork-Az2CoreRouteTable'
+         DestinationCidrBlock: !FindInMap [ VPCaddressPrefix,values,DMZVPCCIDR ]
+         TransitGatewayId: !Ref TGW
+
+
+  TGWCoreManagementRoute1:
+      DependsOn: TGWSecurityAttachment
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-ManagementRouteTable'
+        DestinationCidrBlock: !FindInMap [ VPCaddressPrefix,values,DMZVPCCIDR ]
+        TransitGatewayId: !Ref TGW
+
+
+
+  TGWCoreAz1VIPRoute1:
+      DependsOn: TGWSecurityAttachment
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1VIPRouteTable'
+        DestinationCidrBlock: !FindInMap [ VPCaddressPrefix,values,DMZVPCCIDR ]
+        TransitGatewayId: !Ref TGW
+
+
+  TGWCoreAz2VIPRoute1:
+      DependsOn: TGWSecurityAttachment
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2VIPRouteTable'
+        DestinationCidrBlock: !FindInMap [ VPCaddressPrefix,values,DMZVPCCIDR ]
+        TransitGatewayId: !Ref TGW
+
+
+
+  TGWCoreAz1UntrustRoute1:
+      DependsOn: TGWSecurityAttachment
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1UntrustRouteTable'
+        DestinationCidrBlock: !FindInMap [ VPCaddressPrefix,values,DMZVPCCIDR ]
+        TransitGatewayId: !Ref TGW
+
+
+
+  TGWCoreAz2UntrustRoute1:
+      DependsOn: TGWSecurityAttachment
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2UntrustRouteTable'
+        DestinationCidrBlock: !FindInMap [ VPCaddressPrefix,values,DMZVPCCIDR ]
+        TransitGatewayId: !Ref TGW
+
+
+##Addding route with TGW as Destination/Target in DMZ VPC Route tables
+  TGWDMZAZ1DMZRoute:
+      DependsOn: TGWSecurityAttachment
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'DMZNetwork-AZ1DMZRouteTable'
+        DestinationCidrBlock: !FindInMap [ VPCaddressPrefix,values,CoreVPCCIDR]
+        TransitGatewayId: !Ref TGW
+
+
+  TGWDMZAZ2DMZRoute:
+      DependsOn: TGWSecurityAttachment
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'DMZNetwork-AZ2DMZRouteTable'
+        DestinationCidrBlock: !FindInMap [ VPCaddressPrefix,values,CoreVPCCIDR]
+        TransitGatewayId: !Ref TGW
+
+
+
+  TGWDMZAz23rdPartyDMZRoute:
+      DependsOn: TGWSecurityAttachment
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'DMZNetwork-Az23rdPartyDMZRouteTable'
+        DestinationCidrBlock: !FindInMap [ VPCaddressPrefix,values,CoreVPCCIDR]
+        TransitGatewayId: !Ref TGW
+
+
+  TGWDMZAz13rdPartyDMZRoute:
+       DependsOn: TGWSecurityAttachment
+       Type: AWS::EC2::Route
+       Properties:
+         RouteTableId: !ImportValue 'DMZNetwork-Az13rdPartyDMZRouteTable'
+         DestinationCidrBlock: !FindInMap [ VPCaddressPrefix,values,CoreVPCCIDR]
+         TransitGatewayId: !Ref TGW
+
+
+
+# ======================================================================================================================
+#   Outputs
+# ======================================================================================================================
+
+Outputs:
+
+  GWLBServiceId:
+    Description: GWLB Service ID for use for additional GWLB Endpoints
+    Value: !GetAtt GWLBESerivceName.Data
+
+  TGW:
+    Description: TGW ID
+    Value: !Ref TGW
+    Export:
+      Name: TGW-ID

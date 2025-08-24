@@ -1,0 +1,82 @@
+alerts_data:
+  BytesProcessed_endpointServices:
+    alarm_name           : "mon-perf-openapm-openAPMInfra-endpointServices-mon-perf-openapm-endpointService-BytesProcessed-minor"
+    description           : "The number of bytes exchanged between endpoint services and endpoints, in both directions is zero"
+    comparison_operator       : "LessThanOrEqualToThreshold"
+    evaluation_periods        : 1
+    metric_name               : "BytesProcessed"
+    namespace                 : "AWS/PrivateLinkServices"
+    period                    : 300
+    statistic                 : "Sum"    
+    threshold                 : 0
+    dimensions                : 
+      Service Id : "vpce-svc-085a1966d8ec9e777"  
+    sns_topic_arn             : "arn:aws:sns:us-west-2:077940578811:mon-perf-na1-cloudwatch-bmc-minor"     
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+
+  UnHealthyHostCount_ALB_HTTP:
+    alarm_name           : "mon-perf-openapm-openAPMInfra-ALB-grafana-ingress-UnHealthyHostCount-critical"
+    description           : "The number of targets that are considered unhealthy are greater than zero"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 5
+    metric_name               : "UnHealthyHostCount"
+    namespace                 : "AWS/ApplicationELB"
+    period                    : 60
+    statistic                 : "Sum"    
+    threshold                 : 0
+    dimensions                : 
+      TargetGroup  : "targetgroup/k8s-grafana-grafanaa-b61f2111d6/fdd333368cca1214"  
+      LoadBalancer : "app/mon-perf-openapm-grafana-ingress/06ffc7f4c3d7c450"
+    sns_topic_arn             : "arn:aws:sns:us-west-2:077940578811:mon-perf-na1-cloudwatch-bmc-critical"     
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  
+  UnHealthyHostCount_NLB_TLS_4317:
+    alarm_name           : "mon-perf-openapm-openAPMInfra-NLB-TLS-4317-UnHealthyHostCount-critical"
+    description           : "The number of targets (k8s-otelcoll-otelcoll-95ccdaf01d) that are considered unhealthy are greater than zero ()"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 5
+    metric_name               : "UnHealthyHostCount"
+    namespace                 : "AWS/NetworkELB"
+    period                    : 60
+    statistic                 : "Minimum"    
+    threshold                 : 0
+    dimensions                : 
+      TargetGroup  : "targetgroup/k8s-otelcoll-otelcoll-95ccdaf01d/abc9592c3ff3eb02"  
+      LoadBalancer : "net/monitoring-otel-ingress/ddcad3d28acf098a"
+    sns_topic_arn             : "arn:aws:sns:us-west-2:077940578811:mon-perf-na1-cloudwatch-bmc-critical"     
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"   
+
+  RejectedFlowCount_NLB:
+    alarm_name           : "mon-perf-openapm-openAPMInfra-NLB-monitoring-otel-ingress-RejectedFlowCount-critical"
+    description           : "The total number of flows (or connections) rejected by the load balancer(monitoring-otel-ingress)."
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    metric_name               : "RejectedFlowCount"
+    namespace                 : "AWS/NetworkELB"
+    period                    : 60
+    statistic                 : "Sum"    
+    threshold                 : 0
+    dimensions                :       
+      LoadBalancer : "net/monitoring-otel-ingress/ddcad3d28acf098a"
+    sns_topic_arn             : "arn:aws:sns:us-west-2:077940578811:mon-perf-na1-cloudwatch-bmc-critical"     
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"       

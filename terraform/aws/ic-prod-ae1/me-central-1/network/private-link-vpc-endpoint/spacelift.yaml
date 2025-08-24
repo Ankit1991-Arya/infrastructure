@@ -1,0 +1,11 @@
+before_init:
+- cat /mnt/workspace/github.netrc >> ~/.netrc
+- chmod 600 ~/.netrc
+contexts:
+  cxossp-github-personal-access-token: 0
+integrations:
+  aws: ic-prod-ae1
+maintainers:
+- email: networkarchitecture@nice.com
+  name: network-architecture
+terraform_version: 1.9.1

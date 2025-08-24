@@ -1,0 +1,1170 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: AWS CloudFormation Template for Network Only - Voice Network
+#Voice1 - /22 - 10.232.192.0/22
+#
+#Voice2 - /22 - 10.232.196.0/22
+
+
+Mappings:
+  VPCaddressPrefix:
+    values:
+      vpcOctet: '10.232'
+      voice1: '192'
+      voice2: '196'
+      core: '152'
+      coreEnd: '0/21'
+      voicetrustOctet: '10.232.192.0/24'
+      voiceuntrustOctet: '10.232.113.0/25'
+      voicemgmtOctet: '10.232.194.128/25'
+      voice2trustOctet: '10.232.196.0/24'
+      voice2untrustOctet: '10.232.117.0/25'
+      voice2mgmtOctet: '10.232.198.128/25'
+      ASN1: '4200002007'
+      ASN2: '4200002007'
+      Owner: 'Network Teams'
+      AvailabilityZone1: 'eu-west-2a'
+      AvailabilityZone2: 'eu-west-2b'
+      VoiceToVoicePeering: 'Voice_Voice2'
+      Voice1ToCorePeering: 'Voice_Core'
+      Voice2ToCorePeering: 'Voice2_Core'
+
+Parameters:
+  SystemName:
+    Description: System Name
+    Type: String
+    Default: RibbonSWE-VoiceNetwork
+    MaxLength: '26'
+    AllowedPattern: '^[A-Za-z]{1}[-A-Za-z0-9]*[A-Za-z0-9]{1}$'
+    ConstraintDescription: 'Enter valid system name.  Regex: ^[A-Za-z]{1}[-A-Za-z0-9]*[A-Za-z0-9]{1}$ '
+
+
+Resources:
+
+  Vpc:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !Join
+        - .
+        - -  !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          -  !FindInMap [ VPCaddressPrefix,values,voice1 ]
+          - 0/22
+      Tags:
+        - Key: Name
+          Value: !Ref 'AWS::StackName'
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: VPC
+
+  VGW:
+    Type: 'AWS::EC2::VPNGateway'
+    Properties:
+      Type: ipsec.1
+      AmazonSideAsn: !FindInMap [ VPCaddressPrefix,values,ASN1 ]
+      Tags:
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+        - Key: Name
+          Value: Voicenetwork-VGW
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: VPN Gateway
+  AttachVGWGateway:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref Vpc
+      VpnGatewayId: !Ref VGW
+  InternetGateway:
+    Properties:
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: InternetGateway
+    Type: 'AWS::EC2::InternetGateway'
+  AttachGateway:
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+  Az1PublicSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '193'
+          - 0/25
+      Tags:
+        - Key: Name
+          Value: Az1 Public Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+        - Key: Product
+          Value: Voice
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1PublicRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az1 Public Route Table
+        - Key: Network
+          Value: Az1 Public
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  Az1PublicSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az1PublicRouteTable
+      SubnetId: !Ref Az1PublicSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az1PublicDefaultRoute:
+    DependsOn: AttachGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref Az1PublicRouteTable
+    Type: 'AWS::EC2::Route'
+  EIP1:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+  NATGateway1:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt
+        - EIP1
+        - AllocationId
+      SubnetId: !Ref Az1PublicSubnet
+  Az1TrustSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '192'
+          - 0/24
+      Tags:
+        - Key: Name
+          Value: Az1 Trust Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1TrustRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az1 Trust Route Table
+        - Key: Network
+          Value: Az1 Trust
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  Az1TrustSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az1TrustRouteTable
+      SubnetId: !Ref Az1TrustSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  TrustDefaultRoute:
+    DependsOn: NATGateway1
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
+      RouteTableId: !Ref Az1TrustRouteTable
+    Type: 'AWS::EC2::Route'
+  Az1MgmtSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '194'
+          - 128/25
+      Tags:
+        - Key: Name
+          Value: Az1 Mgmt Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1MgmtRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az1 Mgmt Route Table
+        - Key: Network
+          Value: Az1 Mgmt
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  Az1MgmtSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az1MgmtRouteTable
+      SubnetId: !Ref Az1MgmtSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  MgmtDefaultRoute:
+    DependsOn: NATGateway1
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
+      RouteTableId: !Ref Az1MgmtRouteTable
+    Type: 'AWS::EC2::Route'
+  Az1SyncSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '194'
+          - 0/25
+      Tags:
+        - Key: Name
+          Value: Az1 Sync Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1SyncRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az1 Sync Route Table
+        - Key: Network
+          Value: Az1 Sync
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  Az1SyncSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az1SyncRouteTable
+      SubnetId: !Ref Az1SyncSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  SyncDefaultRoute:
+    DependsOn: NATGateway1
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
+      RouteTableId: !Ref Az1SyncRouteTable
+    Type: 'AWS::EC2::Route'
+
+  S3Endpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: '*'
+            Effect: Allow
+            Resource: '*'
+            Principal: '*'
+      RouteTableIds:
+        - !Ref Az1MgmtRouteTable
+        - !Ref Az1TrustRouteTable
+      ServiceName: !Join
+        - ''
+        - - com.amazonaws.
+          - !Ref 'AWS::Region'
+          - .s3
+      VpcId: !Ref Vpc
+
+
+  RoutePropegation:
+    DependsOn: AttachVGWGateway
+    Type: AWS::EC2::VPNGatewayRoutePropagation
+    Properties:
+      RouteTableIds:
+        - !Ref Az1SyncRouteTable
+        - !Ref Az1HFERouteTable
+        - !Ref Az1MgmtRouteTable
+        - !Ref Az1PublicRouteTable
+        - !Ref Az1TrustRouteTable
+      VpnGatewayId: !Ref VGW
+
+  Az1HFESubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '193'
+          - 128/28
+      Tags:
+        - Key: Name
+          Value: Az1 HFE Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+        - Key: Product
+          Value: Voice
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1HFERouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az1 HFE Route Table
+        - Key: Network
+          Value: Az1 HFE
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  Az1HFESubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az1HFERouteTable
+      SubnetId: !Ref Az1HFESubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+
+  Az1HFE2Subnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '193'
+          - 144/28
+      Tags:
+        - Key: Name
+          Value: Az1 HFE-2 Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+        - Key: Product
+          Value: Voice
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1HFE2RouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az1 HFE-2 Route Table
+        - Key: Network
+          Value: Az1 HFE
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  Az1HFE2SubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az1HFE2RouteTable
+      SubnetId: !Ref Az1HFE2Subnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+
+#--------------------------------------------------------
+
+  Vpc2:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - !FindInMap [ VPCaddressPrefix,values,voice2 ]
+          - 0/22
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ''
+            - - !Ref 'AWS::StackName'
+              - '2'
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: VPC
+
+  VGW2:
+    Type: 'AWS::EC2::VPNGateway'
+    Properties:
+      Type: ipsec.1
+      AmazonSideAsn: !FindInMap [ VPCaddressPrefix,values,ASN2 ]
+      Tags:
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+        - Key: Name
+          Value: VoicenetworkVPCAz2-VGW
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: VPNGateway
+  AttachVGW2Gateway:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref Vpc2
+      VpnGatewayId: !Ref VGW2
+  InternetGateway2:
+    Properties:
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: InternetGateway
+    Type: 'AWS::EC2::InternetGateway'
+  AttachGateway2:
+    Properties:
+      InternetGatewayId: !Ref InternetGateway2
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+  VPC2Az2PublicSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '197'
+          - 0/25
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 Public Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+        - Key: Product
+          Value: Voice
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::Subnet'
+  VPC2Az2PublicRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 Public Route Table
+        - Key: Network
+          Value: Voice VPC2 Az2 Public
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::RouteTable'
+  VPC2Az2PublicSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref VPC2Az2PublicRouteTable
+      SubnetId: !Ref VPC2Az2PublicSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  VPC2Az2PublicDefaultRoute:
+    DependsOn: AttachGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway2
+      RouteTableId: !Ref VPC2Az2PublicRouteTable
+    Type: 'AWS::EC2::Route'
+  VPC2EIP1:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc2
+  VPC2NATGateway1:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt
+        - VPC2EIP1
+        - AllocationId
+      SubnetId: !Ref VPC2Az2PublicSubnet
+  VPC2Az2TrustSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '196'
+          - 0/24
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 Trust Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::Subnet'
+  VPC2Az2TrustRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 Trust Route Table
+        - Key: Network
+          Value: Voice VPC2 Az2 Trust
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::RouteTable'
+  VPC2Az2TrustSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref VPC2Az2TrustRouteTable
+      SubnetId: !Ref VPC2Az2TrustSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  VPC2TrustDefaultRoute:
+    DependsOn: VPC2NATGateway1
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref VPC2NATGateway1
+      RouteTableId: !Ref VPC2Az2TrustRouteTable
+    Type: 'AWS::EC2::Route'
+  VPC2Az2MgmtSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '198'
+          - 128/25
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 Mgmt Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::Subnet'
+  VPC2Az2MgmtRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 Mgmt Route Table
+        - Key: Network
+          Value: Voice VPC2 Az2 Mgmt
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::RouteTable'
+  VPC2Az2MgmtSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref VPC2Az2MgmtRouteTable
+      SubnetId: !Ref VPC2Az2MgmtSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  VPC2MgmtDefaultRoute:
+    DependsOn: VPC2NATGateway1
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref VPC2NATGateway1
+      RouteTableId: !Ref VPC2Az2MgmtRouteTable
+    Type: 'AWS::EC2::Route'
+  VPC2Az2SyncSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '198'
+          - 0/25
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 Sync Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::Subnet'
+  VPC2Az2SyncRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 Sync Route Table
+        - Key: Network
+          Value: Voice VPC2 Az2 Sync
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::RouteTable'
+  VPC2Az2SyncSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref VPC2Az2SyncRouteTable
+      SubnetId: !Ref VPC2Az2SyncSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  VPC2SyncDefaultRoute:
+    DependsOn: VPC2NATGateway1
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref VPC2NATGateway1
+      RouteTableId: !Ref VPC2Az2SyncRouteTable
+    Type: 'AWS::EC2::Route'
+
+  VPC2S3Endpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: '*'
+            Effect: Allow
+            Resource: '*'
+            Principal: '*'
+      RouteTableIds:
+        - !Ref VPC2Az2MgmtRouteTable
+        - !Ref VPC2Az2TrustRouteTable
+      ServiceName: !Join
+        - ''
+        - - com.amazonaws.
+          - !Ref 'AWS::Region'
+          - .s3
+      VpcId: !Ref Vpc2
+
+
+  VPC2RoutePropegation:
+    DependsOn: AttachVGWGateway
+    Type: AWS::EC2::VPNGatewayRoutePropagation
+    Properties:
+      RouteTableIds:
+        - !Ref VPC2Az2SyncRouteTable
+        - !Ref VPC2Az2HFERouteTable
+        - !Ref VPC2Az2MgmtRouteTable
+        - !Ref VPC2Az2PublicRouteTable
+        - !Ref VPC2Az2TrustRouteTable
+      VpnGatewayId: !Ref VGW2
+
+  VPC2Az2HFESubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '197'
+          - 128/28
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 HFE Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+        - Key: Product
+          Value: Voice
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::Subnet'
+  VPC2Az2HFERouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 HFE Route Table
+        - Key: Network
+          Value: Voice VPC2 Az2 HFE
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::RouteTable'
+  VPC2Az2HFESubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref VPC2Az2HFERouteTable
+      SubnetId: !Ref VPC2Az2HFESubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+
+  VPC2Az2HFE2Subnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '197'
+          - 144/28
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 HFE-2 Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+        - Key: Product
+          Value: Voice
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::Subnet'
+  VPC2Az2HFE2RouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 HFE-2 Route Table
+        - Key: Network
+          Value: Voice VPC2 Az2 HFE
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::RouteTable'
+  VPC2Az2HFE2SubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref VPC2Az2HFE2RouteTable
+      SubnetId: !Ref VPC2Az2HFE2Subnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+
+
+
+#PEERING CONNECTION
+#comment - VPC Peering between voice 1 and voice 2 VPC's
+  VoiceToVoicePeeringConnection:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      VpcId: !Ref Vpc
+      PeerVpcId: !Ref Vpc2
+      Tags:
+        - Key: Name
+          Value: !FindInMap [ VPCaddressPrefix,values, VoiceToVoicePeering ]
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: PeeringConnection
+
+#VPC Peering from Voice to Core VPC
+  VoiceToCorePeeringConnection:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      VpcId: !Ref Vpc
+      PeerVpcId: !ImportValue 'CoreNetwork-Vpc'
+      Tags:
+        - Key: Name
+          Value: !FindInMap [ VPCaddressPrefix,values, Voice1ToCorePeering ]
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: PeeringConnection
+
+#VPC Peering from Voice2 to Core VPC
+  Voice2ToCorePeeringConnection:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      VpcId: !Ref Vpc2
+      PeerVpcId: !ImportValue 'CoreNetwork-Vpc'
+      Tags:
+        - Key: Name
+          Value: !FindInMap [ VPCaddressPrefix,values, Voice2ToCorePeering ]
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: PeeringConnection
+
+  #RT part
+  #add routes Voice to Voice2
+  VoiceVoice2TrustRouteTable:
+      DependsOn: VoiceToVoicePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !Ref   Az1TrustRouteTable
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            -  !FindInMap [ VPCaddressPrefix,values,voice2 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToVoicePeeringConnection
+
+     #add routes Voice to Core
+  VoiceCoreTrustRouteTable:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !Ref   Az1TrustRouteTable
+        DestinationCidrBlock: !Join
+          - .
+          - - !ImportValue 'CoreNetwork-VPCaddressPrefix'
+            - !FindInMap [ VPCaddressPrefix,values,core ]
+            - !FindInMap [ VPCaddressPrefix,values,coreEnd ]
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+  VoiceCoreMgmtRouteTable:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !Ref   Az1MgmtRouteTable
+        DestinationCidrBlock: !Join
+          - .
+          - - !ImportValue 'CoreNetwork-VPCaddressPrefix'
+            - !FindInMap [ VPCaddressPrefix,values,core ]
+            - !FindInMap [ VPCaddressPrefix,values,coreEnd ]
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+     #add routes Voice2 to Voice
+  Voice2VoiceTrustRouteTable:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !Ref   VPC2Az2TrustRouteTable
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToVoicePeeringConnection
+
+      #add routes Voice2 to Core
+  Voice2CoreTrustRouteTable:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !Ref   VPC2Az2TrustRouteTable
+        DestinationCidrBlock: !Join
+          - .
+          - - !ImportValue 'CoreNetwork-VPCaddressPrefix'
+            - !FindInMap [ VPCaddressPrefix,values,core ]
+            - !FindInMap [ VPCaddressPrefix,values,coreEnd ]
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+  Voice2CoreMgmtRouteTable:
+    DependsOn: Voice2ToCorePeeringConnection
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref   VPC2Az2MgmtRouteTable
+      DestinationCidrBlock: !Join
+        - .
+        - - !ImportValue 'CoreNetwork-VPCaddressPrefix'
+          - !FindInMap [ VPCaddressPrefix,values,core ]
+          - !FindInMap [ VPCaddressPrefix,values,coreEnd ]
+      VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+#add routes Core to Voice via vpc peering conn
+  CoreVoiceAz1LambdaRouteTable:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1LambdaRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+
+  CoreVoiceAz2LambdaRouteTable:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2LambdaRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+  CoreVoiceAz1CoreRouteTable:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1CoreRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+  CoreVoiceAz2CoreRouteTable:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2CoreRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+
+  CoreVoiceManagementRouteTable:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-ManagementRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+
+  CoreVoiceAz1VIPRouteTable:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1VIPRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+
+  CoreVoiceAz2VIPRouteTable:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2VIPRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+
+  CoreVoiceAz1UntrustRouteTable:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1UntrustRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+
+
+  CoreVoiceAz2UntrustRouteTable:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2UntrustRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+#add routes Core to Voice2 via VPC Peering conn
+  CoreVoice2Az1LambdaRouteTable:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1LambdaRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+  CoreVoice2Az2LambdaRouteTable:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2LambdaRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+  CoreVoice2Az1CoreRouteTable:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1CoreRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+  CoreVoice2Az2CoreRouteTable:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2CoreRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+
+  CoreVoice2ManagementRouteTable:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-ManagementRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+
+  CoreVoice2Az1VIPRouteTable:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1VIPRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+
+  CoreVoice2Az2VIPRouteTable:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2VIPRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+
+  CoreVoice2Az1UntrustRouteTable:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1UntrustRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+
+  CoreVoice2Az2UntrustRouteTable:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2UntrustRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2 ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+
+
+
+
+
+
+
+Outputs:
+  Vpc:
+    Description: Voice VPC
+    Value: !Ref Vpc
+    Export:
+      Name: VoiceNetwork-Vpc
+  InternetGateway:
+    Description: Voice InternetGateway
+    Value: !Ref InternetGateway
+    Export:
+      Name: VoiceNetwork-InternetGateway
+  Az1PublicSubnet:
+    Description: Voice Az1PublicSubnet
+    Value: !Ref Az1PublicSubnet
+    Export:
+      Name: VoiceNetwork-Az1PublicSubnet
+  Az1TrustSubnet:
+    Description: Voice Az1TrustSubnet
+    Value: !Ref Az1TrustSubnet
+    Export:
+      Name: VoiceNetwork-Az1TrustSubnet
+  Az1MgmtSubnet:
+    Description: Voice Az1MgmtSubnet
+    Value: !Ref Az1MgmtSubnet
+    Export:
+      Name: VoiceNetwork-Az1MgmtSubnet
+  Az1SyncSubnet:
+    Description: Voice Az1SyncSubnet
+    Value: !Ref Az1SyncSubnet
+    Export:
+      Name: VoiceNetwork-Az1SyncSubnet
+  S3Enpoint:
+    Description: Voice S3Endpoint
+    Value: !Ref S3Endpoint
+    Export:
+      Name: VoiceNetwork-S3Endpoint
+  Az1HFESubnet:
+    Description: Voice Az1HFESubnet
+    Value: !Ref Az1HFESubnet
+    Export:
+      Name: VoiceNetwork-Az1HFESubnet
+
+  Az1HFE2Subnet:
+    Description: Voice Az1HFE2Subnet
+    Value: !Ref Az1HFE2Subnet
+    Export:
+      Name: VoiceNetwork-Az1HFE2Subnet
+
+
+
+
+
+
+
+
+
+#-------------------------------------------------------
+  Vpc2:
+    Description: Voice VPC
+    Value: !Ref Vpc2
+    Export:
+      Name: VoiceNetwork2-Vpc
+  InternetGateway2:
+    Description: Voice InternetGateway VPC2
+    Value: !Ref InternetGateway2
+    Export:
+      Name: VoiceNetwork2-InternetGateway
+  VPC2Az2PublicSubnet:
+    Description: Voice VPC2 Az2PublicSubnet
+    Value: !Ref VPC2Az2PublicSubnet
+    Export:
+      Name: VoiceNetwork2-Az2PublicSubnet
+  VPC2Az2TrustSubnet:
+    Description: Voice VPC2 Az2TrustSubnet
+    Value: !Ref VPC2Az2TrustSubnet
+    Export:
+      Name: VoiceNetwork2-Az2TrustSubnet
+  VPC2Az2MgmtSubnet:
+    Description: Voice VPC2 Az2MgmtSubnet
+    Value: !Ref VPC2Az2MgmtSubnet
+    Export:
+      Name: VoiceNetwork2-Az2MgmtSubnet
+  VPC2Az2SyncSubnet:
+    Description: Voice VPC2 Az22SyncSubnet
+    Value: !Ref VPC2Az2SyncSubnet
+    Export:
+      Name: VoiceNetwork2-Az2SyncSubnet
+  VPC2S3Enpoint:
+    Description: Voice VPC2 S3Endpoint
+    Value: !Ref VPC2S3Endpoint
+    Export:
+      Name: VoiceNetwork2-S3Endpoint
+  VPC2Az2HFESubnet:
+    Description: Voice VPC2 Az2HFESubnet
+    Value: !Ref VPC2Az2HFESubnet
+    Export:
+      Name: VoiceNetwork2-Az2HFESubnet
+
+  VPC2Az2HFE2Subnet:
+    Description: Voice VPC2 Az2HFE2Subnet
+    Value: !Ref VPC2Az2HFE2Subnet
+    Export:
+      Name: VoiceNetwork2-Az2HFE2Subnet
+
+  Az1TrustRouteTable:
+    Description: Az1TrustRouteTable
+    Value: !Ref Az1TrustRouteTable
+    Export:
+      Name: Voice-Az1TrustRouteTable
+  VPC2Az2TrustRouteTable:
+    Description: VPC2Az2TrustRouteTable
+    Value: !Ref VPC2Az2TrustRouteTable
+    Export:
+      Name: Voice-VPC2Az2TrustRouteTable
+

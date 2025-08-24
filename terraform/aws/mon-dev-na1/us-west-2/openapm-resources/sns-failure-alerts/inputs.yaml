@@ -1,0 +1,11 @@
+sns_data:
+  topic1:
+    sns_topic_name: "mon-dev-na1-sns-topic-critical"
+    aws_account_id: "300101013673"
+    email_endpoint: "dnyaneshwar.choudhari@nice.com"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"

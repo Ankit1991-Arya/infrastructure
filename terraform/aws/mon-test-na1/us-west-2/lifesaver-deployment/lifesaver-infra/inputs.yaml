@@ -1,0 +1,26 @@
+sns_topic_subscriptions: {
+  "us-west-2": [
+    "arn:aws:sns:us-west-2:837589194720:fips-test-lifesaver.fifo"
+  ]
+}
+lambda_name: "mon-test-lifesaver-sqs-processor"
+queue_name: "mon-test-lifesaver-queue"
+dlq_name: "mon-test-lifesaver-dlq"
+whitelisted_accounts: [
+  "837589194720"
+]
+role_name: "arn:aws:iam::837589194720:role/service-role/fips-test-lifesaver-lambda"
+aws_region: "us-west-2"
+lambda_memory_megabytes: 128
+lambda_debug_logging: true
+secret_name: "mon-test-lifesaver-secrets"
+vpc_id: "vpc-0c6c00b4d514bf31c"
+subnet_ids: ["subnet-01795186c750267a6"]
+tags: {
+  Product: "Monitoring-tool",
+  ServiceOwner: "SRE",
+  ApplicationOwner: "SRE",
+  Owner: "SRE",
+  InfrastructureOwner: "SRE"
+  }
+fips_compliant: true

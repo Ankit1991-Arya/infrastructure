@@ -1,0 +1,7 @@
+integrations:
+  aws: ic-test
+  azure: "AZU-IC-RND-CXONE-TEST"
+maintainers:
+  - name: network-architecture
+    email: networkarchitecture@nice.com
+terraform_version: 1.3.1

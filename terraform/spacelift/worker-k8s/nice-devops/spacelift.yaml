@@ -1,0 +1,9 @@
+contexts:
+  incontact-spacelift-workerpool: 0
+integrations:
+  aws: nice-devops
+read_access_to_members: false
+worker_pool_name: public
+maintainers:
+  - name: kubernetes-admins
+    email: devops-cloud-native-core@niceincontact.com

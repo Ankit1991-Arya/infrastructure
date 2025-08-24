@@ -1,0 +1,2 @@
+# DNS Lambda
+New CXone Areas/Regions will be deployed into new Area-specific AWS Accounts. Resources will be deployed in these new accounts, but DNS records for these resources will need to be created/updated/deleted in the existing main IC/ACD AWS Accounts in each System. For example, resources for the new UAE Area will be created in the ic-prod-ae1 AWS Account, but DNS .internal/private DNS records pointed at these resources will need to be created in the ic-prod AWS Account (in the platform.prod.internal and other .internal Route 53 Hosted Zones).

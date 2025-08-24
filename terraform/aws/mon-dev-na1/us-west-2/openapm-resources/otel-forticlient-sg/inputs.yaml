@@ -1,0 +1,51 @@
+security_group_data:
+  mon-dev-openapm-otel-forticlient-sg-1:
+    prefix_list_names:
+      - "mon-dev-openapm-company-wide-list"
+    security_group_name: "mon-dev-openapm-otel-forticlient-sg-1"
+    security_group_description: "Security Group for Otel access via FortiClient"
+    vpc_id: "vpc-021148982a73da230"
+    security_group_tags:
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  mon-dev-openapm-otel-forticlient-sg-2:
+    prefix_list_names:
+      - "mon-dev-openapm-secure-internet-access-1"
+    security_group_name: "mon-dev-openapm-otel-forticlient-sg-2"
+    security_group_description: "Security Group for Otel access via FortiClient"
+    vpc_id: "vpc-021148982a73da230"
+    security_group_tags:
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  mon-dev-openapm-otel-forticlient-sg-3:
+    prefix_list_names:
+      - "mon-dev-openapm-secure-internet-access-2"
+    security_group_name: "mon-dev-openapm-otel-forticlient-sg-3"
+    security_group_description: "Security Group for Otel access via FortiClient"
+    vpc_id: "vpc-021148982a73da230"
+    security_group_tags:
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  mon-dev-openapm-otel-forticlient-sg-4:
+    prefix_list_names:
+      - "mon-dev-openapm-secure-internet-access-3"
+    security_group_name: "mon-dev-openapm-otel-forticlient-sg-4"
+    security_group_description: "Security Group for Otel access via FortiClient"
+    vpc_id: "vpc-021148982a73da230"
+    security_group_tags:
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+
+

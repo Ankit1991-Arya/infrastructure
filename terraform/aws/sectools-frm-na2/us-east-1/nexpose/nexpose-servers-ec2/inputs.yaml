@@ -1,0 +1,335 @@
+ec2_instances_data:
+  # ec2-instance-test-1:
+  #   image_id: "ami-05193d2ff78370a7e"
+  #   instance_type: "t2.micro"
+  #   subnet_id: "subnet-05fde233563fa0106"
+  #   create_new_nic: false
+  #   key_name: "ec2-instance-test-1-nexpose"
+  #   # availability_zone: "us-west-2a" # Optional
+  #   root_block_devices:
+  #     - delete_on_termination: true
+  #       volume_size: 50
+  #       volume_type: gp3
+  #       # iops: 3000
+  #       # throughput: 200
+  #       encrypted: true
+  #       kms_key_arn: "arn:aws:kms:us-west-2:992382563823:key/d7147cda-08d5-49e2-a7ae-b0c54e14f868"
+
+  #   ebs_block_devices:
+  #     - delete_on_termination: true
+  #       device_name: /dev/sdc
+  #       volume_type: gp3
+  #       volume_size: 8
+  #       # iops: 3000
+  #       # throughput: 200
+  #       # snapshot_id: snap-1234567890abcdef0
+  #       encrypted: true
+  #       kms_key_id: "arn:aws:kms:us-west-2:992382563823:key/d7147cda-08d5-49e2-a7ae-b0c54e14f868"
+
+  #   cpu_options:
+  #     core_count: 2
+  #     # threads_per_core: 1
+    
+  #   tags:
+  #     JIRA: "CNC-4830"
+
+  #   ### Security Group Details ###
+  #   create_new_security_group: true
+  #   # security_group_ids: ["sg-0c464157dec241382"]
+  #   security_group_name: "nexpose-servers-sg"
+  #   aws_vpc_security_group_egress_rules:
+  #     egress_rule1:
+  #       ip_protocol: "-1"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+  #       cidr_ipv4: "10.20.0.0/20"
+  #       # from_port: 0
+  #       # to_port: 65535
+  #       # prefix_list_id: "pl-12345678"
+  #       # referenced_security_group_id: "sg-0b1c6f7f6b1e3a6b6"
+  #   aws_vpc_security_group_ingress_rules:
+  #     ingress_rule1:
+  #       ip_protocol: "-1"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+  #       cidr_ipv4: "10.20.0.0/20"
+  #       # from_port: 0
+  #       # to_port: 65535
+  #       # prefix_list_id: "pl-12345678"
+  #       # referenced_security_group_id: "sg-0b1c6f7f6b1e3a6b6"
+
+  #   ### Load Balancer Details ###
+  #   create_new_load_balancer: true
+  #   load_balancer_data:
+  #     internal: true
+  #     ip_address_type: "ipv4"
+  #     load_balancer_type: "network"
+  #     name: "nextpose-servers-lb"
+  #     subnets: ["subnet-05fde233563fa0106"]
+  #     security_groups: ["sg-09e77093ff956277f"]
+  #     create_new_security_group: false
+  #     # security_group_name: "nexpose-servers-sg"
+  #     # aws_vpc_security_group_egress_rules:
+  #     #   egress_rule1:
+  #     #     ip_protocol: "-1"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+  #     #     cidr_ipv4: "10.20.0.0/20"
+  #     #     # from_port: 0
+  #     #     # to_port: 65535
+  #     #     # prefix_list_id: "pl-12345678"
+  #     #     # referenced_security_group_id: "sg-0b1c6f7f6b1e3a6b6"
+  #     # aws_vpc_security_group_ingress_rules:
+  #     #   ingress_rule1:
+  #     #     ip_protocol: "-1"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+  #     #     cidr_ipv4: "10.20.0.0/20"
+  #     #     # from_port: 0
+  #     #     # to_port: 65535
+  #     #     # prefix_list_id: "pl-12345678"
+  #     #     # referenced_security_group_id: "sg-0b1c6f7f6b1e3a6b6"
+  #     target_groups:
+  #       target-group1:
+  #         port: 80
+  #         protocol: "TCP"
+  #         # protocol_version: "HTTP1"
+  #         target_type: "instance"
+  #         connection_termination: false
+  #         deregistration_delay: 300
+  #         # ip_address_type: null
+  #         # lambda_multi_value_headers_enabled: false
+  #         # load_balancing_algorithm_type: "round_robin"
+  #         # load_balancing_anomaly_mitigation: "off"
+  #         # load_balancing_cross_zone_enabled: "use_load_balancer_configuration"
+  #         # name_prefix: "nexpose-servers-tg"
+  #         # preserve_client_ip: false
+  #         # proxy_protocol_v2: false
+  #         # slow_start: 0
+  #         # health_check:
+  #         #   enabled: true
+  #         #   interval: 30
+  #         #   healthy_threshold: 3
+  #         #   matcher: null
+  #         #   path: "/"
+  #         #   port: null
+  #         #   protocol: "http"
+  #         #   timeout: 30
+  #         #   unhealthy_threshold: 3
+  #         # stickiness:
+  #         #   enabled: false
+  #         #   type: "lb_cookie"
+  #         #   cookie_duration: 86400
+  #         #   cookie_name: "AWSALB"
+  #         # target_failover:
+  #         #   on_deregistration: "no_rebalance"
+  #         #   on_unhealthy: "no_rebalance"
+  #         # target_group_health: 
+  #         #   dns_failover:
+  #         #     minimum_healthy_targets_count: "off"
+  #         #     minimum_healthy_targets_percentage: "off"
+  #         #   unhealthy_state_routing: 
+  #         #     minimum_healthy_targets_count: 1
+  #         #     minimum_healthy_targets_percentage: "off"
+  #         # target_health_state: 
+  #         #   enable_unhealthy_connection_termination: true
+  #         #   unhealthy_draining_interval: 0
+  #     listeners:
+  #       listener-1:
+  #         # alpn_policy: "HTTP1Only"
+  #         # certificate_arn: "arn:aws:acm:us-west-2:992382563823:certificate/12345678-1234-1234-1234-123456789012"
+  #         port: 80
+  #         protocol: "TCP"
+  #         # ssl_policy: "ELBSecurityPolicy-2016-08"
+  #         # authenticate_cognito:
+  #         # authenticate_oidc:
+  #         # fixed_response:
+  #         forward:
+  #           order: 1
+  #           target_group_key: "target-group1" #name of the target group
+  #         # weighted_forward
+  #         # redirect
+
+  #     # preserve_host_header: false
+  #     # client_keep_alive: false
+  #     # customer_owned_ipv4_pool: "ipv4pool-0a1b2c3d4e5f6g7h8"
+  #     # desync_mitigation_mode: "defensive"
+  #     # dns_record_client_routing_policy: "weighted"
+  #     # drop_invalid_header_fields: false
+  #     # enable_cross_zone_load_balancing: false
+  #     # enable_deletion_protection: false
+  #     # enable_http2: true
+  #     # enable_tls_version_and_cipher_suite_headers: false
+  #     # enable_xff_client_port: false
+  #     # enable_waf_fail_open: false
+  #     # enforce_security_group_inbound_rules_on_private_link_traffic: false
+  #     # idle_timeout: 60
+  #     # xff_header_processing_mode: "overwrite"
+  #     # access_logs:
+  #     #   bucket: ""
+  #     #   enabled: false
+  #     #   prefix: null
+  #     # connection_logs:
+  #     #   enabled: false
+  #     #   prefix: null
+  #     # subnet_mapping:
+  #     #   subnet_id: ""
+  #     #   allocation_id: ""
+
+  #   ### Optional Parameters ###
+    
+  #   # launch_template:
+  #   #   launch_template_id: lt-1234567890abcdef0
+  #   #   version: "$Latest"
+  #   #   launch_template_name: "test-launch-template"
+
+  #   # hibernation: true
+
+  #   # private_dns_name_options: 
+  #   #   hostname_type: ip-name
+  #   #   enable_resource_name_dns_a_record: true
+  #   #   enable_resource_name_dns_aaaa_record: false
+
+  #   # user_data: "file://./user_data.sh"
+  #   # user_data_base64: "file://./user_data.sh"
+  #   # user_data_replace_on_change: true
+
+  #   # monitoring: true
+
+  #   # ebs_optimized: true
+  #   # cpu_options:
+  #   #   core_count: 1
+  #   #   threads_per_core: 1
+
+  #   # capacity_reservation_specification: 
+  #   #   capacity_reservation_preference: open
+  #   #   capacity_reservation_target:
+  #   #     capacity_reservation_id: cr-1234567890abcdef0
+  #   #     capacity_reservation_resource_group_arn: arn:aws:ec2:us-west-2:123456789012:capacity-reservation/resource-group/cr-1234567890abcdef0
+
+  #   # ephemeral_block_device:
+  #   #   - device_name: /dev/sdb
+  #   #     virtual_name: ephemeral0
+
+  #   # metadata_options:
+  #   #   http_endpoint: enabled
+  #   #   http_tokens: required
+    
+  #   # maintenance_options:
+  #   #   auto_recovery: true
+
+  #   # enclave_options:
+  #   #   enabled: true
+
+  #   # source_dest_check: true
+  #   # disable_api_termination: false
+  #   # disable_api_stop: false
+  #   # instance_initiated_shutdown_behavior: stop
+  #   # placement_group: "test-placement-group"
+  #   # tenancy: "default"
+  #   # host_id: "i-1234567890abcdef0"
+
+  #   # credit_specification: 
+  #   #   cpu_credits: standard
+
+  #   # timeouts:
+  #   #   create: 10m
+  #   #   read: 10m
+  #   #   update: 10m
+  #   #   delete: 10m
+  #   # 
+
+###############################################################################################################
+
+  nexpose-security-console:
+    image_id: "ami-095dccd550f664446"
+    instance_type: "m5.xlarge"
+    subnet_id: "subnet-05e5d04611066b081"
+    create_new_nic: false
+    iam_instance_profile_name: "nexpose-ec2-ssm-profile"
+    instance_profile_iam_role_name: "nexpose-ec2-ssm-instance-profile-role"
+    # key_name: "ec2-instance-test-1-nexpose"
+    root_block_devices:
+      - delete_on_termination: true
+        volume_size: 1000
+        volume_type: gp3
+        encrypted: true
+        kms_key_arn: "arn:aws:kms:us-east-1:975050239252:key/a633afbe-849c-40b7-a685-f5afa8e92fdc"
+    ebs_block_devices:
+      - delete_on_termination: true
+        device_name: /dev/sdc
+        volume_type: gp3
+        volume_size: 50
+        encrypted: true
+        kms_key_id: "arn:aws:kms:us-east-1:975050239252:key/a633afbe-849c-40b7-a685-f5afa8e92fdc"
+      - delete_on_termination: true
+        device_name: /dev/sdb
+        volume_type: gp3
+        volume_size: 100
+        encrypted: true
+        kms_key_id: "arn:aws:kms:us-east-1:975050239252:key/a633afbe-849c-40b7-a685-f5afa8e92fdc"
+    cpu_options:
+      core_count: 2
+    
+    tags:
+      JIRA: "CNC-4830"
+
+    ### Security Group Details ###
+    create_new_security_group: true
+#    create_new_ec2_security_group: true
+    create_new_nlb_security_group: true
+#    security_group_ids: []
+    security_group_name: "ec2-nexpose-console-sg"
+    nexpose_nlb_sg_name: "nlb-nexpose-console-sg"
+    aws_vpc_security_group_ingress_rules:
+      ingress_rule1:
+        ip_protocol: "tcp"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+        cidr_ipv4: "10.0.0.0/21"
+        from_port: 3780
+        to_port: 3780
+      ingress_rule2:
+        ip_protocol: "tcp"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+        cidr_ipv4: "10.21.0.0/16"
+        from_port: 3780
+        to_port: 3780
+      ingress_rule3:
+        ip_protocol: "tcp"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+        cidr_ipv4: "10.21.0.0/16"
+        from_port: 40815
+        to_port: 40815
+      ingress_rule4:
+        ip_protocol: "tcp"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+        cidr_ipv4: "10.0.0.0/21"
+        from_port: 40815
+        to_port: 40815
+      ingress_rule5:
+        ip_protocol: "tcp"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+        cidr_ipv4: "172.16.0.0/12"
+        from_port: 40815
+        to_port: 40815
+      ingress_rule6:
+        ip_protocol: "tcp"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+        cidr_ipv4: "172.16.0.0/12"
+        from_port: 3780
+        to_port: 3780
+    aws_vpc_security_group_egress_rules:
+      egress_rule2:
+        ip_protocol: "-1"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+        cidr_ipv4: "0.0.0.0/0"
+
+    ### Load Balancer Details ###
+    create_new_load_balancer: false
+    # load_balancer_data:
+    #   internal: true
+    #   ip_address_type: "ipv4"
+    #   load_balancer_type: "application" #"network"
+    #   name: "nextpose-servers-alb"
+    #   subnets: ["subnet-05fde233563fa0106", "subnet-0db30aab87abe6068"]
+    #   security_groups: ["sg-09e77093ff956277f"]
+    #   create_new_security_group: false
+    #   target_groups:
+    #     target-group-alb-01:
+    #       port: 80
+    #       protocol: "HTTP"
+    #       target_type: "instance"
+    #       connection_termination: false
+    #       deregistration_delay: 300
+    #   listeners:
+    #     listener-1:
+    #       port: 80
+    #       protocol: "HTTP"
+    #       forward:
+    #         order: 1
+    #         target_group_key: "target-group-alb-01" #name of the target group

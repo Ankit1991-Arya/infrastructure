@@ -1,0 +1,35 @@
+private_link_data:
+  # Private link for API Facade and MediaPlayback
+  Facade-MediaPlayback:
+    vpc_id: vpc-0a6fec358fec78ca5
+    subnet_ids:
+      - subnet-053cece5258555ab9
+      - subnet-0c8ca183ca2464e12
+    security_group_ids:
+      - sg-06bccc696baec414d
+    service_name: "com.amazonaws.vpce.ap-northeast-2.vpce-svc-0b1b08dde73b74ee3"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: false
+    route53_record_name: ""
+    tags: 
+      Request: "RITM0059007"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "apifacade"
+      Product: "apifacade"
+  # Private link for API Facade and IHub
+  Facade-IHub:
+    vpc_id: vpc-0a6fec358fec78ca5
+    subnet_ids:
+      - subnet-053cece5258555ab9
+      - subnet-0c8ca183ca2464e12
+    security_group_ids:
+      - sg-06bccc696baec414d
+    service_name: "com.amazonaws.vpce.ap-northeast-2.vpce-svc-07d653237fc5ca36d"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: false
+    route53_record_name: ""
+    tags: 
+      Request: "RITM0059007"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "apifacade"
+      Product: "apifacade"

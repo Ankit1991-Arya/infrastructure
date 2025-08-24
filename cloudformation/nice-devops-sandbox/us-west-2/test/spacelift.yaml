@@ -1,0 +1,14 @@
+cloudformation:
+  entry_template_file: "main.cf.yaml"
+  region: "us-west-2"
+    #stack_name: "ec2-security-group-port-range-all-prohibited"
+  stack_name: "ec2-test-etoh"
+  template_bucket: "cf-templates-1terfsf7y3pfd-us-west-2"
+env:
+  CF_CAPABILITY_IAM: "1"
+integrations:
+  aws: nice-devops-sandbox
+maintainers:
+  - name: Kubernetes-admins
+    email: devops-cloud-native-core@niceincontact.com
+platform: cloudformation

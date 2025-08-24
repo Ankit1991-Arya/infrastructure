@@ -1,0 +1,57 @@
+ec2_instances_data:
+  nexpose-security-engine:
+    image_id: "ami-076fd6d797a9c51c6"
+    instance_type: "m5.large"
+    subnet_id: "subnet-7b9b7032"
+    create_new_nic: false
+    iam_instance_profile_name: "nexpose-engine-ec2-ssm-profile"
+    instance_profile_iam_role_name: "nexpose-ec2-ssm-instance-profile-role"
+    # key_name: "ec2-instance-test-1-nexpose"
+    root_block_devices:
+      - delete_on_termination: true
+        volume_size: 100
+        volume_type: gp3
+        encrypted: true
+        kms_key_arn: "arn:aws:kms:us-west-2:265671366761:key/908670b2-4499-4732-b889-e5ccb9dfbd4a"
+    ebs_block_devices:
+      - delete_on_termination: true
+        device_name: /dev/sdc
+        volume_type: gp3
+        volume_size: 50
+        encrypted: true
+        kms_key_id: "arn:aws:kms:us-west-2:265671366761:key/908670b2-4499-4732-b889-e5ccb9dfbd4a"
+      - delete_on_termination: true
+        device_name: /dev/sdb
+        volume_type: gp3
+        volume_size: 100
+        encrypted: true
+        kms_key_id: "arn:aws:kms:us-west-2:265671366761:key/908670b2-4499-4732-b889-e5ccb9dfbd4a"
+    cpu_options:
+      core_count: 2
+
+    tags:
+      JIRA: "CNC-4830"
+
+    ### Security Group Details ###
+    create_new_security_group: true
+    # security_group_ids: ["sg-09e77093ff956277f"]
+    security_group_name: "nexpose-scan-engine-sg"
+    aws_vpc_security_group_ingress_rules:
+      ingress_rule3:
+        ip_protocol: "tcp"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+        cidr_ipv4: "10.0.0.0/8"
+        from_port: 40814
+        to_port: 40814
+      ingress_rule4:
+        ip_protocol: "tcp"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+        cidr_ipv4: "172.16.0.0/12"
+        from_port: 40814
+        to_port: 40814
+        # prefix_list_id: "pl-12345678"
+        # referenced_security_group_id: "sg-0b1c6f7f6b1e3a6b6"
+    aws_vpc_security_group_egress_rules:
+      egress_rule2:
+        ip_protocol: "-1"  # if ip_protocol is set to -1, it translates to all protocols, all port ranges, and from_port and to_port values should not be defined.
+        cidr_ipv4: "0.0.0.0/0"
+
+    create_new_load_balancer: false

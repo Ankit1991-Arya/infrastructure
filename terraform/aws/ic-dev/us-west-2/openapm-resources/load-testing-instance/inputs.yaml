@@ -1,0 +1,22 @@
+# The ID of the VPC where Security Group for load testing EC2 instances will be deployed
+vpc_id: "vpc-00b8adb2e0d253dd7"
+
+# Name of the Security Group for load testing EC2 instances
+security_group_name: "sg_shared_eks_load_test"
+
+# Details of Instance profile for SSM
+iam_instance_profile_name: "SSMInstanceProfile1"
+iam_role_name: "AmazonSSMRoleForInstancesQuickSetup"
+
+# Details of Load Testing EC2 Instances
+instance_count: 2
+instance_type: "t2.micro"
+subnet_name: "shared_eks-private-us-west-2a"
+volume_size: 8
+volume_type: "gp3"
+instance_name_prefix: "SRE-Load-Test-EC2"
+tags:
+  InfrastructureOwner: "SRE"
+  ApplicationOwner: "SRE"
+  Owner: "SRE"
+  Product: "Gatling Server"

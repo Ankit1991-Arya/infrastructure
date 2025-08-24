@@ -1,0 +1,16 @@
+
+lambda_name: "mon-test-sre-otel-collector-testing-lambda"
+role_name: "arn:aws:iam::837589194720:role/service-role/sre-otel-test-function-role-cfnqw81b"
+aws_region: "us-west-2"
+lambda_memory_megabytes: 128
+lambda_debug_logging: false
+vpc_id: "vpc-07646288bd8b5a772"
+security_group_ids : ["sg-00c13c3a393b42a35","sg-0b7ccf1befe8586b7"]
+subnet_ids: ["subnet-0a0b885653fdc81f4","subnet-035c8351a80c1f0fb","subnet-083fbfd958e1922a8"]
+tags: {
+  Product: "Monitoring-tool",
+  ServiceOwner: "SRE",
+  ApplicationOwner: "SRE",
+  Owner: "SRE",
+  InfrastructureOwner: "SRE"
+  }

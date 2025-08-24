@@ -1,0 +1,358 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: This template creates network for UK SOV region DMZ vpc
+
+Mappings:
+  VPCaddressPrefix:
+    values:
+      vpcOctet: '10.232'
+      ASN: '4200002007'
+      Owner: 'Network Teams'
+      AvailabilityZone1: 'eu-west-2a'
+      AvailabilityZone2: 'eu-west-2b'
+      AvailabilityZone3: 'eu-west-2c'
+
+
+Resources:
+  Vpc:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+ ## Needs changed from Region to Region
+          - '144'
+          - 0/21
+      Tags:
+        - Key: Name
+          Value: !Ref 'AWS::StackName'
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: VPC
+  VGW:
+    Type: 'AWS::EC2::VPNGateway'
+    Properties:
+      AmazonSideAsn: !FindInMap [ VPCaddressPrefix,values,ASN ]
+      Type: ipsec.1
+      Tags:
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+        - Key: Name
+          Value: DMZnetwork-VGW
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: VPNGateway
+  AttachVGWGateway:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref Vpc
+      VpnGatewayId: !Ref VGW
+  S3Endpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: '*'
+            Effect: Allow
+            Resource: '*'
+            Principal: '*'
+      RouteTableIds:
+        - !Ref AZ1DMZRouteTable
+        - !Ref AZ2DMZRouteTable
+        - !Ref Az13rdPartyDMZRouteTable
+        - !Ref Az23rdPartyDMZRouteTable
+      ServiceName: !Join
+        - ''
+        - - com.amazonaws.
+          - !Ref 'AWS::Region'
+          - .s3
+      VpcId: !Ref Vpc
+  3rdPartyAZ1DMZDefaultRoute:
+    DependsOn: AttachGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref Az13rdPartyDMZRouteTable
+    Type: 'AWS::EC2::Route'
+  3rdPartyAZ2DMZDefaultRoute:
+    DependsOn: AttachGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref Az23rdPartyDMZRouteTable
+    Type: 'AWS::EC2::Route'
+  Az13rdPartyDMZRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az1 3rdPartyDMZ Route Table
+        - Key: Network
+          Value: Az1 3rdPartyDMZ
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  Az23rdPartyDMZRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az2 3rdPartyDMZ Route Table
+        - Key: Network
+          Value: Az2 3rdPartyDMZ
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  AZ1DMZRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: AZ1 DMZ Route Table
+  AZ2DMZRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: AZ2 DMZ Route Table
+  AZ1DMZDefaultRoute:
+    DependsOn: NATGateway1
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
+      RouteTableId: !Ref AZ1DMZRouteTable
+    Type: 'AWS::EC2::Route'
+  AZ2DMZDefaultRoute:
+    DependsOn: NATGateway2
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway2
+      RouteTableId: !Ref AZ2DMZRouteTable
+    Type: 'AWS::EC2::Route'
+  NATGateway1:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt
+        - EIP1
+        - AllocationId
+      SubnetId: !Ref Az13rdPartyDMZSubnet
+      Tags:
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: NATGateway
+  EIP1:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+  NATGateway2:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt
+        - EIP2
+        - AllocationId
+      SubnetId: !Ref Az23rdPartyDMZSubnet
+      Tags:
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: NATGateway
+  EIP2:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+  AttachGateway:
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+  Az13rdPartyDMZSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values, vpcOctet ]
+ ## Needs changed from Region to Region
+          - '146'
+          - 0/23
+      Tags:
+        - Key: Name
+          Value: Az1 3rdPartyDMZ Subnet
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az13rdPartyDMZSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az13rdPartyDMZRouteTable
+      SubnetId: !Ref Az13rdPartyDMZSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az1DMZSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values, vpcOctet ]
+ ## Needs changed from Region to Region
+          - '144'
+          - 0/23
+      Tags:
+        - Key: Name
+          Value: Az1 DMZ Subnet
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1DMZSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref AZ1DMZRouteTable
+      SubnetId: !Ref Az1DMZSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az23rdPartyDMZSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values, vpcOctet ]
+ ## Needs changed from Region to Region
+          - '150'
+          - 0/23
+      Tags:
+        - Key: Name
+          Value: Az2 3rdPartyDMZ Subnet
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az23rdPartyDMZSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az23rdPartyDMZRouteTable
+      SubnetId: !Ref Az23rdPartyDMZSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az2DMZSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values, vpcOctet ]
+ ## Needs changed from Region to Region
+          - '148'
+          - 0/23
+      Tags:
+        - Key: Name
+          Value: Az2 DMZ Subnet
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az2DMZSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref AZ2DMZRouteTable
+      SubnetId: !Ref Az2DMZSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  InternetGateway:
+    Properties:
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: InternetGateway
+    Type: 'AWS::EC2::InternetGateway'
+
+  RoutePropegation:
+    DependsOn: AttachVGWGateway
+    Type: AWS::EC2::VPNGatewayRoutePropagation
+    Properties:
+      RouteTableIds:
+        - !Ref AZ1DMZRouteTable
+        - !Ref Az13rdPartyDMZRouteTable
+        - !Ref AZ2DMZRouteTable
+        - !Ref Az23rdPartyDMZRouteTable
+
+      VpnGatewayId: !Ref VGW
+
+
+
+Outputs:
+  Az13rdPartyDMZSubnet:
+    Description: Az13rdPartyDMZ Subnet Id
+    Value: !Ref Az13rdPartyDMZSubnet
+    Export:
+      Name: DMZNetwork-Az13rdPartyDMZSubnet
+  Az1DMZSubnet:
+    Description: Az1DMZ Subnet Id
+    Value: !Ref Az1DMZSubnet
+    Export:
+      Name: DMZNetwork-Az1DMZSubnet
+  Az23rdPartyDMZSubnet:
+    Description: Az23rdPartyDMZ Subnet Id
+    Value: !Ref Az23rdPartyDMZSubnet
+    Export:
+      Name: DMZNetwork-Az23rdPartyDMZSubnet
+  Az2DMZSubnet:
+    Description: Az2DMZ Subnet Id
+    Value: !Ref Az2DMZSubnet
+    Export:
+      Name: DMZNetwork-Az2DMZSubnet
+  Vpc:
+    Description: VPC ID
+    Value: !Ref Vpc
+    Export:
+      Name: DMZNetwork-Vpc
+  VPCaddressPrefix:
+    Description: VPC Address Prefix
+    Value: !FindInMap [ VPCaddressPrefix,values, vpcOctet ]
+    Export:
+      Name: DMZNetwork-VPCaddressPrefix
+  S3Endpoint:
+    Description: ''
+    Value: !Ref S3Endpoint
+    Export:
+      Name: DMZNetwork-S3Endpoint
+  NATGateway1:
+    Description: ''
+    Value: !Ref NATGateway1
+    Export:
+      Name: DMZNetwork-Az1NATGateway
+  NATGateway2:
+    Description: ''
+    Value: !Ref NATGateway2
+    Export:
+      Name: DMZNetwork-Az2NATGateway
+  InternetGateway:
+    Description: ''
+    Value: !Ref InternetGateway
+    Export:
+      Name: DMZNetwork-InternetGateway
+
+
+  AZ1DMZRoutetable:
+    Description: AZ1DMZRouteTable
+    Value: !Ref AZ1DMZRouteTable
+    Export:
+      Name: DMZNetwork-AZ1DMZRouteTable
+
+  AZ2DMZRoutetable:
+    Description: AZ2DMZRouteTable
+    Value: !Ref AZ2DMZRouteTable
+    Export:
+      Name: DMZNetwork-AZ2DMZRouteTable
+
+  Az23rdPartyDMZRoutetable:
+    Description: Az23rdPartyDMZRouteTable
+    Value: !Ref Az23rdPartyDMZRouteTable
+    Export:
+      Name: DMZNetwork-Az23rdPartyDMZRouteTable
+
+
+  Az13rdPartyDMZRoutetable:
+    Description: Az13rdPartyDMZRouteTable
+    Value: !Ref Az13rdPartyDMZRouteTable
+    Export:
+      Name: DMZNetwork-Az13rdPartyDMZRouteTable
+
+

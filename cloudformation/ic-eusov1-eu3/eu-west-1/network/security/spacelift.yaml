@@ -1,0 +1,11 @@
+cloudformation:
+  entry_template_file: main.cf.yaml
+  region: eu-west-1
+  stack_name: SecurityNetwork
+  template_bucket: cf-templates-qeam5lonyrho5-eu-west-1
+integrations:
+  aws: ic-eusov1-eu3
+maintainers:
+- email: networkarchitecture@nice.com
+  name: network-architecture
+platform: cloudformation

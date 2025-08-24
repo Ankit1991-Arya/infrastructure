@@ -1,0 +1,6 @@
+create_stack: false
+
+# Setting the default maintainer of stacks in this account
+maintainers:
+- name: media-services-team
+  email: r&dplatform-media@nice.com

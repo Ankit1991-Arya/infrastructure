@@ -1,0 +1,76 @@
+# These are global variables - used by 2 or more modules
+prefix: cxone-cw-db-mon-perf-na
+period_in_seconds: 60
+environment: perf
+custom_cloudwatch_namespace: CustomAWSHealth/Nice
+test_kinesis_stream_name: CLOUDWATCH_MONITORING_STREAM
+python_runtime_version: "python3.13"
+sns_topic_name: cxone-monitoring-mon-perf-na
+
+live_services_to_check:
+  - KINESIS
+  - SQS
+  - EC2
+  - MULTIPLE_SERVICES
+  - BILLING
+
+# Set the logging level for the lambdas. The list of possible values:
+# "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
+lambda_log_level: INFO
+
+# This remains an empty list until we have applications to monitor
+# below is an example, change as appropriate
+aws_kinesis_accounts: {}
+  # icdev-sre-example:
+  #   account_id: 300813158921
+  #   # Note there is no app its just a stream for example
+  #   app_name: sre-example
+  #   stream_names:
+  #     - SRE_KINESIS_DEMO
+
+tags:
+  Product: "Kinesis Dashboard"
+  Service: "Kinesis Dashboard"
+  Environment: perf
+  ServiceOwner: "SRE"
+  ApplicationOwner: "SRE"
+  Owner: "SRE"
+  InfrastructureOwner: "SRE"
+
+#
+# The sections below are specific to each module
+#
+monitoring_notifications:
+  alert_recipients:
+    - SRE-Platform@niceincontact.com
+service_monitoring_kinesis_stream:
+  retrieval_window_in_minutes: 2
+  metric_statistics_math: Maximum
+  put_record_success_threshold: 0.95
+  put_records_success_threshold: 0.95
+  get_records_success_threshold: 0.95
+  get_iterator_age_msec_threshold: 600000
+  get_read_provisioned_throughput_exceeded_threshold: 0.95
+  get_write_provisioned_throughput_exceeded_threshold: 0.95
+aws_cloudwatch_event_rule_kinesis_stream:
+  lambda_run_interval_minutes: 1
+aws_health_monitor:
+  scheduled_services_to_check:
+    - KINESIS
+    - EC2
+    - SQS
+    - APIGATEWAY
+    - MULTIPLE_SERVICES
+    - BILLING
+  live_event_category_types:
+    - issue
+  scheduled_event_category_types:
+    - accountNotification
+    - investigation
+  service_health_schedule_interval: 5
+cross_account_monitoring:
+  source_account_ids:
+    - 150598861634 # ic-perf
+  organizational_unit_ids:
+    - ou-abc-123
+  sink_name: ic_perf-mon_perf_sink

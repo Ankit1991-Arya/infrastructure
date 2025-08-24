@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This template creates a prefix list and share it with account PROD account
+
+Mappings:
+  envValues:
+    env:
+      prod: "prodUKSov"
+
+  PrefixCidrList:
+      prodUKSov:
+        value:
+          - "10.232.192.0/24"
+          - "10.232.196.0/24"
+
+        tag: "prodUKSov"
+        accountID: "571600874006"
+        region: "eu-west-2"
+
+Resources:
+  PrefixListProd:
+    Type: AWS::EC2::PrefixList
+    Properties:
+      PrefixListName: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prod ],tag ], "SharedPrefixList" ] ]
+      AddressFamily: "IPv4"
+      MaxEntries: 10
+      Entries:
+        - Cidr: !Select [ 0, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prod ],value ] ]
+        - Cidr: !Select [ 1, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prod ],value ] ]
+
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prod ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prod ],tag ]
+
+  ARMresourceProd:
+    Type: AWS::RAM::ResourceShare
+    Properties:
+      Name: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prod ],tag ], "SharedPrefixList" ] ]
+      ResourceArns:
+        - !GetAtt PrefixListProd.Arn
+      Principals:
+        - !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prod ],accountID ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prod ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prod ],accountID ]

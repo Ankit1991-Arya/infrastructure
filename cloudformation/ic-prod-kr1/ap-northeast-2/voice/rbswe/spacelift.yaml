@@ -1,0 +1,76 @@
+maintainers:
+  - name: voice-team
+    email: voiceeng@nice.com
+stack_defaults:
+  maintainers:
+    - name: voice-team
+      email: voiceeng@nice.com
+  platform: cloudformation
+  cloudformation:
+    region: "ap-northeast-2"
+    template_bucket: cf-templates-1jt7n9yv0w1ze-ap-northeast-2
+  integrations:
+    aws: "ic-prod-kr1"
+  contexts:
+    psx-restuser-password: 0
+  project_root: cloudformation-templates/voice/rbswe
+  trigger_on_stack_changes: true
+  allow_resource_deletion: true
+  after_apply:
+    - ec2Id=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=*-${CF_PARAM_SystemName}-*" "Name=instance-state-name,Values=running,pending" --query "Reservations[].Instances[].InstanceId" --output json)
+    - volId=$(aws ec2 describe-volumes --filters "Name=attachment.instance-id,Values=${ec2Id}" --query "Volumes[?Attachments[0].Device=='/dev/sda1'].VolumeId" --output text)
+    - aws ec2 create-tags --resources ${volId} --tags Key=Name,Value="${CF_PARAM_SystemName} / root /dev/sda1" Key=Owner,Value="Voice Teams" Key=ApplicationOwner,Value="Voice Teams" Key=InfrastructureOwner,Value="Voice Teams" Key=Product,Value="Infrastructure" Key=Service,Value="AWS Voice POP" Key=DeviceType,Value="Ribbon SWe SBC" Key=Cluster,Value="Global"
+  create_stack: true
+stacks:
+  acslarbsbc01:
+    cloudformation:
+      stack_name: "VoiceRibbonSBC-acslarbsbc01"
+      entry_template_file: "1.0.0/main.cf.json"
+    env:
+      CF_PARAM_SystemName: "acslarbsbc01"
+      CF_PARAM_ActiveInstanceName: "acslarbsbc01a"
+      CF_PARAM_StandbyInstanceName: "acslarbsbc01b"
+      CF_PARAM_AMIID: "ami-0d1cd08d0dae54781"
+      CF_PARAM_AdminSshKey: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAgEAp9v3Q3qMkjkWVn+yzlXX9uuHfU4sijScI6jrNLkjcKaRvZ87R2NRMy3b0yO90pcAoGs1mQY+646rv5b9tJKo5kgRD4GemdyxzMUoCQoP3AKZsXMCLmsia68uEJ9n64KqHQ+z8MbxqQUWsOvNfQw9rNUVlAKEp6o+2vjJLakm0NDdlOSBNQzTMJOJOlWCHvV7g3bnywS6WNCy4rbE9Af+R0dGosOhb5GQH5fjRbRnlQ/bWy2r+zxYuyrLC0U5q2LRTdjPkDuUdruRUm8DheJyc54ZdnPUiFT4OQzdXJy3ijkRhj3xnj36XUI59SrluMUO02p8R3rpCtIe9aT+b+2rSm6d9C6SYRF/pQU750/b7ncpEheN4h1L0Dn0R9Wh+6m3k6Dw7KyIRump3MQjXlPNCum8oh6S+WE0DZXNNrV1upN072CTyDZmKpUPsU439Mgs8SZiGpQWSMyXywwWaAepM9iGc2zqmkeDHTQqgxMj5D/qiLAs7a+rh8I86rc/hrBSUUDDkYSW263Yuc4w4FmFGZNXZ+FVc82mOocaYpzDva9X/46Ck36613svZmgG6yNPCY644yVzj0S59Av9/TfqGTNC1PY7ZRLnphR/ix9MJe+lTDhaPh3ivG1Ful46OQFhL7KnAQiu1ahgTRwqjsEkWWE7tbVVkyb5FaiwfoU8Gx8= VoiceTeamsProd@SBC"
+      CF_PARAM_VpcId: "vpc-056c34e55fd9f1621"
+      CF_PARAM_SecurityGrpMgt0: "sg-066c547872b1ca12f"
+      CF_PARAM_SecurityGrpHa0: "sg-004d0d644c4d838b6"
+      CF_PARAM_SecurityGrpPkt0: "sg-02fb5b46f53b65338"
+      CF_PARAM_SecurityGrpPkt1: "sg-0bebb9c86aa544c11"
+      CF_PARAM_SubnetIdMgt0: "subnet-037a188d3d4cf2490"
+      CF_PARAM_SubnetIdHA0: "subnet-06c5b7bfe35c84694"
+      CF_PARAM_SubnetIdPkt0: "subnet-03043e330a199d16f"
+      CF_PARAM_SubnetIdPkt1: "subnet-09ccdd3266660d9da"
+      CF_PARAM_NumberOfAlternateIPv4OnPkt1: "10"
+      CF_PARAM_NumberOfAlternateIPv4OnPkt0: "20"
+      CF_PARAM_NumberOfEIPV4OnPkt0: "20"
+      CF_PARAM_EmsFqdn: "dalrbrmp01.inucn.com"
+      CF_PARAM_EmsIP1: "172.19.6.171"
+      CF_PARAM_EmsIP2: "172.23.5.180"
+      CF_PARAM_ClusterID: "AWS-prod-acslarbsbc01"
+  acslbrbsbc01:
+    cloudformation:
+      stack_name: "VoiceRibbonSBC-acslbrbsbc01"
+      entry_template_file: "1.0.0/main.cf.json"
+    env:
+      CF_PARAM_SystemName: "acslbrbsbc01"
+      CF_PARAM_ActiveInstanceName: "acslbrbsbc01a"
+      CF_PARAM_StandbyInstanceName: "acslbrbsbc01b"
+      CF_PARAM_AMIID: "ami-0d1cd08d0dae54781"
+      CF_PARAM_AdminSshKey: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAgEAp9v3Q3qMkjkWVn+yzlXX9uuHfU4sijScI6jrNLkjcKaRvZ87R2NRMy3b0yO90pcAoGs1mQY+646rv5b9tJKo5kgRD4GemdyxzMUoCQoP3AKZsXMCLmsia68uEJ9n64KqHQ+z8MbxqQUWsOvNfQw9rNUVlAKEp6o+2vjJLakm0NDdlOSBNQzTMJOJOlWCHvV7g3bnywS6WNCy4rbE9Af+R0dGosOhb5GQH5fjRbRnlQ/bWy2r+zxYuyrLC0U5q2LRTdjPkDuUdruRUm8DheJyc54ZdnPUiFT4OQzdXJy3ijkRhj3xnj36XUI59SrluMUO02p8R3rpCtIe9aT+b+2rSm6d9C6SYRF/pQU750/b7ncpEheN4h1L0Dn0R9Wh+6m3k6Dw7KyIRump3MQjXlPNCum8oh6S+WE0DZXNNrV1upN072CTyDZmKpUPsU439Mgs8SZiGpQWSMyXywwWaAepM9iGc2zqmkeDHTQqgxMj5D/qiLAs7a+rh8I86rc/hrBSUUDDkYSW263Yuc4w4FmFGZNXZ+FVc82mOocaYpzDva9X/46Ck36613svZmgG6yNPCY644yVzj0S59Av9/TfqGTNC1PY7ZRLnphR/ix9MJe+lTDhaPh3ivG1Ful46OQFhL7KnAQiu1ahgTRwqjsEkWWE7tbVVkyb5FaiwfoU8Gx8= VoiceTeamsProd@SBC"
+      CF_PARAM_VpcId: "vpc-009d7cd7fd77590d5"
+      CF_PARAM_SecurityGrpMgt0: "sg-05d6c1f05a51f756f"
+      CF_PARAM_SecurityGrpHa0: "sg-097526b89896644c1"
+      CF_PARAM_SecurityGrpPkt0: "sg-0f57d8a29e567d869"
+      CF_PARAM_SecurityGrpPkt1: "sg-006952384a20cef2a"
+      CF_PARAM_SubnetIdMgt0: "subnet-01ce37667b4057f43"
+      CF_PARAM_SubnetIdHA0: "subnet-0e006e0f4063ccb4b"
+      CF_PARAM_SubnetIdPkt0: "subnet-0fdbb78f39582d677"
+      CF_PARAM_SubnetIdPkt1: "subnet-0bb24c8261c7433c6"
+      CF_PARAM_NumberOfAlternateIPv4OnPkt1: "10"
+      CF_PARAM_NumberOfAlternateIPv4OnPkt0: "20"
+      CF_PARAM_NumberOfEIPV4OnPkt0: "20"
+      CF_PARAM_EmsFqdn: "dalrbrmp01.inucn.com"
+      CF_PARAM_EmsIP1: "172.19.6.171"
+      CF_PARAM_EmsIP2: "172.23.5.180"
+      CF_PARAM_ClusterID: "AWS-prod-acslbrbsbc01"

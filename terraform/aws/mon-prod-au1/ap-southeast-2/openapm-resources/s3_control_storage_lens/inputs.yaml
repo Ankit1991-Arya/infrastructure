@@ -1,0 +1,11 @@
+s3control_storage_lens_data:
+    s3control_storage_lens_export_bucket:
+        export_bucket_arn:      "arn:aws:s3:::mon-prod-au1-openapm-s3control-storage-lens-export"
+        aws_account_id:  "764988410719"
+        tags: 
+          Product: "Grafana-LGMT"
+          ServiceOwner: "SRE"
+          ApplicationOwner: "SRE"
+          Owner: "SRE"
+          InfrastructureOwner: "SRE"  
+

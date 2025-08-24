@@ -1,0 +1,6 @@
+integrations:
+  azure: AZU-IC-RND-CXONE-DEV
+maintainers:
+- email: devops-cloud-native-core@nice.com
+  name: kubernetes-admins
+terraform_version: 1.3.1

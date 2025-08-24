@@ -1,0 +1,13 @@
+- principal: "User:connect-user"
+  resource_name: "*"
+  operations: ["Describe", "AlterConfigs"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:schema-registry-user"
+  resource_name: "*"
+  operations: ["Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"

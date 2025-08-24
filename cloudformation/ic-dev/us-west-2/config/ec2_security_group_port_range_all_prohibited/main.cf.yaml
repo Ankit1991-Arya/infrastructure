@@ -1,0 +1,136 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: ""
+Resources:
+  CustomConfigRule:
+    Type: "AWS::Config::ConfigRule"
+    Properties:
+      ConfigRuleName: "ec2_security_group_port_range_all_prohibited"
+      Scope:
+        ComplianceResourceTypes:
+          - "AWS::EC2::SecurityGroup"
+      Description: "A Config rule that checks that security groups do not have an inbound rule with port range of \"All\"."
+      Source:
+        Owner: "CUSTOM_LAMBDA"
+        SourceIdentifier:
+          Fn::GetAtt:
+            - "LambdaFunctionCustomConfigRule"
+            - "Arn"
+        SourceDetails:
+          - EventSource: "aws.config"
+            MessageType: "ConfigurationItemChangeNotification"
+          - EventSource: "aws.config"
+            MessageType: "OversizedConfigurationItemChangeNotification"
+    DependsOn: "LambdaInvokePermissionsCustomConfigRule"
+  LambdaInvokePermissionsCustomConfigRule:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName:
+        Fn::GetAtt:
+          - "LambdaFunctionCustomConfigRule"
+          - "Arn"
+      Action: "lambda:InvokeFunction"
+      Principal: "config.amazonaws.com"
+  LambdaFunctionCustomConfigRule:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: "LambdaForec2_security_group_port_range_all_prohibited"
+      Handler: "index.lambda_handler"
+      Role:
+        Fn::GetAtt:
+          - "LambdaIamRoleCustomConfigRule"
+          - "Arn"
+      Runtime: "python3.9"
+      Code:
+        ZipFile:
+          Fn::Join:
+            - "\n"
+            -
+              - ""
+              - "# This file made available under CC0 1.0 Universal (https://creativecommons.org/publicdomain/zero/1.0/legalcode)"
+              - "#"
+              - "# Description: Check that security groups do not have an inbound rule"
+              - "#              with port range of \"All\"."
+              - "#"
+              - "# Trigger Type: Change Triggered"
+              - "# Scope of Changes: EC2:SecurityGroup"
+              - "# Accepted Parameters: None"
+              - ""
+              - "import boto3"
+              - "import json"
+              - ""
+              - ""
+              - "APPLICABLE_RESOURCES = [\"AWS::EC2::SecurityGroup\"]"
+              - ""
+              - ""
+              - "def evaluate_compliance(configuration_item):"
+              - ""
+              - "    # Start as compliant"
+              - "    compliance_type = 'COMPLIANT'"
+              - "    annotation = \"Security group is compliant.\""
+              - ""
+              - "    # Check if resource was deleted"
+              - "    if configuration_item['configurationItemStatus'] == \"ResourceDeleted\":"
+              - "        compliance_type = 'NOT_APPLICABLE'"
+              - "        annotation = \"This resource was deleted.\""
+              - ""
+              - "    # Check resource for applicability"
+              - "    elif configuration_item[\"resourceType\"] not in APPLICABLE_RESOURCES:"
+              - "        compliance_type = 'NOT_APPLICABLE'"
+              - "        annotation = \"The rule doesn't apply to resources of type \"                      + configuration_item[\"resourceType\"] + \".\""
+              - ""
+              - "    else:"
+              - "        # Iterate over IP permissions"
+              - "        for i in configuration_item['configuration']['ipPermissions']:"
+              - "            # inbound rules with no \"fromPort\" have a value of \"All\""
+              - "            if \"fromPort\" not in i:"
+              - "                compliance_type = 'NON_COMPLIANT'"
+              - "                annotation = 'Security group is not compliant.'"
+              - "                break"
+              - ""
+              - "    return {"
+              - "        \"compliance_type\": compliance_type,"
+              - "        \"annotation\": annotation"
+              - "    }"
+              - ""
+              - ""
+              - "def lambda_handler(event, context):"
+              - ""
+              - "    invoking_event = json.loads(event['invokingEvent'])"
+              - "    configuration_item = invoking_event[\"configurationItem\"]"
+              - "    evaluation = evaluate_compliance(configuration_item)"
+              - "    config = boto3.client('config')"
+              - ""
+              - "    print('Compliance evaluation for %s: %s' % (configuration_item['resourceId'], evaluation[\"compliance_type\"]))"
+              - "    print('Annotation: %s' % (evaluation[\"annotation\"]))"
+              - ""
+              - "    response = config.put_evaluations("
+              - "       Evaluations=["
+              - "           {"
+              - "               'ComplianceResourceType': invoking_event['configurationItem']['resourceType'],"
+              - "               'ComplianceResourceId':   invoking_event['configurationItem']['resourceId'],"
+              - "               'ComplianceType':         evaluation[\"compliance_type\"],"
+              - "               \"Annotation\":             evaluation[\"annotation\"],"
+              - "               'OrderingTimestamp':      invoking_event['configurationItem']['configurationItemCaptureTime']"
+              - "           },"
+              - "       ],"
+              - "       ResultToken=event['resultToken'])"
+              - ""
+      Timeout: 300
+    DependsOn: "LambdaIamRoleCustomConfigRule"
+  # TODO: role should be migrated to https://github.com/inContact/cicd-iam-service-roles
+  LambdaIamRoleCustomConfigRule:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
+        - "arn:aws:iam::aws:policy/service-role/AWSConfigRulesExecutionRole"
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"

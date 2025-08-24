@@ -1,0 +1,20 @@
+###########################################################################################
+# The list of SCRAM users to create in the MSK cluster
+# The format is -- <SecretName>: <username>
+# The secret name is the name of the secret that will be created in the AWS Secrets Manager
+# The username is the username that will be created in the MSK cluster
+###########################################################################################
+scram_users:
+  EntityUser: "entity-user"
+  UIQueueUser: "ui-queue-user"
+  SendgridIntegrationUser: "sendgrid-integration-user"
+  AcdScriptEngineUser: "acd-script-engine-user"
+  QueryableAPI: "queryable-api-user"
+  SuiteDataUser: "suite-data-user"
+  SuiteDataNrtUser: "suite-data-nrt-user"
+  RoutingNGUser: "routing-ng-user"
+  RoutingSkillManager: "routing-skill-manager-user"
+  ConnectUser: "connect-user"
+  # ESC_CBARouterUser: "esc-cba-router-user"
+  # SchemaRegistryUser: "schema-registry-user"
+ 

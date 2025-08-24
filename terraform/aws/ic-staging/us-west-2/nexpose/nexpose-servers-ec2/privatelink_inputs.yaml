@@ -1,0 +1,14 @@
+private_link_data_corenetwork:
+  # Private link for Nexpose
+  nexpose-console-corenetwork:
+    vpc_id: vpc-53b04a34
+    subnet_ids:
+      - subnet-769a7d11
+      - subnet-804e77f6
+    security_group_ids: []
+    resource_configuration_arn: "arn:aws:vpc-lattice:us-west-2:992382563823:resourceconfiguration/rcfg-09efd47b86cd567c5"
+    vpc_endpoint_type: "Resource"
+    route53_record_name: ""
+    tags:
+      Product: "Nexpose"
+      VPC: "CoreNetwork-staging"

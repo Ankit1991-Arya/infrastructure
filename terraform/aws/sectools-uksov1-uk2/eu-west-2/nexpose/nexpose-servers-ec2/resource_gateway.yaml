@@ -1,0 +1,14 @@
+resource_gateway_data:
+  nexpose-console-rg:
+    vpc_id: vpc-02d703b60270f7f52
+    subnet_ids:
+      - subnet-081e51aaad0b12044
+      - subnet-0c854c5e4fefd786c
+      - subnet-0b965a1ecebe9d684
+    ip_address_type: "IPV4"
+    resource_configuration_ip_address: ""
+    resource_configuration_port_range: ["40814-40815"]
+    resource_configuration_type: "SINGLE"
+    principals:
+      - 147997157422
+      - 396608801543

@@ -1,0 +1,11 @@
+maintainers:
+  - name: network-architecture
+    email: networkarchitecture@nice.com
+platform: cloudformation
+cloudformation:
+  stack_name:  "ip-prefix-list-dev"
+  entry_template_file: "universalPrefixList.yml"
+  region: "us-west-2"
+  template_bucket: cf-templates-vdffxqvdhbyl-us-west-2
+integrations:
+  aws: "ic-test"

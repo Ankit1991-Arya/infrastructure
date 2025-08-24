@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This template creates a prefix list and share it with account PROD account
+
+Mappings:
+  envValues:
+    env:
+      prodUAE: "prodUAE"
+
+  PrefixCidrList:
+      prodUAE:
+        value:
+          - "10.4.32.0/21"
+          - "10.4.64.0/24"
+          - "172.19.0.0/16"
+          - "172.23.0.0/16"
+          - "10.209.0.0/19"
+          - "10.209.64.0/19"
+          - "172.29.0.0/21"
+          - "172.29.16.0/21"
+          - "172.21.0.0/16"
+          - "10.4.16.0/21"
+          - "10.5.64.0/24"
+          - "10.230.224.0/24"
+          - "10.230.228.0/24"
+          - "10.5.16.0/21"
+          - "10.7.27.0/24"
+          - "10.7.59.0/24"
+          - "10.7.73.0/24"
+          - "10.7.105.0/24"
+          - "10.230.80.0/24"
+          - "10.230.84.0/24"
+        tag: "prodUAE"
+        accountID: "371021933542"
+        region: "me-central-1"
+
+Resources:
+  PrefixListProdUAE:
+    Type: AWS::EC2::PrefixList
+    Properties:
+      PrefixListName: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],tag ], "SharedPrefixList" ] ]
+      AddressFamily: "IPv4"
+      MaxEntries: 60
+      Entries:
+        - Cidr: !Select [ 0, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 1, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 2, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 3, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 4, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 5, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 6, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 7, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 8, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 9, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 10, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 11, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 12, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 13, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 14, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 15, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 16, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 17, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 18, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+        - Cidr: !Select [ 19, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],value ] ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],tag ]
+
+  ARMresourceProdUAE:
+    Type: AWS::RAM::ResourceShare
+    Properties:
+      Name: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],tag ], "SharedPrefixList" ] ]
+      ResourceArns:
+        - !GetAtt PrefixListProdUAE.Arn
+      Principals:
+        - !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],accountID ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUAE ],accountID ]

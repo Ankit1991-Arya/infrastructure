@@ -1,0 +1,51 @@
+sns_data:
+  BmcInfo:
+    sns_topic_name           : "mon-eusov1-eu2-cloudwatch-bmc-info"
+    aws_account_id           : "851725368241"
+    whitelisted_iam_account_id : "533267422300"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  BmcMinor:
+    sns_topic_name           : "mon-eusov1-eu2-cloudwatch-bmc-minor"
+    aws_account_id           : "851725368241"
+    whitelisted_iam_account_id : "533267422300"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  BmcMajor:
+    sns_topic_name           : "mon-eusov1-eu2-cloudwatch-bmc-major"
+    aws_account_id           : "851725368241"
+    whitelisted_iam_account_id : "533267422300"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  BmcCritical:
+    sns_topic_name           : "mon-eusov1-eu2-cloudwatch-bmc-critical"
+    aws_account_id           : "851725368241"
+    whitelisted_iam_account_id : "533267422300"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  BmcCustom:
+    sns_topic_name           : "mon-eusov1-eu2-cloudwatch-bmc-custom"
+    aws_account_id           : "851725368241"
+    whitelisted_iam_account_id : "533267422300"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"

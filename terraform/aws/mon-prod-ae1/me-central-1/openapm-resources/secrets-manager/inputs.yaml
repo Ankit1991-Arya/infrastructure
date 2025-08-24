@@ -1,0 +1,64 @@
+secrets_data:
+  secret1:
+    name: "mon-prod-ae1-monitoring-auth"
+    description: "AWS Secret that stores Grafana Admin username and password for openAPM stack"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret2:
+    name: "mon-prod-ae1/SRE/OpenAPM/Alertmanager/BMC-PROD-API"
+    description: "AWS Secret that stores BMC API details"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret3:
+    name: "mon-prod-ae1/SRE/OpenAPM/grafana/ic-prod/cloudwatch/datasource/ic-prod"
+    description: "AWS CloudWatch user AccessKey & SecretKey"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret4:
+    name: "mon-prod-ae1/SRE/OpenAPM/grafana/wfo-prod/cloudwatch/datasource/wfo-prod"
+    description: "AWS CloudWatch user AccessKey & SecretKey"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret5:
+    name: "mon-prod-ae1/SRE/OpenAPM/grafana/mon-prod-ae1/cloudwatch/datasource/mon-prod-ae1"
+    description: "AWS CloudWatch user AccessKey & SecretKey"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret6:
+    name: "mon-prod-ae1/SRE/OpenAPM/grafana/okta"
+    description: "AWS Secret that stores OKTA client details for OKTA authentication on Mon Grafana"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret7:
+    name: "Mon-prod-ae1/SRE/OpenAPM/prometheusBlackboxExporter/blackboxExporter"
+    description: "AWS Secret that stores blackboxExporter contains sensitive data"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"

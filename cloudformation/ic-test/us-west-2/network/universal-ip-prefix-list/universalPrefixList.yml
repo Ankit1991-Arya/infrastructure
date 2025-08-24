@@ -1,0 +1,750 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This template creates a prefix list and share it with account PROD account
+# CIDR address space source  https://tlvjira02.nice.com/browse/CXDEVOPS-10322
+# has to be uploaded to gitHub
+
+Mappings:
+  envValues:
+    env:
+      dev: "dev"
+      test: "test"
+      perf: "perf"
+      stage: "stage"
+      prodNA1: "prodNA1"
+#      federal: "federal"
+      prodAU: "prodAU"
+      prodEU: "prodEU"
+      prodNA2: "prodNA2"
+      prodUK: "prodUK"
+      prodCA: "prodCA"
+      prodJP: "prodJP"
+
+  PrefixCidrList:
+      dev:
+        value:
+          - "10.209.12.0/23"
+          - "172.28.66.178/32"
+          - "172.28.98.98/32"
+          - "172.28.64.0/18"
+          - "172.28.128.0/18"
+          - "172.28.140.192/32"
+          - "172.28.140.16/32"
+          - "172.20.40.22/32"
+          - "172.20.40.23/32"
+          - "172.20.41.22/32"
+          - "172.20.41.23/32"
+        tag: "dev"
+        accountID: "934137132601"
+        region: "us-west-2"
+      test:
+        value:
+          -  "172.28.66.178/32"
+          -  "172.28.98.98/32"
+          -  "172.28.64.0/18"
+          -  "172.20.0.0/16"
+          -  "172.20.40.22/32"
+          -  "172.20.40.23/32"
+          -  "172.20.41.22/32"
+          -  "172.20.41.23/32"
+        tag: "test"
+        accountID: "934137132601"
+        region: "us-west-2"
+      perf:
+        value:
+          -  "172.28.0.0/20"
+          -  "172.28.11.123/32"
+          -  "172.28.32.0/20"
+          -  "172.28.66.178/32"
+          -  "172.28.98.98/32"
+          -  "172.28.64.0/18"
+          -  "172.20.40.0/23"
+          -  "172.20.40.22/32"
+          -  "172.20.40.23/32"
+          -  "172.20.41.22/32"
+          -  "172.20.41.23/32"
+          -  "10.9.176.0/23"
+          -  "10.9.180.0/23"
+        tag: "perf"
+        accountID: "636107004818"
+        region: "us-west-2"
+      stage:
+        value:
+          -  "10.209.12.0/23"
+          -  "172.28.32.0/20"
+          -  "172.28.0.0/18"
+          -  "172.28.0.0/20"
+          -  "205.214.30.2/32"
+          -  "172.20.40.80/32"
+          -  "172.20.41.80/32"
+          -  "172.20.40.0/23"
+          -  "205.214.30.0/24"
+        tag: "stage"
+        accountID: "946153222386"
+        region: "us-west-2"
+      prodNA1:
+        value:
+          -  "172.25.64.0/18"
+          -  "172.25.140.0/23"
+          -  "172.19.0.0/16"
+          -  "172.23.0.0/16"
+          -  "10.209.0.0/19"
+          -  "10.209.64.0/19"
+          -  "172.29.0.0/21"
+          -  "172.29.16.0/21"
+          -  "172.29.32.0/21"
+          -  "172.21.0.0/16"
+          -  "10.4.16.0/21"
+          -  "10.5.16.0/21"
+          -  "10.230.0.0/21"
+        tag: "prodNA1"
+        accountID: "918987959928"
+        region: "us-west-2"
+#      918987959928productionAU:
+      prodAU:
+        value:
+          - "10.209.128.0/19"
+          - "10.209.160.0/19"
+          - "172.19.0.0/16"
+          - "172.23.0.0/16"
+          - "10.209.0.0/19"
+          - "10.209.64.0/19"
+          - "172.29.0.0/21"
+          - "172.29.16.0/21"
+          - "172.21.0.0/16"
+          - "10.4.16.0/21"
+          - "172.29.32.0/21"
+        tag: "prodAU"
+        accountID: "918987959928"
+        region: "ap-southeast-2"
+      prodEU:
+        value:
+          - "172.21.14.0/24"
+          - "172.21.34.0/24"
+          - "172.19.0.0/16"
+          - "172.23.0.0/16"
+          - "10.209.0.0/19"
+          - "10.209.64.0/19"
+          - "172.29.0.0/21"
+          - "172.29.16.0/21"
+          - "172.21.0.0/16"
+          - "172.29.36.0/23"
+          - "172.29.38.0/23"
+          - "10.4.16.0/21"
+        tag: "prodEU"
+        accountID: "918987959928"
+        region: "eu-central-1"
+      prodNA2:
+        value:
+          - "172.31.168.0/21"
+          - "172.31.176.0/21"
+          - "172.19.0.0/16"
+          - "172.23.0.0/16"
+          - "10.209.0.0/19"
+          - "10.209.64.0/19"
+          - "172.29.0.0/21"
+          - "172.29.16.0/21"
+          - "172.21.0.0/16"
+          - "10.4.16.0/21"
+        tag: "prodNA2"
+        accountID: "334442430111"
+        region: "us-east-1"
+      prodUK:
+        value:
+          - "10.4.96.0/21"
+          - "10.4.24.0/24"
+          - "172.19.0.0/16"
+          - "172.23.0.0/16"
+          - "10.209.0.0/19"
+          - "10.209.64.0/19"
+          - "172.29.0.0/21"
+          - "172.29.16.0/21"
+          - "172.21.0.0/16"
+          - "10.4.16.0/21"
+          - "10.5.24.0/24"
+        tag: "prodUK"
+        accountID: "918987959928"
+        region: "eu-west-2"
+      prodCA:
+        value:
+          - "10.4.32.0/21"
+          - "10.4.64.0/24"
+          - "172.19.0.0/16"
+          - "172.23.0.0/16"
+          - "10.209.0.0/19"
+          - "10.209.64.0/19"
+          - "172.29.0.0/21"
+          - "172.29.16.0/21"
+          - "172.21.0.0/16"
+          - "10.4.16.0/21"
+          - "10.5.64.0/24"
+        tag: "prodCA"
+        accountID: "918987959928"
+        region: "ca-central-1"
+      prodJP:
+        value:
+          - "10.5.32.0/21"
+          - "10.5.16.0/24"
+          - "10.5.20.0/24"
+          - "172.19.0.0/16"
+          - "172.23.0.0/16"
+          - "10.209.0.0/19"
+          - "10.209.64.0/19"
+          - "172.29.0.0/21"
+          - "172.29.16.0/21"
+          - "172.21.0.0/16"
+          - "10.4.16.0/21"
+        tag: "prodJP"
+        accountID: "918987959928"
+        region: "ap-northeast-1"
+Conditions:
+  DevRegionCheck: !Equals [ !Ref "AWS::Region", us-west-2 ]
+  StageCheck: !Equals [ !Ref "AWS::Region", us-west-2 ]
+  ProdNA1Check: !Equals [ !Ref "AWS::Region", us-west-2 ]
+  ProdAUCheck: !Equals [ !Ref "AWS::Region", ap-southeast-2 ]
+  ProdEUCheck: !Equals [ !Ref "AWS::Region", eu-central-1 ]
+  ProdNA2Check: !Equals [ !Ref "AWS::Region", us-east-1 ]
+  ProdUKCheck: !Equals [ !Ref "AWS::Region", eu-west-2 ]
+  ProdCACheck: !Equals [ !Ref "AWS::Region", ca-central-1 ]
+  ProdJPCheck: !Equals [ !Ref "AWS::Region", ap-northeast-1 ]
+  devStackCheck: !Equals [ !Ref "AWS::StackName", ip-prefix-list-dev]
+  stageStackCheck: !Equals [ !Ref "AWS::StackName", ip-prefix-list-stage]
+  prodStackCheck: !Equals [ !Ref "AWS::StackName", ip-prefix-list-prod]
+
+  #DevNotify: !Equals [ !Ref EnvironmentValue, "dev-test-perf" ]
+  #ProdNotify: !Equals [ !Ref EnvironmentValue, "prod" ]
+  #StageNotify: !Equals [ !Ref EnvironmentValue, "stage" ]
+
+
+  RegionCheckDev: !And
+   - !Condition DevRegionCheck
+   - !Condition devStackCheck
+
+  RegionCheckStage: !And
+    - !Condition StageCheck
+    - !Condition stageStackCheck
+
+  JPprod: !And
+    - !Condition ProdJPCheck
+    - !Condition prodStackCheck
+
+  CAprod: !And
+    - !Condition ProdCACheck
+    - !Condition prodStackCheck
+
+  UKprod: !And
+    - !Condition ProdUKCheck
+    - !Condition prodStackCheck
+
+  NA2prod: !And
+    - !Condition ProdNA2Check
+    - !Condition prodStackCheck
+
+  EUprod: !And
+    - !Condition ProdEUCheck
+    - !Condition prodStackCheck
+
+  AUprod: !And
+    - !Condition ProdAUCheck
+    - !Condition prodStackCheck
+
+  NA1prod: !And
+    - !Condition ProdNA1Check
+    - !Condition prodStackCheck
+
+Resources:
+  PrefixListDev:
+    Type: AWS::EC2::PrefixList
+    Condition: RegionCheckDev
+    Properties:
+      PrefixListName: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,dev],tag ], "SharedPrefixList" ] ]
+      AddressFamily: "IPv4"
+      MaxEntries: 60
+      Entries:
+        - Cidr: !Select [ 0, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,dev],value]]
+        - Cidr: !Select [ 1, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,dev],value]]
+        - Cidr: !Select [ 2, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,dev],value]]
+        - Cidr: !Select [ 3, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,dev],value]]
+        - Cidr: !Select [ 4, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,dev],value]]
+        - Cidr: !Select [ 5, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,dev],value]]
+        - Cidr: !Select [ 6, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,dev],value]]
+        - Cidr: !Select [ 7, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,dev],value]]
+        - Cidr: !Select [ 8, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,dev],value]]
+        - Cidr: !Select [ 9, !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,dev],value ]]
+        - Cidr: !Select [ 10, !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,dev],value ]]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,dev],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [PrefixCidrList,!FindInMap [envValues,env,dev],tag]
+  PrefixListTest:
+    Type: AWS::EC2::PrefixList
+    Condition: RegionCheckDev
+    Properties:
+      PrefixListName: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,test],tag ], "SharedPrefixList" ] ]
+      AddressFamily: "IPv4"
+      MaxEntries: 60
+      Entries:
+        - Cidr: !Select [ 0, !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,test],value ] ]
+        - Cidr: !Select [ 1, !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,test],value ] ]
+        - Cidr: !Select [ 2, !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,test],value ] ]
+        - Cidr: !Select [ 3, !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,test],value ] ]
+        - Cidr: !Select [ 4, !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,test],value ] ]
+        - Cidr: !Select [ 5, !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,test],value ] ]
+        - Cidr: !Select [ 6, !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,test],value ] ]
+        - Cidr: !Select [ 7, !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,test],value ] ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,test],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [PrefixCidrList,!FindInMap [envValues,env,test],tag]
+  PrefixListPerf:
+      Type: AWS::EC2::PrefixList
+#      DeletionPolicy: Retain
+      Condition: RegionCheckDev
+      Properties:
+        PrefixListName: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,perf],tag ], "SharedPrefixList" ] ]
+        AddressFamily: "IPv4"
+        MaxEntries: 60
+        Entries:
+          - Cidr: !Select [ 0, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,perf],value]]
+          - Cidr: !Select [ 1, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,perf],value]]
+          - Cidr: !Select [ 2, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,perf],value]]
+          - Cidr: !Select [ 3, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,perf],value]]
+          - Cidr: !Select [ 4, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,perf],value]]
+          - Cidr: !Select [ 5, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,perf],value]]
+          - Cidr: !Select [ 6, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,perf],value]]
+          - Cidr: !Select [ 7, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,perf],value]]
+          - Cidr: !Select [ 8, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,perf],value]]
+          - Cidr: !Select [ 9, !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,perf],value ]]
+          - Cidr: !Select [ 10, !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,perf],value ]]
+          - Cidr: !Select [ 11, !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,perf],value ]]
+          - Cidr: !Select [ 12, !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,perf],value ]]
+        Tags:
+          - Key: "Name"
+            Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,perf],tag ], "SharedPrefixList" ] ]
+          - Key: "Owner"
+            Value: "Network Teams"
+          - Key: "Env"
+            Value: !FindInMap [PrefixCidrList,!FindInMap [envValues,env,perf],tag]
+  PrefixListStage:
+        Type: AWS::EC2::PrefixList
+#        DeletionPolicy: Retain
+        Condition: RegionCheckStage
+        Properties:
+          PrefixListName: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,stage],tag ], "SharedPrefixList" ] ]
+          AddressFamily: "IPv4"
+          MaxEntries: 60
+          Entries:
+            - Cidr: !Select [ 0, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,stage],value]]
+            - Cidr: !Select [ 1, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,stage],value]]
+            - Cidr: !Select [ 2, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,stage],value]]
+            - Cidr: !Select [ 3, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,stage],value]]
+            - Cidr: !Select [ 4, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,stage],value]]
+            - Cidr: !Select [ 5, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,stage],value]]
+            - Cidr: !Select [ 6, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,stage],value]]
+            - Cidr: !Select [ 7, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,stage],value]]
+            - Cidr: !Select [ 8, !FindInMap [PrefixCidrList,!FindInMap [envValues,env,stage],value]]
+          Tags:
+            - Key: "Name"
+              Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,stage],tag ], "SharedPrefixList" ] ]
+            - Key: "Owner"
+              Value: "Network Teams"
+            - Key: "Env"
+              Value: !FindInMap [PrefixCidrList,!FindInMap [envValues,env,stage],tag]
+
+  PrefixListProdNA1:
+    Type: AWS::EC2::PrefixList
+    #        DeletionPolicy: Retain
+    Condition: NA1prod
+    Properties:
+      PrefixListName: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],tag ], "SharedPrefixList" ] ]
+      AddressFamily: "IPv4"
+      MaxEntries: 60
+      Entries:
+        - Cidr: !Select [ 0, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],value ] ]
+        - Cidr: !Select [ 1, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],value ] ]
+        - Cidr: !Select [ 2, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],value ] ]
+        - Cidr: !Select [ 3, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],value ] ]
+        - Cidr: !Select [ 4, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],value ] ]
+        - Cidr: !Select [ 5, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],value ] ]
+        - Cidr: !Select [ 6, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],value ] ]
+        - Cidr: !Select [ 7, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],value ] ]
+        - Cidr: !Select [ 8, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],value ] ]
+        - Cidr: !Select [ 9, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],value ] ]
+        - Cidr: !Select [ 10, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],value ] ]
+        - Cidr: !Select [ 11, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],value ] ]
+        - Cidr: !Select [ 12, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],value ] ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],tag ]
+  PrefixListProdAU:
+    Type: AWS::EC2::PrefixList
+    #        DeletionPolicy: Retain
+    Condition: AUprod
+    Properties:
+      PrefixListName: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],tag ], "SharedPrefixList" ] ]
+      AddressFamily: "IPv4"
+      MaxEntries: 60
+      Entries:
+        - Cidr: !Select [ 0, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],value ] ]
+        - Cidr: !Select [ 1, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],value ] ]
+        - Cidr: !Select [ 2, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],value ] ]
+        - Cidr: !Select [ 3, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],value ] ]
+        - Cidr: !Select [ 4, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],value ] ]
+        - Cidr: !Select [ 5, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],value ] ]
+        - Cidr: !Select [ 6, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],value ] ]
+        - Cidr: !Select [ 7, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],value ] ]
+        - Cidr: !Select [ 8, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],value ] ]
+        - Cidr: !Select [ 9, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],value ] ]
+        - Cidr: !Select [ 10, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],value ] ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],tag ]
+
+  PrefixListProdEU:
+    Type: AWS::EC2::PrefixList
+    #        DeletionPolicy: Retain
+    Condition: EUprod
+    Properties:
+      PrefixListName: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],tag ], "SharedPrefixList" ] ]
+      AddressFamily: "IPv4"
+      MaxEntries: 60
+      Entries:
+        - Cidr: !Select [ 0, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],value ] ]
+        - Cidr: !Select [ 1, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],value ] ]
+        - Cidr: !Select [ 2, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],value ] ]
+        - Cidr: !Select [ 3, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],value ] ]
+        - Cidr: !Select [ 4, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],value ] ]
+        - Cidr: !Select [ 5, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],value ] ]
+        - Cidr: !Select [ 6, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],value ] ]
+        - Cidr: !Select [ 7, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],value ] ]
+        - Cidr: !Select [ 8, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],value ] ]
+        - Cidr: !Select [ 9, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],value ] ]
+        - Cidr: !Select [ 10, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],value ] ]
+        - Cidr: !Select [ 11, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],value ] ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],tag ]
+
+  PrefixListProdNA2:
+    Type: AWS::EC2::PrefixList
+    #        DeletionPolicy: Retain
+    Condition: NA2prod
+    Properties:
+      PrefixListName: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],tag ], "SharedPrefixList" ] ]
+      AddressFamily: "IPv4"
+      MaxEntries: 60
+      Entries:
+        - Cidr: !Select [ 0, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],value ] ]
+        - Cidr: !Select [ 1, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],value ] ]
+        - Cidr: !Select [ 2, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],value ] ]
+        - Cidr: !Select [ 3, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],value ] ]
+        - Cidr: !Select [ 4, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],value ] ]
+        - Cidr: !Select [ 5, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],value ] ]
+        - Cidr: !Select [ 6, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],value ] ]
+        - Cidr: !Select [ 7, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],value ] ]
+        - Cidr: !Select [ 8, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],value ] ]
+        - Cidr: !Select [ 9, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],value ] ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],tag ]
+
+  PrefixListProdUK:
+    Type: AWS::EC2::PrefixList
+    #        DeletionPolicy: Retain
+    Condition: UKprod
+    Properties:
+      PrefixListName: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],tag ], "SharedPrefixList" ] ]
+      AddressFamily: "IPv4"
+      MaxEntries: 60
+      Entries:
+        - Cidr: !Select [ 0, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],value ] ]
+        - Cidr: !Select [ 1, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],value ] ]
+        - Cidr: !Select [ 2, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],value ] ]
+        - Cidr: !Select [ 3, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],value ] ]
+        - Cidr: !Select [ 4, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],value ] ]
+        - Cidr: !Select [ 5, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],value ] ]
+        - Cidr: !Select [ 6, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],value ] ]
+        - Cidr: !Select [ 7, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],value ] ]
+        - Cidr: !Select [ 8, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],value ] ]
+        - Cidr: !Select [ 9, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],value ] ]
+        - Cidr: !Select [ 10, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],value ] ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],tag ]
+  PrefixListProdCA:
+    Type: AWS::EC2::PrefixList
+    #        DeletionPolicy: Retain
+    Condition: CAprod
+    Properties:
+      PrefixListName: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],tag ], "SharedPrefixList" ] ]
+      AddressFamily: "IPv4"
+      MaxEntries: 60
+      Entries:
+        - Cidr: !Select [ 0, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],value ] ]
+        - Cidr: !Select [ 1, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],value ] ]
+        - Cidr: !Select [ 2, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],value ] ]
+        - Cidr: !Select [ 3, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],value ] ]
+        - Cidr: !Select [ 4, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],value ] ]
+        - Cidr: !Select [ 5, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],value ] ]
+        - Cidr: !Select [ 6, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],value ] ]
+        - Cidr: !Select [ 7, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],value ] ]
+        - Cidr: !Select [ 8, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],value ] ]
+        - Cidr: !Select [ 9, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],value ] ]
+        - Cidr: !Select [ 10, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],value ] ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],tag ]
+  PrefixListProdJP:
+    Type: AWS::EC2::PrefixList
+    #        DeletionPolicy: Retain
+    Condition: JPprod
+    Properties:
+      PrefixListName: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],tag ], "SharedPrefixList" ] ]
+      AddressFamily: "IPv4"
+      MaxEntries: 60
+      Entries:
+        - Cidr: !Select [ 0, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],value ] ]
+        - Cidr: !Select [ 1, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],value ] ]
+        - Cidr: !Select [ 2, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],value ] ]
+        - Cidr: !Select [ 3, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],value ] ]
+        - Cidr: !Select [ 4, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],value ] ]
+        - Cidr: !Select [ 5, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],value ] ]
+        - Cidr: !Select [ 6, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],value ] ]
+        - Cidr: !Select [ 7, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],value ] ]
+        - Cidr: !Select [ 8, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],value ] ]
+        - Cidr: !Select [ 9, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],value ] ]
+        - Cidr: !Select [ 10, !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],value ] ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],tag ]
+
+  ARMresourceDev:
+    Type: AWS::RAM::ResourceShare
+#    DeletionPolicy: Retain
+    Condition: RegionCheckDev
+    Properties:
+      Name: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,dev],tag ], "SharedPrefixList" ] ]
+      ResourceArns:
+#        - !If [DevNotify, , !If [TestNotify, !GetAtt PrefixListTest.Arn, !If [PerfNotify, !GetAtt PrefixListPerf.Arn, !If [StageNotify, !GetAtt PrefixListStage.Arn, !Ref: "AWS::NoValue"]]]]
+        - !GetAtt PrefixListDev.Arn
+      Principals:
+        - !FindInMap [PrefixCidrList,!FindInMap [envValues,env,dev],accountID]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,dev],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,dev],tag ]
+  ARMresourceTest:
+    Type: AWS::RAM::ResourceShare
+#    DeletionPolicy: Retain
+    Condition: RegionCheckDev
+    Properties:
+      Name: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,test],tag ], "SharedPrefixList" ] ]
+      ResourceArns:
+        - !GetAtt PrefixListTest.Arn
+      Principals:
+        - !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,test],accountID ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,test],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,test],tag ]
+  ARMresourcePerf:
+    Type: AWS::RAM::ResourceShare
+#    DeletionPolicy: Retain
+    Condition: RegionCheckDev
+    Properties:
+      Name: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,perf],tag ], "SharedPrefixList" ] ]
+      ResourceArns:
+        #        - !If [DevNotify, , !If [TestNotify, !GetAtt PrefixListTest.Arn, !If [PerfNotify, !GetAtt PrefixListPerf.Arn, !If [StageNotify, !GetAtt PrefixListStage.Arn, !Ref: "AWS::NoValue"]]]]
+        - !GetAtt PrefixListPerf.Arn
+      Principals:
+        - !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,perf],accountID ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,perf],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,perf],tag ]
+  ARMresourceStage:
+    Type: AWS::RAM::ResourceShare
+#    DeletionPolicy: Retain
+    Condition: RegionCheckStage
+    Properties:
+      Name: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,stage],tag ], "SharedPrefixList" ] ]
+      ResourceArns:
+        - !GetAtt PrefixListStage.Arn
+      Principals:
+        - !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,stage],accountID ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,stage],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: !FindInMap [ PrefixCidrList,!FindInMap [envValues,env,stage],tag ]
+
+  ARMresourceProdNA1:
+    Type: AWS::RAM::ResourceShare
+    #    DeletionPolicy: Retain
+    Condition: NA1prod
+    Properties:
+      Name: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],tag ], "SharedPrefixList" ] ]
+      ResourceArns:
+        - !GetAtt PrefixListProdNA1.Arn
+      Principals:
+        - !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],accountID ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: "918987959928" #!FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA1 ],tag ]
+
+  ARMresourceProdAU:
+    Type: AWS::RAM::ResourceShare
+    #    DeletionPolicy: Retain
+    Condition: AUprod
+    Properties:
+      Name: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],tag ], "SharedPrefixList" ] ]
+      ResourceArns:
+        - !GetAtt PrefixListProdAU.Arn
+      Principals:
+        - !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],accountID ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: "918987959928" #!FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodAU ],tag ]
+  ARMresourceProdEU:
+    Type: AWS::RAM::ResourceShare
+    #    DeletionPolicy: Retain
+    Condition: EUprod
+    Properties:
+      Name: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],tag ], "SharedPrefixList" ] ]
+      ResourceArns:
+        - !GetAtt PrefixListProdEU.Arn
+      Principals:
+        - !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],accountID ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: "918987959928"  #!FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodEU ],tag ]
+  ARMresourceProdNA2:
+    Type: AWS::RAM::ResourceShare
+    #    DeletionPolicy: Retain
+    Condition: NA2prod
+    Properties:
+      Name: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],tag ], "SharedPrefixList" ] ]
+      ResourceArns:
+        - !GetAtt PrefixListProdNA2.Arn
+      Principals:
+        - !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],accountID ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],tag ], "SharedPrefixList" ] ]
+          #Value: "334442430111"
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: "334442430111"   #!FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodNA2 ],tag ]
+  ARMresourceProdUK:
+    Type: AWS::RAM::ResourceShare
+    #    DeletionPolicy: Retain
+    Condition: UKprod
+    Properties:
+      Name: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],tag ], "SharedPrefixList" ] ]
+      ResourceArns:
+        - !GetAtt PrefixListProdUK.Arn
+      Principals:
+        - !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],accountID ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: "918987959928"
+          #Value: !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodUK ],tag ]
+  ARMresourceProdCA:
+    Type: AWS::RAM::ResourceShare
+    #    DeletionPolicy: Retain
+    Condition: CAprod
+    Properties:
+      Name: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],tag ], "SharedPrefixList" ] ]
+      ResourceArns:
+        - !GetAtt PrefixListProdCA.Arn
+      Principals:
+        - !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],accountID ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: "918987959928"
+  #Value: !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodCA ],tag ]
+  ARMresourceProdJP:
+    Type: AWS::RAM::ResourceShare
+    #    DeletionPolicy: Retain
+    Condition: JPprod
+    Properties:
+      Name: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],tag ], "SharedPrefixList" ] ]
+      ResourceArns:
+        - !GetAtt PrefixListProdJP.Arn
+      Principals:
+        - !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],accountID ]
+      Tags:
+        - Key: "Name"
+          Value: !Join [ "-", [ !FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],tag ], "SharedPrefixList" ] ]
+        - Key: "Owner"
+          Value: "Network Teams"
+        - Key: "Env"
+          Value: "918987959928"
+#!FindInMap [ PrefixCidrList,!FindInMap [ envValues,env,prodJP ],tag ]
+#  CreateResources: !Or [!Equals [ !Ref "AWS::Region", us-west-2 ], !Equals [ !Ref "AWS::Region", us-east-1 ]]
+#  CreateResources: !Or [ !Equals [ !Ref "Environment", prod ], !Equals [ !Ref "Environment", dev ], !Equals [ !Ref "Environment", preprod ], !Equals [ !Ref "Environment", test ] ]

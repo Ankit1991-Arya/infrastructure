@@ -1,0 +1,15 @@
+before_init:
+  - "cat /mnt/workspace/github.netrc >> ~/.netrc"
+  - "chmod 600 ~/.netrc"
+contexts:
+  cxossp-github-personal-access-token: 0
+integrations:
+  aws: omilia-ausov1-au2
+maintainers:
+  - name: systems-engineering
+    email: systemengineering@nice.com
+  - name: kubernetes-admins
+    email: devops-cloud-native-core@niceincontact.com
+branch: omilia-ausov-vpc
+auto_deploy: false
+terraform_version: 1.5.0

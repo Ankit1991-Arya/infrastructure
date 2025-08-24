@@ -1,0 +1,9 @@
+data:
+  role:
+    arn: "arn:aws:iam::300101013673:role/ServiceAccess-sre-uptime-calculation-mon-role"
+  kinesis:
+    shard_count: 1
+    retention_period: 24
+    encryption_type: "KMS"
+  KMS:
+    enable_key_rotation: true

@@ -1,0 +1,6 @@
+integrations:
+  azure: "AZU-IC-COGS-CXONE-PROD-OPENREC-NA1"
+maintainers:
+  - name: cloudops
+    email: cloudops@nice.com
+terraform_version: 1.3.1

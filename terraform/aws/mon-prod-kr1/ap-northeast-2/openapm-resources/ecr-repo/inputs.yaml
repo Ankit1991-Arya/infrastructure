@@ -1,0 +1,17 @@
+ecr_repo_data:
+  OpenApm-ECR-Repo:
+    name: openapm/mon-prod-kr1-mimirtool
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  OpenApm-Grafana-Role-Sync-ECR-Repo:
+    name: openapm/mon-prod-kr1-grafana-role-sync
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"      

@@ -1,0 +1,19 @@
+---
+
+# Note prefix must match from the monitoring account
+prefix: cxone-cw-db-dev
+
+# mon-dev-na1
+monitoring_account_id: 300101013673
+
+# This comes from systems manager parameter, you need the value from sink_arn
+monitoring_sink_id: arn:aws:oam:us-west-2:300101013673:sink/dd56f56f-c9b0-41c9-b740-45cea5ee324f
+
+tags:
+  Product: "Kinesis Dashboard"
+  Service: "Kinesis Dashboard"
+  Environment: dev
+  ServiceOwner: "SRE"
+  ApplicationOwner: "SRE"
+  Owner: "SRE"
+  InfrastructureOwner: "SRE"

@@ -1,0 +1,36 @@
+sns_topic_subscriptions: {
+  "us-west-2": [
+    "arn:aws:sns:us-west-2:837589194720:fips-test-lifesaver.fifo",
+    "arn:aws:sns:us-west-2:300101013673:fips-test-lifesaver",
+    "arn:aws:sns:us-west-2:300101013673:test-cloudwatch-bmc-test"
+  ],
+  "us-east-1": [
+    "arn:aws:sns:us-east-1:837589194720:test-cloudwatch-bmc-test"
+  ]
+}
+lambda_name: "mon-test-lifesaver-lambda"
+queue_name: "mon-test-lifesaver-queue"
+dlq_name: "mon-test-lifesaver-dlq"
+whitelisted_accounts: [
+  "837589194720",
+  "300101013673"
+]
+role_name: "arn:aws:iam::837589194720:role/ServiceAccess-sre-lifesaver-lambda-role"
+aws_region: "us-west-2"
+lambda_memory_megabytes: 128
+lambda_debug_logging: true
+secret_name: "mon-test-lifesaver-secrets"
+vpc_id: "vpc-07646288bd8b5a772"
+subnet_ids: ["subnet-079dc76a3e0e5a9a9"]
+tags: {
+  Product: "Monitoring-tool",
+  ServiceOwner: "SRE",
+  ApplicationOwner: "SRE",
+  Owner: "SRE",
+  InfrastructureOwner: "SRE"
+  }
+fips_compliant: true
+fips_supported_regions:
+  - "us-east-1"
+  - "us-west-2"
+

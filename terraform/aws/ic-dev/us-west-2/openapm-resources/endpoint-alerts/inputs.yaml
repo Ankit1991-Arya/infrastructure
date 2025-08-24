@@ -1,0 +1,47 @@
+alerts_data:
+  packetsDropped_PrivateLinkendpoint:
+    alarm_name           : "ic-dev-openapm-openAPMInfra-endpoint-PrivateLink-OpenAPM-PacketsDropped-minor"
+    description           : "The number of packets dropped by the endpoint is greated than 0"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    metric_name               : "PacketsDropped"
+    namespace                 : "AWS/PrivateLinkEndpoints"
+    period                    : 300
+    statistic                 : "Sum"    
+    threshold                 : 0
+    dimensions                : 
+      VPC Endpoint Id : "vpce-02638c679f10019eb"  
+      Endpoint Type   : "Interface"
+      Service Name    : "com.amazonaws.vpce.us-west-2.vpce-svc-09078651a4db7980b"
+      VPC Id          : "vpc-a416f5c3"
+    sns_topic_arn             : "arn:aws:sns:us-west-2:300813158921:mon-dev-na1-cloudwatch-bmc-minor"     
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+
+  packetsDropped_shared_eks01endpoint:
+    alarm_name           : "ic-dev-openapm-openAPMInfra-endpoint-shared_eks01-PacketsDropped-minor"
+    description           : "The number of packets dropped by the endpoint is greated than 0"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    metric_name               : "PacketsDropped"
+    namespace                 : "AWS/PrivateLinkEndpoints"
+    period                    : 300
+    statistic                 : "Sum"    
+    threshold                 : 0
+    dimensions                : 
+      VPC Endpoint Id : "vpce-09abade382fc55e40"  
+      Endpoint Type   : "Interface"
+      Service Name    : "com.amazonaws.vpce.us-west-2.vpce-svc-09078651a4db7980b"
+      VPC Id          : "vpc-00b8adb2e0d253dd7"
+    sns_topic_arn             : "arn:aws:sns:us-west-2:300813158921:mon-dev-na1-cloudwatch-bmc-minor"     
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+

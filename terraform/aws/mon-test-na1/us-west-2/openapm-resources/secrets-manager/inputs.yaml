@@ -1,0 +1,75 @@
+secrets_data:
+  secret1:
+    name: "mon-test-monitoring-auth"
+    description: "AWS Secret that stores Grafana Admin username and password for openAPM stack"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret2:
+    name: "mon-test/SRE/OpenAPM/Alertmanager/BMC-QA-API"
+    description: "AWS Secret that stores BMC API details"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret3:
+    name: "mon-test/SRE/OpenAPM/grafana/ic-test/cloudwatch/datasource/ic-test"
+    description: "AWS CloudWatch user AccessKey & SecretKey"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret4:
+    name: "mon-test/SRE/OpenAPM/grafana/wfo-test/cloudwatch/datasource/wfo-test"
+    description: "AWS CloudWatch user AccessKey & SecretKey"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret5:
+    name: "mon-test/SRE/OpenAPM/grafana/mon-test/cloudwatch/datasource/mon-test"
+    description: "AWS CloudWatch user AccessKey & SecretKey"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret6:
+    name: "Mon-test/SRE/OpenAPM/grafana/okta"
+    description: "AWS Secret that stores OKTA client details for OKTA authentication on Mon Grafana"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret7:
+    name: "Mon-test/SRE/OpenAPM/prometheusBlackboxExporter/blackboxExporter"
+    description: "AWS Secret that stores blackboxExporter contains sensitive data"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  secret8:
+    name: "Mon-test/SRE/OpenAPM/prometheusBlackboxExporter/monitoring-tools"
+    description: "AWS Secret that stores different monitoring tools API and tokens"
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+
+           

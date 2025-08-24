@@ -1,0 +1,13 @@
+locals {
+  region = "eu-west-2"
+  users = [
+    "channelsemail",
+    "dbas",
+    "billing",
+    "systems",
+    "network",
+    "dea",
+    "enterprisetools",
+    "iex"
+  ]
+}

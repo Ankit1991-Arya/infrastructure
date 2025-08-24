@@ -1,0 +1,616 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: This template creates network for UK SOV Region
+
+Mappings:
+  VPCaddressPrefix:
+    values:
+      vpcOctet: '10.232'
+      ASN: '4200002007'
+      Owner: 'Network Teams'
+      AvailabilityZone1: 'eu-west-2a'
+      AvailabilityZone2: 'eu-west-2b'
+      AvailabilityZone3: 'eu-west-2c'
+
+
+
+Resources:
+  Vpc:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      EnableDnsHostnames: true
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+ ## Needs changed from Region to Region
+          - '152'
+          - 0/21
+      Tags:
+        - Key: Name
+          Value: !Ref 'AWS::StackName'
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: VPC
+
+  VGW:
+    Type: 'AWS::EC2::VPNGateway'
+    Properties:
+      AmazonSideAsn: !FindInMap [ VPCaddressPrefix,values,ASN ]
+      Type: ipsec.1
+      Tags:
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+        - Key: Name
+          Value: CoreNetwork-VGW
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: VPNGateway
+  AttachVGWGateway:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref Vpc
+      VpnGatewayId: !Ref VGW
+  S3Endpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: '*'
+            Effect: Allow
+            Resource: '*'
+            Principal: '*'
+      RouteTableIds:
+        - !Ref Az1LambdaRouteTable
+        - !Ref Az2LambdaRouteTable
+        - !Ref Az1CoreRouteTable
+        - !Ref Az2CoreRouteTable
+        - !Ref ManagementRouteTable
+        - !Ref Az1VIPRouteTable
+        - !Ref Az2VIPRouteTable
+        - !Ref Az1UntrustRouteTable
+        - !Ref Az2UntrustRouteTable
+      ServiceName: !Join
+        - ''
+        - - com.amazonaws.
+          - !Ref 'AWS::Region'
+          - .s3
+      VpcId: !Ref Vpc
+  CoreDefaultRoute:
+    DependsOn: NATGateway1
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
+      RouteTableId: !Ref Az1CoreRouteTable
+    Type: 'AWS::EC2::Route'
+
+  Az1CoreRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az1 Core Route Table
+        - Key: Network
+          Value: Az1 Core
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  Az2CoreDefaultRoute:
+    DependsOn: NATGateway2
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway2
+      RouteTableId: !Ref Az2CoreRouteTable
+    Type: 'AWS::EC2::Route'
+  Az2CoreRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az2 Core Route Table
+        - Key: Network
+          Value: Az2 Core
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  Az1UntrustRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az1 Untrust Route Table
+        - Key: Network
+          Value: Az1 Untrust
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  Az2UntrustRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az2 Untrust Route Table
+        - Key: Network
+          Value: Az2 Untrust
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  Az1LambdaDefaultRoute:
+    DependsOn: AttachGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
+      RouteTableId: !Ref Az1LambdaRouteTable
+    Type: 'AWS::EC2::Route'
+  Az2LambdaDefaultRoute:
+    DependsOn: AttachGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway2
+      RouteTableId: !Ref Az2LambdaRouteTable
+    Type: 'AWS::EC2::Route'
+  Az1LambdaRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: Az1 Lambda Route Table
+  Az2LambdaRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: Az2 Lambda Route Table
+  NATGateway1:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt
+        - EIP1
+        - AllocationId
+      SubnetId: !Ref Az1UntrustSubnet
+      Tags:
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: NAT Gateway
+  EIP1:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+  NATGateway2:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt
+        - EIP2
+        - AllocationId
+      SubnetId: !Ref Az2UntrustSubnet
+      Tags:
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: NAT Gateway
+  EIP2:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+  AttachGateway:
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+  Az1CoreSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+ ## Needs changed from Region to Region
+          - '152'
+          - 0/24
+      Tags:
+        - Key: Name
+          Value: Az1 Core Subnet
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1CoreSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az1CoreRouteTable
+      SubnetId: !Ref Az1CoreSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az1VIPSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+ ## Needs changed from Region to Region
+          - '153'
+          - 0/25
+      Tags:
+        - Key: Name
+          Value: Az1 VIP Subnet
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1VIPSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az1VIPRouteTable
+      SubnetId: !Ref Az1VIPSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az1ManagementSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+ ## Needs changed from Region to Region
+          - '153'
+          - 128/28
+      Tags:
+        - Key: Name
+          Value: Az1 Management Subnet
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1ManagementSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref ManagementRouteTable
+      SubnetId: !Ref Az1ManagementSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az1LambdaSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+ ## Needs changed from Region to Region
+          - '154'
+          - 0/23
+      Tags:
+        - Key: Name
+          Value: Az1 Lambda Subnet
+        - Key: kubernetes.io/cluster/channels-email
+          Value: shared
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1LambdaSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az1LambdaRouteTable
+      SubnetId: !Ref Az1LambdaSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az1UntrustSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '153'
+ ## Needs changed from Region to Region
+          - 144/28
+      Tags:
+        - Key: Name
+          Value: Az1 Untrust Subnet
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1UntrustSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az1UntrustRouteTable
+      SubnetId: !Ref Az1UntrustSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az1UntrustDefaultRoute:
+    DependsOn: AttachGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref Az1UntrustRouteTable
+    Type: 'AWS::EC2::Route'
+  Az2CoreSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+ ## Needs changed from Region to Region
+          - '156'
+          - 0/24
+      Tags:
+        - Key: Name
+          Value: Az2 Core Subnet
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az2CoreSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az2CoreRouteTable
+      SubnetId: !Ref Az2CoreSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az2VIPSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+ ## Needs changed from Region to Region
+          - '157'
+          - 0/25
+      Tags:
+        - Key: Name
+          Value: Az2 VIP Subnet
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az2VIPSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az2VIPRouteTable
+      SubnetId: !Ref Az2VIPSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az2ManagementSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+ ## Needs changed from Region to Region
+          - '157'
+          - 128/28
+      Tags:
+        - Key: Name
+          Value: Az2 Management Subnet
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az2ManagementSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref ManagementRouteTable
+      SubnetId: !Ref Az2ManagementSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az2LambdaSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+ ## Needs changed from Region to Region
+          - '158'
+          - 0/23
+      Tags:
+        - Key: Name
+          Value: Az2 Lambda Subnet
+        - Key: kubernetes.io/cluster/channels-email
+          Value: shared
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az2LambdaSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az2LambdaRouteTable
+      SubnetId: !Ref Az2LambdaSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az2UntrustSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+ ## Needs changed from Region to Region
+
+          - '157'
+          - 144/28
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: Az2 Untrust Subnet
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az2UntrustSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az2UntrustRouteTable
+      SubnetId: !Ref Az2UntrustSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az2UntrustDefaultRoute:
+    DependsOn: AttachGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref Az2UntrustRouteTable
+    Type: 'AWS::EC2::Route'
+  Az1VIPDefaultRoute:
+    DependsOn: AttachGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
+      RouteTableId: !Ref Az1VIPRouteTable
+    Type: 'AWS::EC2::Route'
+  Az1VIPRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: VIP Route Table
+        - Key: Network
+          Value: VIP
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  Az2VIPDefaultRoute:
+    DependsOn: AttachGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway2
+      RouteTableId: !Ref Az2VIPRouteTable
+    Type: 'AWS::EC2::Route'
+  Az2VIPRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az2 VIP Route Table
+        - Key: Network
+          Value: VIP
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+
+  InternetGateway:
+    Properties:
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: InternetGatewa
+    Type: 'AWS::EC2::InternetGateway'
+  ManagementDefaultRoute:
+    DependsOn: AttachGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
+      RouteTableId: !Ref ManagementRouteTable
+    Type: 'AWS::EC2::Route'
+  ManagementRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Management Route Table
+        - Key: Network
+          Value: Mgmt
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+
+  RoutePropegation:
+    DependsOn: AttachVGWGateway
+    Type: AWS::EC2::VPNGatewayRoutePropagation
+    Properties:
+      RouteTableIds:
+        - !Ref ManagementRouteTable
+        - !Ref Az1CoreRouteTable
+        - !Ref Az2CoreRouteTable
+        - !Ref Az1LambdaRouteTable
+        - !Ref Az2LambdaRouteTable
+        - !Ref Az1VIPRouteTable
+        - !Ref Az2VIPRouteTable
+
+      VpnGatewayId: !Ref VGW
+
+
+Outputs:
+  Az1CoreSubnet:
+    Description: Az1Core Subnet Id
+    Value: !Ref Az1CoreSubnet
+    Export:
+      Name: CoreNetwork-Az1CoreSubnet
+  Az1VIPSubnet:
+    Description: Az1VIP Subnet Id
+    Value: !Ref Az1VIPSubnet
+    Export:
+      Name: CoreNetwork-Az1VIPSubnet
+  Az1ManagementSubnet:
+    Description: Az1Management Subnet Id
+    Value: !Ref Az1ManagementSubnet
+    Export:
+      Name: CoreNetwork-Az1ManagementSubnet
+  Az1UntrustSubnet:
+    Description: Az1Untrust Subnet Id
+    Value: !Ref Az1UntrustSubnet
+    Export:
+      Name: CoreNetwork-Az1UntrustSubnet
+  Az2CoreSubnet:
+    Description: Az2Core Subnet Id
+    Value: !Ref Az2CoreSubnet
+    Export:
+      Name: CoreNetwork-Az2CoreSubnet
+  Az2VIPSubnet:
+    Description: Az2VIP Subnet Id
+    Value: !Ref Az2VIPSubnet
+    Export:
+      Name: CoreNetwork-Az2VIPSubnet
+  Az2ManagementSubnet:
+    Description: Az2Management Subnet Id
+    Value: !Ref Az2ManagementSubnet
+    Export:
+      Name: CoreNetwork-Az2ManagementSubnet
+  Az2UntrustSubnet:
+    Description: Az2Untrust Subnet Id
+    Value: !Ref Az2UntrustSubnet
+    Export:
+      Name: CoreNetwork-Az2UntrustSubnet
+  Vpc:
+    Description: VPC ID
+    Value: !Ref Vpc
+    Export:
+      Name: CoreNetwork-Vpc
+  AvailabilityZone1:
+    Description: Primary AZ
+    Value: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+    Export:
+      Name: CoreNetwork-AvailabilityZone1
+  AvailabilityZone2:
+    Description: Secondary AZ
+    Value: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+    Export:
+      Name: CoreNetwork-AvailabilityZone2
+  VPCaddressPrefix:
+    Description: VPC Address Prefix
+    Value: !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+    Export:
+      Name: CoreNetwork-VPCaddressPrefix
+  S3Endpoint:
+    Description: Core Network S3 Endpoint
+    Value: !Ref S3Endpoint
+    Export:
+      Name: CoreNetwork-S3Endpoint
+  Az1LambdaSubnet:
+    Description: Az1Lambda Subnet Id
+    Value: !Ref Az1LambdaSubnet
+    Export:
+      Name: CoreNetwork-Az1LambdaSubnet
+  Az2LambdaSubnet:
+    Description: Az2Lambda Subnet Id
+    Value: !Ref Az2LambdaSubnet
+    Export:
+      Name: CoreNetwork-Az2LambdaSubnet
+#RouteTables Export Name as Outputs updated
+  Az2LambdaRouteTable:
+    Description: Az2Lambda RouteTable
+    Value: !Ref Az2LambdaRouteTable
+    Export:
+      Name: CoreNetwork-Az2LambdaRouteTable
+  Az1CoreRouteTable:
+    Description: Az1Core RouteTable
+    Value: !Ref Az1CoreRouteTable
+    Export:
+      Name: CoreNetwork-Az1CoreRouteTable
+  Az2CoreRouteTable:
+    Description: Az2Core RouteTable
+    Value: !Ref Az2CoreRouteTable
+    Export:
+      Name: CoreNetwork-Az2CoreRouteTable
+  ManagementRouteTable:
+    Description: Management RouteTable
+    Value: !Ref ManagementRouteTable
+    Export:
+      Name: CoreNetwork-ManagementRouteTable
+  Az1VIPRouteTable:
+    Description: Az1VIP Route Table
+    Value: !Ref Az1VIPRouteTable
+    Export:
+      Name: CoreNetwork-Az1VIPRouteTable
+  Az2VIPRouteTable:
+    Description: Az2VIP RouteTable
+    Value: !Ref Az2VIPRouteTable
+    Export:
+      Name: CoreNetwork-Az2VIPRouteTable
+  Az1UntrustRouteTable:
+    Description: Az1Untrust RouteTable
+    Value: !Ref Az1UntrustRouteTable
+    Export:
+      Name: CoreNetwork-Az1UntrustRouteTable
+  Az2UntrustRouteTable:
+    Description: Az2Untrust RouteTable
+    Value: !Ref Az2UntrustRouteTable
+    Export:
+      Name: CoreNetwork-Az2UntrustRouteTable
+  Az1LambdaRouteTable:
+    Description: Az1Lambda RouteTable
+    Value: !Ref Az1LambdaRouteTable
+    Export:
+      Name: CoreNetwork-Az1LambdaRouteTable
+
+

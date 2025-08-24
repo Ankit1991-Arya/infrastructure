@@ -1,0 +1,3179 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: AWS CloudFormation Template for Network Only - Voice Network
+#Voice1 CidrBlock
+#10.232.0.0/22 - Trust
+#10.232.8.0/23 - untrust
+#10.232.12.0/24 - Mngmnt/HA
+
+
+#Voice2 CidrBlock
+#10.232.4.0/22 - trust
+#10.232.10.0/23 - untrust
+#10.232.13.0/24 - Mngmnt/HA
+
+
+Mappings:
+  VPCaddressPrefix:
+    values:
+      vpcOctet: '10.232'
+      corevpcOctet: '10.230'
+      voicetrustOctet: '10.232.0.0/22'
+      voiceuntrustOctet: '10.232.8.0/23'
+      voicemgmtsyncOctet: '10.232.12.0/24'
+      voice2trustOctet: '10.232.4.0/22'
+      voice2untrustOctet: '10.232.10.0/23'
+      voice2mgmtsyncOctet: '10.232.13.0/24'
+      voice1a: '0'
+      voice1b: '8'
+      voice1c: '12'
+      voice2a: '4'
+      voice2b: '10'
+      voice2c: '13'
+      coreEnd: '0/21'
+      core: '168'
+      ASN1: '4200002000'
+      ASN2: '4200002000'
+      Owner: 'Network Teams'
+      AvailabilityZone1: 'ap-northeast-2a'
+      AvailabilityZone2: 'ap-northeast-2b'
+      VoiceToVoicePeering: 'Voice_Voice2'
+      Voice1ToCorePeering: 'Voice_Core'
+      Voice2ToCorePeering: 'Voice2_Core'
+
+
+Parameters:
+  SystemName:
+    Description: System Name
+    Type: String
+    Default: RibbonSWE-VoiceNetwork
+    MaxLength: '26'
+    AllowedPattern: '^[A-Za-z]{1}[-A-Za-z0-9]*[A-Za-z0-9]{1}$'
+    ConstraintDescription: 'Enter valid system name.  Regex: ^[A-Za-z]{1}[-A-Za-z0-9]*[A-Za-z0-9]{1}$ '
+
+
+Resources:
+  InternalServerSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Internal server security group
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 172.28.0.0/18
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 172.28.208.0/21
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 10.221.24.0/21
+        - IpProtocol: tcp
+          FromPort: '1433'
+          ToPort: '1433'
+          CidrIp: 10.221.24.0/21
+        - IpProtocol: tcp
+          FromPort: '1433'
+          ToPort: '1433'
+          CidrIp: 205.214.10.0/24
+        - IpProtocol: tcp
+          FromPort: '1971'
+          ToPort: '1971'
+          CidrIp: 10.221.24.0/21
+        - IpProtocol: tcp
+          FromPort: '8989'
+          ToPort: '8989'
+          CidrIp: 205.214.23.104/32
+        - IpProtocol: tcp
+          FromPort: '9310'
+          ToPort: '9310'
+          CidrIp: 10.221.24.0/21
+        - IpProtocol: tcp
+          FromPort: '9311'
+          ToPort: '9311'
+          CidrIp: 10.221.24.0/21
+        - IpProtocol: tcp
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 10.221.64.0/21
+        - IpProtocol: udp
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 10.221.64.0/21
+        - IpProtocol: icmp
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 10.221.24.0/21
+        - IpProtocol: icmp
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 205.214.15.62/32
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 10.21.0.0/16
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 172.17.0.0/16
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 172.19.4.0/23
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 172.20.0.0/16
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 172.23.4.0/23
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 172.27.0.0/16
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 192.168.76.0/22
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 205.214.14.0/24
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 205.214.15.62/32
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 205.214.16.0/24
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 205.214.17.0/24
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 205.214.18.0/24
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 205.214.19.0/24
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 205.214.23.124/32
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: voice_internal_sg
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: SecurityGroup
+  InCDRServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref Vpc
+      GroupDescription: sg for InCDR Servers
+      Tags:
+        - Key: Name
+          Value: global_tools_InCDR_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: SecurityGroup
+      SecurityGroupIngress:
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: 10.21.0.0/16
+      - IpProtocol: -1   #Office IP Space
+        CidrIp: 172.27.0.0/16
+      - IpProtocol: -1   #LA2
+        CidrIp: "172.23.0.0/16"
+      - IpProtocol: -1   #DAL
+        CidrIp: "172.19.0.0/16"
+      - IpProtocol: -1   #EU
+        CidrIp: "172.21.0.0/16"
+      - IpProtocol: -1   #SGP
+        CidrIp: "172.29.0.0/16"
+      - IpProtocol: -1   #HKO-1
+        CidrIp: "216.20.228.64/26"
+      - IpProtocol: -1   #HKO-2
+        CidrIp: "216.20.228.128/27"
+      - IpProtocol: -1   #LAB
+        CidrIp: "172.20.0.0/16"
+      - IpProtocol: -1 # DMZ Addon Subnet
+        CidrIp: "10.209.200.0/22"
+        Description: "DMZ Addon Subnet"
+      - IpProtocol: -1
+        CidrIp: "10.209.0.0/17"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+        Description: "BMC Discovery"
+      - IpProtocol: -1
+        CidrIp: "205.214.10.0/24"
+        Description: "CDR"
+      - IpProtocol: -1
+        CidrIp: "10.5.18.128/25"
+        Description: "CDR"
+      - IpProtocol: -1
+        CidrIp: "10.5.22.128/25"
+        Description: "CDR"
+      - IpProtocol: "tcp"
+        CidrIp: "10.5.16.0/24"
+        FromPort: "445"
+        ToPort:  "445"
+      - IpProtocol: "tcp"
+        CidrIp: "10.5.20.0/24"
+        FromPort: "445"
+        ToPort:  "445"
+      - IpProtocol: -1 # Korea Voice 1 Mgmt
+        CidrIp: "10.232.12.0/25"
+        Description: "Korea Voice 1 Mgmt"
+      - IpProtocol: -1 # Korea Voice 2 Mgmt
+        CidrIp: "10.232.13.0/25"
+        Description: "Korea Voice 2 Mgmt"
+      - IpProtocol: -1 # Korea Voice 1 Trust
+        CidrIp: "10.232.0.0/22"
+        Description: "Korea Voice 1 Trust"
+      - IpProtocol: -1 # Korea Voice 2 Trust
+        CidrIp: "10.232.4.0/22"
+        Description: "Korea Voice 2 Trust"
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: "172.16.0.0/12"
+      - IpProtocol: -1
+        CidrIp: "10.0.0.0/8"
+      - IpProtocol: -1
+        CidrIp: "192.168.0.0/16"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+
+#SG for Ribbon PSX
+  VoicePsxSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref Vpc
+      GroupDescription: Ribbon PSX security group
+      Tags:
+        - Key: Name
+          Value:
+            'Fn::Join':
+              - '-'
+              - - Ref: SystemName
+                - psxSG
+        - Key: ApplicationOwner
+          Value: Voice Teams
+        - Key: InfrastructureOwner
+          Value: Voice Teams
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Infrastructure
+        - Key: Service
+          Value: AWS Voice POP
+        - Key: DeviceType
+          Value: Ribbon PSX
+        - Key: Owner
+          Value: Network Teams
+        - Key: Product
+          Value: Infrastructure
+      SecurityGroupIngress:
+        - Description: SSReq Traffic
+          IpProtocol: tcp
+          FromPort: '3091'
+          ToPort: '3091'
+          CidrIp: 0.0.0.0/0
+        - Description: UDP Traffic
+          IpProtocol: udp
+          FromPort: '3053'
+          ToPort: '3055'
+          CidrIp: 0.0.0.0/0
+        - Description: PES Traffic
+          IpProtocol: udp
+          FromPort: '9004'
+          ToPort: '9004'
+          CidrIp: 0.0.0.0/0
+        - Description: DNS UDP
+          IpProtocol: udp
+          FromPort: '53'
+          ToPort: '53'
+          CidrIp: 0.0.0.0/0
+        - Description: NTP
+          IpProtocol: udp
+          FromPort: '123'
+          ToPort: '123'
+          CidrIp: 0.0.0.0/0
+        - Description: DBREPD Data
+          IpProtocol: tcp
+          FromPort: '3080'
+          ToPort: '3080'
+          CidrIp: 0.0.0.0/0
+        - Description: ICMP Ping
+          IpProtocol: icmp
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 0.0.0.0/0
+        - Description: SIPE TCP Traffic
+          IpProtocol: tcp
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 0.0.0.0/0
+        - Description: JAVA
+          IpProtocol: udp
+          FromPort: '161'
+          ToPort: '161'
+          CidrIp: 0.0.0.0/0
+        - Description: DBREPD Control
+          IpProtocol: tcp
+          FromPort: '3090'
+          ToPort: '3090'
+          CidrIp: 0.0.0.0/0
+        - Description: SSH to CLI
+          IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - Description: Sonus Agent
+          IpProtocol: tcp
+          FromPort: '19991'
+          ToPort: '19991'
+          CidrIp: 0.0.0.0/0
+        - Description: SIPE UDP Traffic
+          IpProtocol: udp
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 0.0.0.0/0
+        - Description: SFTP Traffic
+          IpProtocol: tcp
+          FromPort: '6462'
+          ToPort: '6462'
+          CidrIp: 0.0.0.0/0
+        - Description: Service Director
+          IpProtocol: tcp
+          FromPort: '5000'
+          ToPort: '5000'
+          CidrIp: 0.0.0.0/0
+        - Description: PostgreSQL listener
+          IpProtocol: tcp
+          FromPort: '5432'
+          ToPort: '5432'
+          CidrIp: 0.0.0.0/0
+        - Description: Pgbouncer
+          IpProtocol: tcp
+          FromPort: '6432'
+          ToPort: '6432'
+          CidrIp: 0.0.0.0/0
+        - Description: RAMP registration
+          IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+        - Description: DNS/ENUM TCP
+          IpProtocol: tcp
+          FromPort: '53'
+          ToPort: '53'
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+#SG for Ribbon SBC
+  VoiceRibbonSBCoamSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref Vpc
+      GroupDescription: Voice Ribbon SBC OAM security group
+      Tags:
+        - Key: Name
+          Value:
+            'Fn::Join':
+              - '-'
+              - - Ref: SystemName
+                - sbcSG
+        - Key: ApplicationOwner
+          Value: Voice Teams
+        - Key: InfrastructureOwner
+          Value: Voice Teams
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Infrastructure
+        - Key: Service
+          Value: AWS Voice POP
+        - Key: DeviceType
+          Value: Ribbon SBC
+        - Key: Owner
+          Value: Network Teams
+        - Key: Product
+          Value: Infrastructure
+      SecurityGroupIngress:
+        - Description: ICMP Ping
+          IpProtocol: ICMP
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 10.0.0.0/8
+        - Description: ICMP Ping
+          IpProtocol: ICMP
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 172.16.0.0/12
+        - Description: ICMP Ping
+          IpProtocol: ICMP
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 192.168.0.0/24
+        - Description: EMA
+          IpProtocol: TCP
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 10.0.0.0/8
+        - Description: EMA
+          IpProtocol: TCP
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 172.16.0.0/12
+        - Description: EMA
+          IpProtocol: TCP
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 192.168.0.0/24
+        - Description: SLS (license server) traffic
+          IpProtocol: udp
+          FromPort: '5093'
+          ToPort: '5093'
+          CidrIp: 10.0.0.0/8
+        - Description: SLS (license server) traffic
+          IpProtocol: udp
+          FromPort: '5093'
+          ToPort: '5093'
+          CidrIp: 172.16.0.0/12
+        - Description: SLS (license server) traffic
+          IpProtocol: udp
+          FromPort: '5093'
+          ToPort: '5093'
+          CidrIp: 192.168.0.0/24
+        - Description: Applicable to D-SBC only
+          IpProtocol: TCP
+          FromPort: '4019'
+          ToPort: '4019'
+          CidrIp: 10.0.0.0/8
+        - Description: Applicable to D-SBC only
+          IpProtocol: TCP
+          FromPort: '4019'
+          ToPort: '4019'
+          CidrIp: 172.16.0.0/12
+        - Description: Applicable to D-SBC only
+          IpProtocol: TCP
+          FromPort: '4019'
+          ToPort: '4019'
+          CidrIp: 192.168.0.0/24
+        - Description: Communicating with RAMP, API, and Platform Manager
+          IpProtocol: TCP
+          FromPort: '444'
+          ToPort: '444'
+          CidrIp: 10.0.0.0/8
+        - Description: Communicating with RAMP, API, and Platform Manager
+          IpProtocol: TCP
+          FromPort: '444'
+          ToPort: '444'
+          CidrIp: 172.16.0.0/12
+        - Description: Communicating with RAMP, API, and Platform Manager
+          IpProtocol: TCP
+          FromPort: '444'
+          ToPort: '444'
+          CidrIp: 192.168.0.0/24
+        - Description: RAMP registration
+          IpProtocol: TCP
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 10.0.0.0/8
+        - Description: RAMP registration
+          IpProtocol: TCP
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 172.16.0.0/12
+        - Description: RAMP registration
+          IpProtocol: TCP
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 192.168.0.0/24
+        - Description: Load balancing service
+          IpProtocol: UDP
+          FromPort: '3057'
+          ToPort: '3057'
+          CidrIp: 10.0.0.0/8
+        - Description: Load balancing service
+          IpProtocol: UDP
+          FromPort: '3057'
+          ToPort: '3057'
+          CidrIp: 172.16.0.0/12
+        - Description: Load balancing service
+          IpProtocol: UDP
+          FromPort: '3057'
+          ToPort: '3057'
+          CidrIp: 192.168.0.0/24
+        - Description: Keep Alives and Registration
+          IpProtocol: UDP
+          FromPort: '3055'
+          ToPort: '3055'
+          CidrIp: 10.0.0.0/8
+        - Description: Keep Alives and Registration
+          IpProtocol: UDP
+          FromPort: '3055'
+          ToPort: '3055'
+          CidrIp: 172.16.0.0/12
+        - Description: Keep Alives and Registration
+          IpProtocol: UDP
+          FromPort: '3055'
+          ToPort: '3055'
+          CidrIp: 192.168.0.0/24
+        - Description: Call processing requests
+          IpProtocol: UDP
+          FromPort: '3054'
+          ToPort: '3054'
+          CidrIp: 10.0.0.0/8
+        - Description: Call processing requests
+          IpProtocol: UDP
+          FromPort: '3054'
+          ToPort: '3054'
+          CidrIp: 172.16.0.0/12
+        - Description: Call processing requests
+          IpProtocol: UDP
+          FromPort: '3054'
+          ToPort: '3054'
+          CidrIp: 192.168.0.0/24
+        - Description: SSH to Linux
+          IpProtocol: TCP
+          FromPort: '2024'
+          ToPort: '2024'
+          CidrIp: 10.0.0.0/8
+        - Description: SSH to Linux
+          IpProtocol: TCP
+          FromPort: '2024'
+          ToPort: '2024'
+          CidrIp: 172.16.0.0/12
+        - Description: SSH to Linux
+          IpProtocol: TCP
+          FromPort: '2024'
+          ToPort: '2024'
+          CidrIp: 192.168.0.0/24
+        - Description: NetConf over ssh
+          IpProtocol: TCP
+          FromPort: '2022'
+          ToPort: '2022'
+          CidrIp: 10.0.0.0/8
+        - Description: NetConf over ssh
+          IpProtocol: TCP
+          FromPort: '2022'
+          ToPort: '2022'
+          CidrIp: 172.16.0.0/12
+        - Description: NetConf over ssh
+          IpProtocol: TCP
+          FromPort: '2022'
+          ToPort: '2022'
+          CidrIp: 192.168.0.0/24
+        - Description: SSH to CLI
+          IpProtocol: TCP
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 10.0.0.0/8
+        - Description: SSH to CLI
+          IpProtocol: TCP
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 172.16.0.0/12
+        - Description: SSH to CLI
+          IpProtocol: TCP
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 192.168.0.0/24
+        - Description: SNMP Traps
+          IpProtocol: UDP
+          FromPort: '162'
+          ToPort: '162'
+          CidrIp: 10.0.0.0/8
+        - Description: SNMP Traps
+          IpProtocol: UDP
+          FromPort: '162'
+          ToPort: '162'
+          CidrIp: 172.16.0.0/12
+        - Description: SNMP Traps
+          IpProtocol: UDP
+          FromPort: '162'
+          ToPort: '162'
+          CidrIp: 192.168.0.0/24
+        - Description: SNMP Polling
+          IpProtocol: UDP
+          FromPort: '161'
+          ToPort: '161'
+          CidrIp: 10.0.0.0/8
+        - Description: SNMP Polling
+          IpProtocol: UDP
+          FromPort: '161'
+          ToPort: '161'
+          CidrIp: 172.16.0.0/12
+        - Description: SNMP Polling
+          IpProtocol: UDP
+          FromPort: '161'
+          ToPort: '161'
+          CidrIp: 192.168.0.0/24
+        - Description: NTP
+          IpProtocol: UDP
+          FromPort: '123'
+          ToPort: '123'
+          CidrIp: 10.0.0.0/8
+        - Description: NTP
+          IpProtocol: UDP
+          FromPort: '123'
+          ToPort: '123'
+          CidrIp: 172.16.0.0/12
+        - Description: NTP
+          IpProtocol: UDP
+          FromPort: '123'
+          ToPort: '123'
+          CidrIp: 192.168.0.0/24
+
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+#SG for Ribbon SBC
+  VoiceRibbonSBCHASecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref Vpc
+      GroupDescription: Voice Ribbon SBC HA security group
+      Tags:
+        - Key: Name
+          Value:
+            'Fn::Join':
+              - '-'
+              - - Ref: SystemName
+                - sbcSG
+        - Key: ApplicationOwner
+          Value: Voice Teams
+        - Key: InfrastructureOwner
+          Value: Voice Teams
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Infrastructure
+        - Key: Service
+          Value: AWS Voice POP
+        - Key: DeviceType
+          Value: Ribbon SBC
+        - Key: Owner
+          Value: Network Teams
+        - Key: Product
+          Value: Infrastructure
+      SecurityGroupIngress:
+        - Description: HA communication
+          IpProtocol: -1
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 10.232.12.128/25
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+#SG for Ribbon SBC
+  VoiceRibbonSBCTrustSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref Vpc
+      GroupDescription: Voice Ribbon SBC Trust security group
+      Tags:
+        - Key: Name
+          Value:
+            'Fn::Join':
+              - '-'
+              - - Ref: SystemName
+                - sbcSG
+        - Key: ApplicationOwner
+          Value: Voice Teams
+        - Key: InfrastructureOwner
+          Value: Voice Teams
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Infrastructure
+        - Key: Service
+          Value: AWS Voice POP
+        - Key: DeviceType
+          Value: Ribbon SBC
+        - Key: Owner
+          Value: Network Teams
+        - Key: Product
+          Value: Infrastructure
+      SecurityGroupIngress:
+        - Description: ICMP Ping
+          IpProtocol: ICMP
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 10.0.0.0/8
+        - Description: RTP
+          IpProtocol: UDP
+          FromPort: '6000'
+          ToPort: '65535'
+          CidrIp: 10.0.0.0/8
+        - Description: SIP UDP Traffic
+          IpProtocol: UDP
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 10.0.0.0/8
+        - Description: SIP TCP Traffic
+          IpProtocol: TCP
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 10.0.0.0/8
+        - Description: SIP TLS Traffic
+          IpProtocol: TCP
+          FromPort: '5061'
+          ToPort: '5061'
+          CidrIp: 10.0.0.0/8
+        - Description: ICMP Ping
+          IpProtocol: ICMP
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 172.16.0.0/12
+        - Description: RTP
+          IpProtocol: UDP
+          FromPort: '6000'
+          ToPort: '65535'
+          CidrIp: 172.16.0.0/12
+        - Description: SIP UDP Traffic
+          IpProtocol: UDP
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 172.16.0.0/12
+        - Description: SIP TCP Traffic
+          IpProtocol: TCP
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 172.16.0.0/12
+        - Description: SIP TLS Traffic
+          IpProtocol: TCP
+          FromPort: '5061'
+          ToPort: '5061'
+          CidrIp: 172.16.0.0/12
+        - Description: GW to GW Traffic
+          IpProtocol: TCP
+          FromPort: '2569'
+          ToPort: '2569'
+          CidrIp: 10.232.4.0/22
+        - Description: GW Traffic
+          IpProtocol: TCP
+          FromPort: '2569'
+          ToPort: '2569'
+          CidrIp: 10.0.0.0/8
+        - Description: GW Traffic
+          IpProtocol: TCP
+          FromPort: '2569'
+          ToPort: '2569'
+          CidrIp: 172.16.0.0/12
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+
+#SG for Ribbon SBC
+  VoiceRibbonSBCUntrustSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref Vpc
+      GroupDescription: Voice Ribbon SBC Untrust security group
+      Tags:
+        - Key: Name
+          Value:
+            'Fn::Join':
+              - '-'
+              - - Ref: SystemName
+                - sbcSG
+        - Key: ApplicationOwner
+          Value: Voice Teams
+        - Key: InfrastructureOwner
+          Value: Voice Teams
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Infrastructure
+        - Key: Service
+          Value: AWS Voice POP
+        - Key: DeviceType
+          Value: Ribbon SBC
+        - Key: Owner
+          Value: Network Teams
+        - Key: Product
+          Value: Infrastructure
+      SecurityGroupIngress:
+        - Description: ICMP Ping
+          IpProtocol: ICMP
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 0.0.0.0/0
+        - Description: RTP
+          IpProtocol: UDP
+          FromPort: '6000'
+          ToPort: '65535'
+          CidrIp: 0.0.0.0/0
+        - Description: SIP UDP Traffic
+          IpProtocol: UDP
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 0.0.0.0/0
+        - Description: SIP TCP Traffic
+          IpProtocol: TCP
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 0.0.0.0/0
+        - Description: SIP TLS Traffic
+          IpProtocol: TCP
+          FromPort: '5061'
+          ToPort: '5061'
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  Vpc:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref 'AWS::StackName'
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: VPC
+
+      CidrBlock: !FindInMap [VPCaddressPrefix, values, voicetrustOctet]
+
+  VpcCidrBlock2:
+    Type: AWS::EC2::VPCCidrBlock
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !FindInMap [ VPCaddressPrefix, values, voiceuntrustOctet ]
+
+  VpcCidrBlock3:
+    Type: AWS::EC2::VPCCidrBlock
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !FindInMap [ VPCaddressPrefix, values, voicemgmtsyncOctet ]
+
+
+  VGW:
+    Type: 'AWS::EC2::VPNGateway'
+    Properties:
+      Type: ipsec.1
+      AmazonSideAsn: !FindInMap [ VPCaddressPrefix,values,ASN1 ]
+      Tags:
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+        - Key: Name
+          Value: Voicenetwork-VGW
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: VPNGateway
+  AttachVGWGateway:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref Vpc
+      VpnGatewayId: !Ref VGW
+  InternetGateway:
+    Properties:
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: InternetGateway
+    Type: 'AWS::EC2::InternetGateway'
+  AttachGateway:
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+  Az1UntrustSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '8'
+          - 0/23
+      Tags:
+        - Key: Name
+          Value: Az1 Untrust Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+        - Key: Product
+          Value: Voice
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1UntrustRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az1 Untrust Route Table
+        - Key: Network
+          Value: Az1 Untrust
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  Az1UntrustSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az1UntrustRouteTable
+      SubnetId: !Ref Az1UntrustSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  Az1UntrustDefaultRoute:
+    DependsOn: AttachGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref Az1UntrustRouteTable
+    Type: 'AWS::EC2::Route'
+  EIP1:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+  NATGateway1:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt
+        - EIP1
+        - AllocationId
+      SubnetId: !Ref Az1UntrustSubnet
+  Az1TrustSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '0'
+          - 0/22
+      Tags:
+        - Key: Name
+          Value: Az1 Trust Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1TrustRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az1 Trust Route Table
+        - Key: Network
+          Value: Az1 Trust
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  Az1TrustSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az1TrustRouteTable
+      SubnetId: !Ref Az1TrustSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  TrustDefaultRoute:
+    DependsOn: NATGateway1
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
+      RouteTableId: !Ref Az1TrustRouteTable
+    Type: 'AWS::EC2::Route'
+  Az1MgmtSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '12'
+          - 0/25
+      Tags:
+        - Key: Name
+          Value: Az1 Mgmt Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1MgmtRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az1 Mgmt Route Table
+        - Key: Network
+          Value: Az1 Mgmt
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  Az1MgmtSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az1MgmtRouteTable
+      SubnetId: !Ref Az1MgmtSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  MgmtDefaultRoute:
+    DependsOn: NATGateway1
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
+      RouteTableId: !Ref Az1MgmtRouteTable
+    Type: 'AWS::EC2::Route'
+
+
+  Az1HASubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone1 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '12'
+          - 128/25
+      Tags:
+        - Key: Name
+          Value: Az1 HA Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::Subnet'
+  Az1HARouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Az1 HA Route Table
+        - Key: Network
+          Value: Az1 HA
+      VpcId: !Ref Vpc
+    Type: 'AWS::EC2::RouteTable'
+  Az1HASubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref Az1HARouteTable
+      SubnetId: !Ref Az1HASubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  HADefaultRoute:
+    DependsOn: NATGateway1
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
+      RouteTableId: !Ref Az1HARouteTable
+    Type: 'AWS::EC2::Route'
+
+
+  S3Endpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: '*'
+            Effect: Allow
+            Resource: '*'
+            Principal: '*'
+      RouteTableIds:
+        - !Ref Az1MgmtRouteTable
+        - !Ref Az1TrustRouteTable
+      ServiceName: !Join
+        - ''
+        - - com.amazonaws.
+          - !Ref 'AWS::Region'
+          - .s3
+      VpcId: !Ref Vpc
+
+
+  RoutePropegation:
+    DependsOn: AttachVGWGateway
+    Type: AWS::EC2::VPNGatewayRoutePropagation
+    Properties:
+      RouteTableIds:
+        - !Ref Az1MgmtRouteTable
+        - !Ref Az1HARouteTable
+        - !Ref Az1UntrustRouteTable
+        - !Ref Az1TrustRouteTable
+      VpnGatewayId: !Ref VGW
+
+
+#VOICE VPC 2 CONFIG--------------------------------------------------------
+  VPC2InternalServerSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Internal server security group for Voice VPC2
+      VpcId: !Ref Vpc2
+      SecurityGroupIngress:
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 172.28.0.0/18
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 172.28.208.0/21
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 10.221.24.0/21
+        - IpProtocol: tcp
+          FromPort: '1433'
+          ToPort: '1433'
+          CidrIp: 10.221.24.0/21
+        - IpProtocol: tcp
+          FromPort: '1433'
+          ToPort: '1433'
+          CidrIp: 205.214.10.0/24
+        - IpProtocol: tcp
+          FromPort: '1971'
+          ToPort: '1971'
+          CidrIp: 10.221.24.0/21
+        - IpProtocol: tcp
+          FromPort: '8989'
+          ToPort: '8989'
+          CidrIp: 205.214.23.104/32
+        - IpProtocol: tcp
+          FromPort: '9310'
+          ToPort: '9310'
+          CidrIp: 10.221.24.0/21
+        - IpProtocol: tcp
+          FromPort: '9311'
+          ToPort: '9311'
+          CidrIp: 10.221.24.0/21
+        - IpProtocol: tcp
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 10.221.64.0/21
+        - IpProtocol: udp
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 10.221.64.0/21
+        - IpProtocol: icmp
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 10.221.24.0/21
+        - IpProtocol: icmp
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 205.214.15.62/32
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 10.21.0.0/16
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 172.17.0.0/16
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 172.19.4.0/23
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 172.20.0.0/16
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 172.23.4.0/23
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 172.27.0.0/16
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 192.168.76.0/22
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 205.214.14.0/24
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 205.214.15.62/32
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 205.214.16.0/24
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 205.214.17.0/24
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 205.214.18.0/24
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 205.214.19.0/24
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 205.214.23.124/32
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: voice_vpc2_internal_sg
+  VPC2InCDRServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref Vpc2
+      GroupDescription: sg for InCDR Servers
+      Tags:
+        - Key: Name
+          Value: global_tools_vpc2_InCDR_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: SecurityGroup
+      SecurityGroupIngress:
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: 10.21.0.0/16
+      - IpProtocol: -1   #Office IP Space
+        CidrIp: 172.27.0.0/16
+      - IpProtocol: -1   #LA2
+        CidrIp: "172.23.0.0/16"
+      - IpProtocol: -1   #DAL
+        CidrIp: "172.19.0.0/16"
+      - IpProtocol: -1   #EU
+        CidrIp: "172.21.0.0/16"
+      - IpProtocol: -1   #SGP
+        CidrIp: "172.29.0.0/16"
+      - IpProtocol: -1   #HKO-1
+        CidrIp: "216.20.228.64/26"
+      - IpProtocol: -1   #HKO-2
+        CidrIp: "216.20.228.128/27"
+      - IpProtocol: -1   #LAB
+        CidrIp: "172.20.0.0/16"
+      - IpProtocol: -1 # DMZ Addon Subnet
+        CidrIp: "10.209.200.0/22"
+        Description: "DMZ Addon Subnet"
+      - IpProtocol: -1
+        CidrIp: "10.209.0.0/17"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+        Description: "BMC Discovery"
+      - IpProtocol: -1
+        CidrIp: "205.214.10.0/24"
+        Description: "CDR"
+      - IpProtocol: -1
+        CidrIp: "10.5.18.128/25"
+        Description: "CDR"
+      - IpProtocol: -1
+        CidrIp: "10.5.22.128/25"
+        Description: "CDR"
+      - IpProtocol: "tcp"
+        CidrIp: "10.5.16.0/24"
+        FromPort: "445"
+        ToPort:  "445"
+      - IpProtocol: "tcp"
+        CidrIp: "10.5.20.0/24"
+        FromPort: "445"
+        ToPort:  "445"
+      - IpProtocol: -1 # Korea Voice 1 Mgmt
+        CidrIp: "10.232.12.0/25"
+        Description: "Korea Voice 1 Mgmt"
+      - IpProtocol: -1 # Korea Voice 2 Mgmt
+        CidrIp: "10.232.13.0/25"
+        Description: "Korea Voice 2 Mgmt"
+      - IpProtocol: -1 # Korea Voice 1 Trust
+        CidrIp: "10.232.0.0/22"
+        Description: "Korea Voice 1 Trust"
+      - IpProtocol: -1 # Korea Voice 2 Trust
+        CidrIp: "10.232.4.0/22"
+        Description: "Korea Voice 2 Trust"
+
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: "172.16.0.0/12"
+      - IpProtocol: -1
+        CidrIp: "10.0.0.0/8"
+      - IpProtocol: -1
+        CidrIp: "192.168.0.0/16"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+
+
+
+#SG for Ribbon PSX
+  VoiceVPC2PsxSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref Vpc2
+      GroupDescription: Ribbon PSX security group
+      Tags:
+        - Key: Name
+          Value:
+            'Fn::Join':
+              - '-'
+              - - Ref: SystemName
+                - psxSG
+        - Key: ApplicationOwner
+          Value: Voice Teams
+        - Key: InfrastructureOwner
+          Value: Voice Teams
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Infrastructure
+        - Key: Service
+          Value: AWS Voice POP
+        - Key: DeviceType
+          Value: Ribbon PSX
+        - Key: Owner
+          Value: Network Teams
+        - Key: Product
+          Value: Infrastructure
+      SecurityGroupIngress:
+        - Description: SSReq Traffic
+          IpProtocol: tcp
+          FromPort: '3091'
+          ToPort: '3091'
+          CidrIp: 0.0.0.0/0
+        - Description: UDP Traffic
+          IpProtocol: udp
+          FromPort: '3053'
+          ToPort: '3055'
+          CidrIp: 0.0.0.0/0
+        - Description: PES Traffic
+          IpProtocol: udp
+          FromPort: '9004'
+          ToPort: '9004'
+          CidrIp: 0.0.0.0/0
+        - Description: DNS UDP
+          IpProtocol: udp
+          FromPort: '53'
+          ToPort: '53'
+          CidrIp: 0.0.0.0/0
+        - Description: NTP
+          IpProtocol: udp
+          FromPort: '123'
+          ToPort: '123'
+          CidrIp: 0.0.0.0/0
+        - Description: DBREPD Data
+          IpProtocol: tcp
+          FromPort: '3080'
+          ToPort: '3080'
+          CidrIp: 0.0.0.0/0
+        - Description: ICMP Ping
+          IpProtocol: icmp
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 0.0.0.0/0
+        - Description: SIPE TCP Traffic
+          IpProtocol: tcp
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 0.0.0.0/0
+        - Description: JAVA
+          IpProtocol: udp
+          FromPort: '161'
+          ToPort: '161'
+          CidrIp: 0.0.0.0/0
+        - Description: DBREPD Control
+          IpProtocol: tcp
+          FromPort: '3090'
+          ToPort: '3090'
+          CidrIp: 0.0.0.0/0
+        - Description: SSH to CLI
+          IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - Description: Sonus Agent
+          IpProtocol: tcp
+          FromPort: '19991'
+          ToPort: '19991'
+          CidrIp: 0.0.0.0/0
+        - Description: SIPE UDP Traffic
+          IpProtocol: udp
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 0.0.0.0/0
+        - Description: SFTP Traffic
+          IpProtocol: tcp
+          FromPort: '6462'
+          ToPort: '6462'
+          CidrIp: 0.0.0.0/0
+        - Description: Service Director
+          IpProtocol: tcp
+          FromPort: '5000'
+          ToPort: '5000'
+          CidrIp: 0.0.0.0/0
+        - Description: PostgreSQL listener
+          IpProtocol: tcp
+          FromPort: '5432'
+          ToPort: '5432'
+          CidrIp: 0.0.0.0/0
+        - Description: Pgbouncer
+          IpProtocol: tcp
+          FromPort: '6432'
+          ToPort: '6432'
+          CidrIp: 0.0.0.0/0
+        - Description: RAMP registration
+          IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+        - Description: DNS/ENUM TCP
+          IpProtocol: tcp
+          FromPort: '53'
+          ToPort: '53'
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+#SG for Ribbon SBC
+  Voice2RibbonSBCoamSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref Vpc2
+      GroupDescription: Voice2 Ribbon SBC OAM security group
+      Tags:
+        - Key: Name
+          Value:
+            'Fn::Join':
+              - '-'
+              - - Ref: SystemName
+                - sbcSG
+        - Key: ApplicationOwner
+          Value: Voice Teams
+        - Key: InfrastructureOwner
+          Value: Voice Teams
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Infrastructure
+        - Key: Service
+          Value: AWS Voice POP
+        - Key: DeviceType
+          Value: Ribbon SBC
+        - Key: Owner
+          Value: Network Teams
+        - Key: Product
+          Value: Infrastructure
+      SecurityGroupIngress:
+        - Description: ICMP Ping
+          IpProtocol: ICMP
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 10.0.0.0/8
+        - Description: ICMP Ping
+          IpProtocol: ICMP
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 172.16.0.0/12
+        - Description: ICMP Ping
+          IpProtocol: ICMP
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 192.168.0.0/24
+        - Description: EMA
+          IpProtocol: TCP
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 10.0.0.0/8
+        - Description: EMA
+          IpProtocol: TCP
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 172.16.0.0/12
+        - Description: EMA
+          IpProtocol: TCP
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 192.168.0.0/24
+        - Description: SLS (license server) traffic
+          IpProtocol: udp
+          FromPort: '5093'
+          ToPort: '5093'
+          CidrIp: 10.0.0.0/8
+        - Description: SLS (license server) traffic
+          IpProtocol: udp
+          FromPort: '5093'
+          ToPort: '5093'
+          CidrIp: 172.16.0.0/12
+        - Description: SLS (license server) traffic
+          IpProtocol: udp
+          FromPort: '5093'
+          ToPort: '5093'
+          CidrIp: 192.168.0.0/24
+        - Description: Applicable to D-SBC only
+          IpProtocol: TCP
+          FromPort: '4019'
+          ToPort: '4019'
+          CidrIp: 10.0.0.0/8
+        - Description: Applicable to D-SBC only
+          IpProtocol: TCP
+          FromPort: '4019'
+          ToPort: '4019'
+          CidrIp: 172.16.0.0/12
+        - Description: Applicable to D-SBC only
+          IpProtocol: TCP
+          FromPort: '4019'
+          ToPort: '4019'
+          CidrIp: 192.168.0.0/24
+        - Description: Communicating with RAMP, API, and Platform Manager
+          IpProtocol: TCP
+          FromPort: '444'
+          ToPort: '444'
+          CidrIp: 10.0.0.0/8
+        - Description: Communicating with RAMP, API, and Platform Manager
+          IpProtocol: TCP
+          FromPort: '444'
+          ToPort: '444'
+          CidrIp: 172.16.0.0/12
+        - Description: Communicating with RAMP, API, and Platform Manager
+          IpProtocol: TCP
+          FromPort: '444'
+          ToPort: '444'
+          CidrIp: 192.168.0.0/24
+        - Description: RAMP registration
+          IpProtocol: TCP
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 10.0.0.0/8
+        - Description: RAMP registration
+          IpProtocol: TCP
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 172.16.0.0/12
+        - Description: RAMP registration
+          IpProtocol: TCP
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 192.168.0.0/24
+        - Description: Load balancing service
+          IpProtocol: UDP
+          FromPort: '3057'
+          ToPort: '3057'
+          CidrIp: 10.0.0.0/8
+        - Description: Load balancing service
+          IpProtocol: UDP
+          FromPort: '3057'
+          ToPort: '3057'
+          CidrIp: 172.16.0.0/12
+        - Description: Load balancing service
+          IpProtocol: UDP
+          FromPort: '3057'
+          ToPort: '3057'
+          CidrIp: 192.168.0.0/24
+        - Description: Keep Alives and Registration
+          IpProtocol: UDP
+          FromPort: '3055'
+          ToPort: '3055'
+          CidrIp: 10.0.0.0/8
+        - Description: Keep Alives and Registration
+          IpProtocol: UDP
+          FromPort: '3055'
+          ToPort: '3055'
+          CidrIp: 172.16.0.0/12
+        - Description: Keep Alives and Registration
+          IpProtocol: UDP
+          FromPort: '3055'
+          ToPort: '3055'
+          CidrIp: 192.168.0.0/24
+        - Description: Call processing requests
+          IpProtocol: UDP
+          FromPort: '3054'
+          ToPort: '3054'
+          CidrIp: 10.0.0.0/8
+        - Description: Call processing requests
+          IpProtocol: UDP
+          FromPort: '3054'
+          ToPort: '3054'
+          CidrIp: 172.16.0.0/12
+        - Description: Call processing requests
+          IpProtocol: UDP
+          FromPort: '3054'
+          ToPort: '3054'
+          CidrIp: 192.168.0.0/24
+        - Description: SSH to Linux
+          IpProtocol: TCP
+          FromPort: '2024'
+          ToPort: '2024'
+          CidrIp: 10.0.0.0/8
+        - Description: SSH to Linux
+          IpProtocol: TCP
+          FromPort: '2024'
+          ToPort: '2024'
+          CidrIp: 172.16.0.0/12
+        - Description: SSH to Linux
+          IpProtocol: TCP
+          FromPort: '2024'
+          ToPort: '2024'
+          CidrIp: 192.168.0.0/24
+        - Description: NetConf over ssh
+          IpProtocol: TCP
+          FromPort: '2022'
+          ToPort: '2022'
+          CidrIp: 10.0.0.0/8
+        - Description: NetConf over ssh
+          IpProtocol: TCP
+          FromPort: '2022'
+          ToPort: '2022'
+          CidrIp: 172.16.0.0/12
+        - Description: NetConf over ssh
+          IpProtocol: TCP
+          FromPort: '2022'
+          ToPort: '2022'
+          CidrIp: 192.168.0.0/24
+        - Description: SSH to CLI
+          IpProtocol: TCP
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 10.0.0.0/8
+        - Description: SSH to CLI
+          IpProtocol: TCP
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 172.16.0.0/12
+        - Description: SSH to CLI
+          IpProtocol: TCP
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 192.168.0.0/24
+        - Description: SNMP Traps
+          IpProtocol: UDP
+          FromPort: '162'
+          ToPort: '162'
+          CidrIp: 10.0.0.0/8
+        - Description: SNMP Traps
+          IpProtocol: UDP
+          FromPort: '162'
+          ToPort: '162'
+          CidrIp: 172.16.0.0/12
+        - Description: SNMP Traps
+          IpProtocol: UDP
+          FromPort: '162'
+          ToPort: '162'
+          CidrIp: 192.168.0.0/24
+        - Description: SNMP Polling
+          IpProtocol: UDP
+          FromPort: '161'
+          ToPort: '161'
+          CidrIp: 10.0.0.0/8
+        - Description: SNMP Polling
+          IpProtocol: UDP
+          FromPort: '161'
+          ToPort: '161'
+          CidrIp: 172.16.0.0/12
+        - Description: SNMP Polling
+          IpProtocol: UDP
+          FromPort: '161'
+          ToPort: '161'
+          CidrIp: 192.168.0.0/24
+        - Description: NTP
+          IpProtocol: UDP
+          FromPort: '123'
+          ToPort: '123'
+          CidrIp: 10.0.0.0/8
+        - Description: NTP
+          IpProtocol: UDP
+          FromPort: '123'
+          ToPort: '123'
+          CidrIp: 172.16.0.0/12
+        - Description: NTP
+          IpProtocol: UDP
+          FromPort: '123'
+          ToPort: '123'
+          CidrIp: 192.168.0.0/24
+
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+#SG for Ribbon SBC
+  Voice2RibbonSBCHASecurityGroup2:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref Vpc2
+      GroupDescription: Voice2 Ribbon SBC HA security group
+      Tags:
+        - Key: Name
+          Value:
+            'Fn::Join':
+              - '-'
+              - - Ref: SystemName
+                - sbcSG
+        - Key: ApplicationOwner
+          Value: Voice Teams
+        - Key: InfrastructureOwner
+          Value: Voice Teams
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Infrastructure
+        - Key: Service
+          Value: AWS Voice POP
+        - Key: DeviceType
+          Value: Ribbon SBC
+        - Key: Owner
+          Value: Network Teams
+        - Key: Product
+          Value: Infrastructure
+      SecurityGroupIngress:
+        - Description: HA communication
+          IpProtocol: -1
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 10.232.13.128/25
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+#SG for Ribbon SBC
+  Voice2RibbonSBCTrustSecurityGroup2:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref Vpc2
+      GroupDescription: Voice2 Ribbon SBC Trust security group
+      Tags:
+        - Key: Name
+          Value:
+            'Fn::Join':
+              - '-'
+              - - Ref: SystemName
+                - sbcSG
+        - Key: ApplicationOwner
+          Value: Voice Teams
+        - Key: InfrastructureOwner
+          Value: Voice Teams
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Infrastructure
+        - Key: Service
+          Value: AWS Voice POP
+        - Key: DeviceType
+          Value: Ribbon SBC
+        - Key: Owner
+          Value: Network Teams
+        - Key: Product
+          Value: Infrastructure
+      SecurityGroupIngress:
+        - Description: ICMP Ping
+          IpProtocol: ICMP
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 10.0.0.0/8
+        - Description: RTP
+          IpProtocol: UDP
+          FromPort: '6000'
+          ToPort: '65535'
+          CidrIp: 10.0.0.0/8
+        - Description: SIP UDP Traffic
+          IpProtocol: UDP
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 10.0.0.0/8
+        - Description: SIP TCP Traffic
+          IpProtocol: TCP
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 10.0.0.0/8
+        - Description: SIP TLS Traffic
+          IpProtocol: TCP
+          FromPort: '5061'
+          ToPort: '5061'
+          CidrIp: 10.0.0.0/8
+        - Description: ICMP Ping
+          IpProtocol: ICMP
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 172.16.0.0/12
+        - Description: RTP
+          IpProtocol: UDP
+          FromPort: '6000'
+          ToPort: '65535'
+          CidrIp: 172.16.0.0/12
+        - Description: SIP UDP Traffic
+          IpProtocol: UDP
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 172.16.0.0/12
+        - Description: SIP TCP Traffic
+          IpProtocol: TCP
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 172.16.0.0/12
+        - Description: SIP TLS Traffic
+          IpProtocol: TCP
+          FromPort: '5061'
+          ToPort: '5061'
+          CidrIp: 172.16.0.0/12
+        - Description: GW to GW Traffic
+          IpProtocol: TCP
+          FromPort: '2569'
+          ToPort: '2569'
+          CidrIp: 10.232.0.0/22
+        - Description: GW Traffic
+          IpProtocol: TCP
+          FromPort: '2569'
+          ToPort: '2569'
+          CidrIp: 10.0.0.0/8
+        - Description: GW Traffic
+          IpProtocol: TCP
+          FromPort: '2569'
+          ToPort: '2569'
+          CidrIp: 172.16.0.0/12
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+
+#SG for Ribbon SBC
+  Voice2RibbonSBCUntrustSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref Vpc2
+      GroupDescription: Voice2 Ribbon SBC Untrust security group
+      Tags:
+        - Key: Name
+          Value:
+            'Fn::Join':
+              - '-'
+              - - Ref: SystemName
+                - sbcSG
+        - Key: ApplicationOwner
+          Value: Voice Teams
+        - Key: InfrastructureOwner
+          Value: Voice Teams
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Infrastructure
+        - Key: Service
+          Value: AWS Voice POP
+        - Key: DeviceType
+          Value: Ribbon SBC
+        - Key: Owner
+          Value: Network Teams
+        - Key: Product
+          Value: Infrastructure
+      SecurityGroupIngress:
+        - Description: ICMP Ping
+          IpProtocol: ICMP
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: 0.0.0.0/0
+        - Description: RTP
+          IpProtocol: UDP
+          FromPort: '6000'
+          ToPort: '65535'
+          CidrIp: 0.0.0.0/0
+        - Description: SIP UDP Traffic
+          IpProtocol: UDP
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 0.0.0.0/0
+        - Description: SIP TCP Traffic
+          IpProtocol: TCP
+          FromPort: '5060'
+          ToPort: '5060'
+          CidrIp: 0.0.0.0/0
+        - Description: SIP TLS Traffic
+          IpProtocol: TCP
+          FromPort: '5061'
+          ToPort: '5061'
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  Vpc2:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ''
+            - - !Ref 'AWS::StackName'
+              - '2'
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: VPC
+
+      CidrBlock: !FindInMap [VPCaddressPrefix, values, voice2trustOctet]
+
+  VpcCidrBlock4:
+    Type: AWS::EC2::VPCCidrBlock
+    Properties:
+      VpcId: !Ref Vpc2
+      CidrBlock: !FindInMap [ VPCaddressPrefix, values, voice2untrustOctet ]
+
+  VpcCidrBlock5:
+    Type: AWS::EC2::VPCCidrBlock
+    Properties:
+      VpcId: !Ref Vpc2
+      CidrBlock: !FindInMap [ VPCaddressPrefix, values, voice2mgmtsyncOctet ]
+
+
+
+  VGW2:
+    Type: 'AWS::EC2::VPNGateway'
+    Properties:
+      Type: ipsec.1
+      AmazonSideAsn: !FindInMap [ VPCaddressPrefix,values,ASN2 ]
+      Tags:
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+        - Key: Name
+          Value: VoicenetworkVPCAz2-VGW
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: VPNGateway
+  AttachVGW2Gateway:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref Vpc2
+      VpnGatewayId: !Ref VGW2
+  InternetGateway2:
+    Properties:
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: InternetGateway
+    Type: 'AWS::EC2::InternetGateway'
+  AttachGateway2:
+    Properties:
+      InternetGatewayId: !Ref InternetGateway2
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+  VPC2Az2UntrustSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '10'
+          - 0/23
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 Untrust Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+        - Key: Product
+          Value: Voice
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::Subnet'
+  VPC2Az2UntrustRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 Untrust Route Table
+        - Key: Network
+          Value: Voice VPC2 Az2 Untrust
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::RouteTable'
+  VPC2Az2UntrustSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref VPC2Az2UntrustRouteTable
+      SubnetId: !Ref VPC2Az2UntrustSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  VPC2Az2UntrustDefaultRoute:
+    DependsOn: AttachGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway2
+      RouteTableId: !Ref VPC2Az2UntrustRouteTable
+    Type: 'AWS::EC2::Route'
+  VPC2EIP1:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc2
+  VPC2NATGateway1:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt
+        - VPC2EIP1
+        - AllocationId
+      SubnetId: !Ref VPC2Az2UntrustSubnet
+  VPC2Az2TrustSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '4'
+          - 0/22
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 Trust Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::Subnet'
+  VPC2Az2TrustRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 Trust Route Table
+        - Key: Network
+          Value: Voice VPC2 Az2 Trust
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::RouteTable'
+  VPC2Az2TrustSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref VPC2Az2TrustRouteTable
+      SubnetId: !Ref VPC2Az2TrustSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  VPC2TrustDefaultRoute:
+    DependsOn: VPC2NATGateway1
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref VPC2NATGateway1
+      RouteTableId: !Ref VPC2Az2TrustRouteTable
+    Type: 'AWS::EC2::Route'
+  VPC2Az2MgmtSubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '13'
+          - 0/25
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 Mgmt Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::Subnet'
+  VPC2Az2MgmtRouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 Mgmt Route Table
+        - Key: Network
+          Value: Voice VPC2 Az2 Mgmt
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::RouteTable'
+  VPC2Az2MgmtSubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref VPC2Az2MgmtRouteTable
+      SubnetId: !Ref VPC2Az2MgmtSubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  VPC2MgmtDefaultRoute:
+    DependsOn: VPC2NATGateway1
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref VPC2NATGateway1
+      RouteTableId: !Ref VPC2Az2MgmtRouteTable
+    Type: 'AWS::EC2::Route'
+
+  VPC2Az2HASubnet:
+    Properties:
+      AvailabilityZone: !FindInMap [ VPCaddressPrefix,values,AvailabilityZone2 ]
+      CidrBlock: !Join
+        - .
+        - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+          - '13'
+          - 128/25
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 HA Subnet
+        - Key: Owner
+          Value: !FindInMap [ VPCaddressPrefix,values,Owner ]
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::Subnet'
+  VPC2Az2HARouteTable:
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Voice VPC2 Az2 HA Route Table
+        - Key: Network
+          Value: Voice VPC2 Az2 HA
+      VpcId: !Ref Vpc2
+    Type: 'AWS::EC2::RouteTable'
+  VPC2Az2HASubnetRouteTableAssociation:
+    Properties:
+      RouteTableId: !Ref VPC2Az2HARouteTable
+      SubnetId: !Ref VPC2Az2HASubnet
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  VPC2HADefaultRoute:
+    DependsOn: VPC2NATGateway1
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref VPC2NATGateway1
+      RouteTableId: !Ref VPC2Az2HARouteTable
+    Type: 'AWS::EC2::Route'
+
+  VPC2S3Endpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: '*'
+            Effect: Allow
+            Resource: '*'
+            Principal: '*'
+      RouteTableIds:
+        - !Ref VPC2Az2MgmtRouteTable
+        - !Ref VPC2Az2TrustRouteTable
+      ServiceName: !Join
+        - ''
+        - - com.amazonaws.
+          - !Ref 'AWS::Region'
+          - .s3
+      VpcId: !Ref Vpc2
+
+
+  VPC2RoutePropegation:
+    DependsOn: AttachVGWGateway
+    Type: AWS::EC2::VPNGatewayRoutePropagation
+    Properties:
+      RouteTableIds:
+        - !Ref VPC2Az2MgmtRouteTable
+        - !Ref VPC2Az2HARouteTable
+        - !Ref VPC2Az2UntrustRouteTable
+        - !Ref VPC2Az2TrustRouteTable
+      VpnGatewayId: !Ref VGW2
+
+
+#comment - VPC Peering between voice 1 and voice 2 VPC's
+  VoiceToVoicePeeringConnection:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      VpcId: !Ref Vpc
+      PeerVpcId: !Ref Vpc2
+      Tags:
+        - Key: Name
+          Value: !FindInMap [ VPCaddressPrefix,values, VoiceToVoicePeering ]
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: PeeringConnection
+
+#VPC Peering from Voice to Core VPC
+  VoiceToCorePeeringConnection:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      VpcId: !Ref Vpc
+      PeerVpcId: !ImportValue 'CoreNetwork-Vpc'
+      Tags:
+        - Key: Name
+          Value: !FindInMap [ VPCaddressPrefix,values, Voice1ToCorePeering ]
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: PeeringConnection
+
+
+
+#VPC Peering from Voice2 to Core VPC
+  Voice2ToCorePeeringConnection:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      VpcId: !Ref Vpc2
+      PeerVpcId: !ImportValue 'CoreNetwork-Vpc'
+      Tags:
+        - Key: Name
+          Value: !FindInMap [ VPCaddressPrefix,values, Voice2ToCorePeering ]
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: Network Teams
+        - Key: Product
+          Value: PeeringConnection
+
+
+
+  #RT part
+  #add routes Voice to Voice2trust
+  VoiceVoice2TrustRouteTable1:
+      DependsOn: VoiceToVoicePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !Ref   Az1TrustRouteTable
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToVoicePeeringConnection
+
+  #RT part
+  #add routes Voice to Voice2untrust
+  VoiceVoice2TrustRouteTable2:
+      DependsOn: VoiceToVoicePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !Ref   Az1TrustRouteTable
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref VoiceToVoicePeeringConnection
+
+  #RT part
+  #add routes Voice to Voice2Mngmnt/HA
+  VoiceVoice2TrustRouteTable3:
+      DependsOn: VoiceToVoicePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !Ref   Az1TrustRouteTable
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref VoiceToVoicePeeringConnection
+
+
+#add routes Voice to Core
+  VoiceCoreTrustRouteTable:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !Ref   Az1TrustRouteTable
+        DestinationCidrBlock: !Join
+          - .
+          - - !ImportValue 'CoreNetwork-VPCaddressPrefix'
+            - !FindInMap [ VPCaddressPrefix,values,core ]
+            - !FindInMap [ VPCaddressPrefix,values,coreEnd ]
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+#add routes Voice2 to Voicetrustsubnet
+  Voice2VoiceTrustRouteTable1:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !Ref   VPC2Az2TrustRouteTable
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToVoicePeeringConnection
+
+#add routes Voice2 to Voiceuntrustsubet
+  Voice2VoiceTrustRouteTable2:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !Ref   VPC2Az2TrustRouteTable
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref VoiceToVoicePeeringConnection
+
+
+#add routes Voice2 to VoiceMngmnt/HA subnet
+  Voice2VoiceTrustRouteTable3:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !Ref   VPC2Az2TrustRouteTable
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref VoiceToVoicePeeringConnection
+
+
+#add routes Voice2 to Core
+  Voice2CoreTrustRouteTable:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !Ref   VPC2Az2TrustRouteTable
+        DestinationCidrBlock: !Join
+          - .
+          - - !ImportValue 'CoreNetwork-VPCaddressPrefix'
+            - !FindInMap [ VPCaddressPrefix,values,core ]
+            - !FindInMap [ VPCaddressPrefix,values,coreEnd ]
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+#add routes Core to VoiceTrust subnet
+  CoreVoiceAz1LambdaRouteTable1:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1LambdaRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+#add routes Core to VoiceUntrust subnet
+  CoreVoiceAz1LambdaRouteTable2:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1LambdaRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+
+#add routes Core to VoiceMngmnt/HA subnet
+  CoreVoiceAz1LambdaRouteTable3:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1LambdaRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+  CoreVoiceAz2LambdaRouteTable1:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2LambdaRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+  CoreVoiceAz2LambdaRouteTable2:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2LambdaRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+  CoreVoiceAz2LambdaRouteTable3:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2LambdaRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+  CoreVoiceAz1CoreRouteTable1:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1CoreRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+  CoreVoiceAz1CoreRouteTable2:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1CoreRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+  CoreVoiceAz1CoreRouteTable3:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1CoreRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+  CoreVoiceAz2CoreRouteTable1:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2CoreRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+  CoreVoiceAz2CoreRouteTable2:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2CoreRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+  CoreVoiceAz2CoreRouteTable3:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2CoreRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+  CoreVoiceManagementRouteTable1:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-ManagementRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+  CoreVoiceManagementRouteTable2:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-ManagementRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+
+  CoreVoiceManagementRouteTable3:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-ManagementRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+  CoreVoiceAz1VIPRouteTable1:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1VIPRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+  CoreVoiceAz1VIPRouteTable2:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1VIPRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+  CoreVoiceAz1VIPRouteTable3:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1VIPRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+  CoreVoiceAz2VIPRouteTable1:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2VIPRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+  CoreVoiceAz2VIPRouteTable2:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2VIPRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+  CoreVoiceAz2VIPRouteTable3:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2VIPRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+  CoreVoiceAz1UntrustRouteTable1:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1UntrustRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+
+  CoreVoiceAz1UntrustRouteTable2:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1UntrustRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+  CoreVoiceAz1UntrustRouteTable3:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1UntrustRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+  CoreVoiceAz2UntrustRouteTable1:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2UntrustRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+  CoreVoiceAz2UntrustRouteTable2:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2UntrustRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+
+  CoreVoiceAz2UntrustRouteTable3:
+      DependsOn: VoiceToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2UntrustRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice1c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref VoiceToCorePeeringConnection
+
+
+
+
+#add routes Core to Voice2 via VPC Peering conn
+
+  CoreVoice2Az1LambdaRouteTable1:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1LambdaRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+  CoreVoice2Az2LambdaRouteTable2:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2LambdaRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+  CoreVoice2Az2LambdaRouteTable3:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2LambdaRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+  CoreVoice2Az1CoreRouteTable1:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1CoreRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+  CoreVoice2Az1CoreRouteTable2:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1CoreRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+  CoreVoice2Az1CoreRouteTable3:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1CoreRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+
+
+  CoreVoice2Az2CoreRouteTable1:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2CoreRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+  CoreVoice2Az2CoreRouteTable2:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2CoreRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+
+  CoreVoice2Az2CoreRouteTable3:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2CoreRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+
+  CoreVoice2ManagementRouteTable1:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-ManagementRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+  CoreVoice2ManagementRouteTable2:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-ManagementRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+  CoreVoice2ManagementRouteTable3:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-ManagementRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+
+
+
+
+  CoreVoice2Az1VIPRouteTable1:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1VIPRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+
+
+  CoreVoice2Az1VIPRouteTable2:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1VIPRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+  CoreVoice2Az1VIPRouteTable3:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1VIPRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+
+
+
+
+
+
+  CoreVoice2Az2VIPRouteTable1:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2VIPRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+  CoreVoice2Az2VIPRouteTable2:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2VIPRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+  CoreVoice2Az2VIPRouteTable3:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2VIPRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+
+  CoreVoice2Az1UntrustRouteTable1:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1UntrustRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+  CoreVoice2Az1UntrustRouteTable2:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1UntrustRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+  CoreVoice2Az1UntrustRouteTable3:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az1UntrustRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+
+
+  CoreVoice2Az2UntrustRouteTable1:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2UntrustRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2a ]
+            - 0/22
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+  CoreVoice2Az2UntrustRouteTable2:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2UntrustRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2b ]
+            - 0/23
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+
+  CoreVoice2Az2UntrustRouteTable3:
+      DependsOn: Voice2ToCorePeeringConnection
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !ImportValue 'CoreNetwork-Az2UntrustRouteTable'
+        DestinationCidrBlock: !Join
+          - .
+          - - !FindInMap [ VPCaddressPrefix,values,vpcOctet ]
+            - !FindInMap [ VPCaddressPrefix,values,voice2c ]
+            - 0/24
+        VpcPeeringConnectionId: !Ref Voice2ToCorePeeringConnection
+
+
+Outputs:
+  Vpc:
+    Description: Voice VPC
+    Value: !Ref Vpc
+    Export:
+      Name: VoiceNetwork-Vpc
+  InternetGateway:
+    Description: Voice InternetGateway
+    Value: !Ref InternetGateway
+    Export:
+      Name: VoiceNetwork-InternetGateway
+  Az1UntrustSubnet:
+    Description: Voice Az1UntrustSubnet
+    Value: !Ref Az1UntrustSubnet
+    Export:
+      Name: VoiceNetwork-Az1UntrustSubnet
+  Az1TrustSubnet:
+    Description: Voice Az1TrustSubnet
+    Value: !Ref Az1TrustSubnet
+    Export:
+      Name: VoiceNetwork-Az1TrustSubnet
+  Az1MgmtSubnet:
+    Description: Voice Az1MgmtSubnet
+    Value: !Ref Az1MgmtSubnet
+    Export:
+      Name: VoiceNetwork-Az1MgmtSubnet
+  Az1HASubnet:
+    Description: Voice Az1HASubnet
+    Value: !Ref Az1HASubnet
+    Export:
+      Name: VoiceNetwork-Az1HASubnet
+  S3Enpoint:
+    Description: Voice S3Endpoint
+    Value: !Ref S3Endpoint
+    Export:
+      Name: VoiceNetwork-S3Endpoint
+  InCDRServersSG:
+    Description: Voice Network INCDR SG
+    Value: !Ref InCDRServersSG
+    Export:
+      Name: VoiceNetwork-InCDRServersSG
+  InternalServerSecurityGroup:
+    Description: SG for Internal Components
+    Value: !Ref InternalServerSecurityGroup
+    Export:
+      Name: VoiceNetwork-InternalServerSecurityGroup
+#-------------------------------------------------------
+  Vpc2:
+    Description: Voice VPC
+    Value: !Ref Vpc2
+    Export:
+      Name: VoiceNetwork2-Vpc
+  InternetGateway2:
+    Description: Voice InternetGateway VPC2
+    Value: !Ref InternetGateway2
+    Export:
+      Name: VoiceNetwork2-InternetGateway
+  VPC2Az2UntrustSubnet:
+    Description: Voice VPC2 Az2UntrustSubnet
+    Value: !Ref VPC2Az2UntrustSubnet
+    Export:
+      Name: VoiceNetwork2-Az2UntrustSubnet
+  VPC2Az2TrustSubnet:
+    Description: Voice VPC2 Az2TrustSubnet
+    Value: !Ref VPC2Az2TrustSubnet
+    Export:
+      Name: VoiceNetwork2-Az2TrustSubnet
+  VPC2Az2MgmtSubnet:
+    Description: Voice VPC2 Az2MgmtSubnet
+    Value: !Ref VPC2Az2MgmtSubnet
+    Export:
+      Name: VoiceNetwork2-Az2MgmtSubnet
+  VPC2Az2HASubnet:
+    Description: Voice VPC2 Az22HASubnet
+    Value: !Ref VPC2Az2HASubnet
+    Export:
+      Name: VoiceNetwork2-Az2HASubnet
+  VPC2S3Enpoint:
+    Description: Voice VPC2 S3Endpoint
+    Value: !Ref VPC2S3Endpoint
+    Export:
+      Name: VoiceNetwork2-S3Endpoint
+  VPC2InCDRServersSG:
+    Description: Voice Network2 INCDR SG
+    Value: !Ref VPC2InCDRServersSG
+    Export:
+      Name: VoiceNetwork2-InCDRServersSG
+  VPC2InternalServerSecurityGroup:
+    Description: Voice VPC 2 SG for Internal Components
+    Value: !Ref VPC2InternalServerSecurityGroup
+    Export:
+      Name: VoiceNetwork2-InternalServerSecurityGroup
+  Az1TrustRouteTable:
+    Description: Az1TrustRouteTable
+    Value: !Ref Az1TrustRouteTable
+    Export:
+      Name: Voice-Az1TrustRouteTable
+  VPC2Az2TrustRouteTable:
+    Description: VPC2Az2TrustRouteTable
+    Value: !Ref VPC2Az2TrustRouteTable
+    Export:
+      Name: Voice-VPC2Az2TrustRouteTable
+
+
+#Peering
+  VoiceToVoicePeeringConnection:
+    Description: VoiceToVoicePeeringConnection
+    Value: !Ref VoiceToVoicePeeringConnection
+    Export:
+      Name: VoiceToVoicePeeringConnection
+
+  VoiceToCorePeeringConnection:
+    Description: VoiceToCorePeeringConnection
+    Value: !Ref VoiceToCorePeeringConnection
+    Export:
+      Name: VoiceToCorePeeringConnection
+
+
+  Voice2ToCorePeeringConnection:
+    Description: Voice2ToCorePeeringConnection
+    Value: !Ref Voice2ToCorePeeringConnection
+    Export:
+      Name: Voice2ToCorePeeringConnection

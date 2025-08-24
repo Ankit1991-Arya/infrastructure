@@ -1,0 +1,335 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates an SNS topic to be used for alarm integration from CloudWatch to BMC TSIM.
+
+Mappings:
+  EnvMap:
+    icpune:
+      account: '355182703791'
+    ic-staging:
+      account: '545209810301'
+    ic-prod:
+      account: '737494165703'
+    ic-fedramp-high:
+      account: '420587085960'
+    ic-prod-jo1:
+      account: '635146017371'
+    ic-prod-ae1:
+      account: '977437863335'
+    ic-prod-kr1:
+      account: '225195882266'
+    ic-ausov1-au2:
+      account: '637423616941'
+    ic-eusov1-eu2:
+      account: '533267422300'
+
+Parameters:
+  AssociatedStack:
+    Type: String
+    Default: 'PDO-14674'
+    Description: The environment stack name that these alarms will be associated with. Leave blank if you don't want to have multiple unique environments within a single AWS account.
+  SQSQueuesEnv:
+    AllowedValues:
+      - icpune
+      - ic-staging
+      - ic-prod
+      - ic-prod-jo1
+      - ic-prod-ae1
+      - ic-prod-kr1
+      - ic-fedramp-high
+      - ic-ausov1-au2
+      - ic-eusov1-eu2
+    Default: icpune
+    Type: String
+    Description: Specify environment you are deploying into for Lifesaver SQS queues alerting.
+
+Conditions:
+  AssociatedStackEmpty:
+    "Fn::Equals":
+      - "Ref": "AssociatedStack"
+      - ""
+
+Resources:
+  BmcInfoAlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName:
+        Fn::If:
+          - AssociatedStackEmpty
+          - 'cloudwatch-bmc-info'        
+          - Fn::Join:
+              - '-'
+              - - Ref: AssociatedStack
+                - 'cloudwatch-bmc-info'
+      Tags:
+        - Key: ApplicationOwner
+          Value: EnterpriseTools
+        - Key: Product
+          Value: Platform
+  BmcMinorAlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName:
+        Fn::If:
+          - AssociatedStackEmpty
+          - 'cloudwatch-bmc-minor'        
+          - Fn::Join:
+              - '-'
+              - - Ref: AssociatedStack
+                - 'cloudwatch-bmc-minor'
+      Tags:
+        - Key: ApplicationOwner
+          Value: EnterpriseTools
+        - Key: Product
+          Value: Platform
+  BmcMajorAlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName:
+        Fn::If:
+          - AssociatedStackEmpty
+          - 'cloudwatch-bmc-major'        
+          - Fn::Join:
+              - '-'
+              - - Ref: AssociatedStack
+                - 'cloudwatch-bmc-major'
+      Tags:
+        - Key: ApplicationOwner
+          Value: EnterpriseTools
+        - Key: Product
+          Value: Platform            
+  BmcCriticalAlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName:
+        Fn::If:
+          - AssociatedStackEmpty
+          - 'cloudwatch-bmc-critical'        
+          - Fn::Join:
+              - '-'
+              - - Ref: AssociatedStack
+                - 'cloudwatch-bmc-critical'
+      Tags:
+        - Key: ApplicationOwner
+          Value: EnterpriseTools
+        - Key: Product
+          Value: Platform
+
+  BmcInfoAlarmTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Id: BmcInfoAlarmTopicPolicy
+        Version: '2012-10-17'
+        Statement:
+          - Sid: __default_statement_ID
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::FindInMap:
+                  - EnvMap
+                  - Ref: SQSQueuesEnv
+                  - account
+            Action:
+              - SNS:GetTopicAttributes
+              - SNS:SetTopicAttributes
+              - SNS:AddPermission
+              - SNS:RemovePermission
+              - SNS:DeleteTopic
+              - SNS:Subscribe
+              - SNS:ListSubscriptionsByTopic
+              - SNS:Publish
+              - SNS:Receive
+            Resource:
+              Ref: BmcInfoAlarmTopic
+            Condition:
+              StringEquals:
+                AWS:SourceOwner:
+                  Ref: AWS::AccountId
+          - Sid: WhitelistLifesaverSQSQueueOwner
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::FindInMap:
+                  - EnvMap
+                  - Ref: SQSQueuesEnv
+                  - account
+            Action: sns:Subscribe
+            Resource:
+              Ref: BmcInfoAlarmTopic
+      Topics:
+        - Ref: BmcInfoAlarmTopic
+  BmcMinorAlarmTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Id: BmcMinorAlarmTopicPolicy
+        Version: '2012-10-17'
+        Statement:
+          - Sid: __default_statement_ID
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::FindInMap:
+                  - EnvMap
+                  - Ref: SQSQueuesEnv
+                  - account
+            Action:
+              - SNS:GetTopicAttributes
+              - SNS:SetTopicAttributes
+              - SNS:AddPermission
+              - SNS:RemovePermission
+              - SNS:DeleteTopic
+              - SNS:Subscribe
+              - SNS:ListSubscriptionsByTopic
+              - SNS:Publish
+              - SNS:Receive
+            Resource:
+              Ref: BmcMinorAlarmTopic
+            Condition:
+              StringEquals:
+                AWS:SourceOwner:
+                  Ref: AWS::AccountId
+          - Sid: WhitelistLifesaverSQSQueueOwner
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::FindInMap:
+                  - EnvMap
+                  - Ref: SQSQueuesEnv
+                  - account
+            Action: sns:Subscribe
+            Resource:
+              Ref: BmcMinorAlarmTopic
+      Topics:
+        - Ref: BmcMinorAlarmTopic
+  BmcMajorAlarmTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Id: BmcMajorAlarmTopicPolicy
+        Version: '2012-10-17'
+        Statement:
+          - Sid: __default_statement_ID
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::FindInMap:
+                  - EnvMap
+                  - Ref: SQSQueuesEnv
+                  - account
+            Action:
+              - SNS:GetTopicAttributes
+              - SNS:SetTopicAttributes
+              - SNS:AddPermission
+              - SNS:RemovePermission
+              - SNS:DeleteTopic
+              - SNS:Subscribe
+              - SNS:ListSubscriptionsByTopic
+              - SNS:Publish
+              - SNS:Receive
+            Resource:
+              Ref: BmcMajorAlarmTopic
+            Condition:
+              StringEquals:
+                AWS:SourceOwner:
+                  Ref: AWS::AccountId
+          - Sid: WhitelistLifesaverSQSQueueOwner
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::FindInMap:
+                  - EnvMap
+                  - Ref: SQSQueuesEnv
+                  - account
+            Action: sns:Subscribe
+            Resource:
+              Ref: BmcMajorAlarmTopic
+      Topics:
+        - Ref: BmcMajorAlarmTopic
+  
+  BmcCriticalAlarmTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Id: BmcCriticalAlarmTopicPolicy
+        Version: '2012-10-17'
+        Statement:
+          - Sid: '__default_statement_ID'
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::FindInMap:
+                  - EnvMap
+                  - Ref: SQSQueuesEnv
+                  - account
+            Action:
+              - SNS:GetTopicAttributes
+              - SNS:SetTopicAttributes
+              - SNS:AddPermission
+              - SNS:RemovePermission
+              - SNS:DeleteTopic
+              - SNS:Subscribe
+              - SNS:ListSubscriptionsByTopic
+              - SNS:Publish
+              - SNS:Receive
+            Resource:
+              Ref: BmcCriticalAlarmTopic
+            Condition:
+              StringEquals:
+                AWS:SourceOwner:
+                  Ref: AWS::AccountId
+          - Sid: WhitelistLifesaverSQSQueueOwner
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::FindInMap:
+                  - EnvMap
+                  - Ref: SQSQueuesEnv
+                  - account
+            Action: sns:Subscribe
+            Resource:
+              Ref: BmcCriticalAlarmTopic
+      Topics:
+        - Ref: BmcCriticalAlarmTopic
+
+Outputs:
+  BmcInfoAlarmTopicARN:
+    Description: ARN of SNS topic for CloudWatch alarms sent to BMC at INFO severity level.
+    Value:
+      Ref: BmcInfoAlarmTopic
+    Export:
+      Name:
+        Fn::Join:
+          - '-'
+          - - Ref: AssociatedStack
+            - 'BMCInfoAlarmTopic'
+  BmcMinorAlarmTopicARN:
+    Description: ARN of SNS topic for CloudWatch alarms sent to BMC at MINOR severity level.
+    Value:
+      Ref: BmcMinorAlarmTopic
+    Export:
+      Name:
+        Fn::Join:
+          - '-'
+          - - Ref: AssociatedStack
+            - 'BMCMinorAlarmTopic'
+  BmcMajorAlarmTopicARN:
+    Description: ARN of SNS topic for CloudWatch alarms sent to BMC at MAJOR severity level.
+    Value:
+      Ref: BmcMajorAlarmTopic
+    Export:
+      Name:
+        Fn::Join:
+          - '-'
+          - - Ref: AssociatedStack
+            - 'BMCMajorAlarmTopic'
+  BmcCriticalAlarmTopicARN:
+    Description: ARN of SNS topic for CloudWatch alarms sent to BMC at CRITICAL severity level.
+    Value:
+      Ref: BmcCriticalAlarmTopic
+    Export:
+      Name:
+        Fn::Join:
+          - '-'
+          - - Ref: AssociatedStack
+            - 'BMCCriticalAlarmTopic'

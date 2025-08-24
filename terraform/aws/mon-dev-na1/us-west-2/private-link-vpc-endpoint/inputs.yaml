@@ -1,0 +1,18 @@
+private_link_data:
+  # Private link for otel collector
+  otel-collector:
+    vpc_id: vpc-06aa5506e40e82109
+    subnet_ids:
+      - subnet-0a19a7e3439e2bd34
+      - subnet-043a6a4a32302d4c0
+    security_group_ids:
+      - sg-063cafc81fd8d8918
+    service_name: "com.amazonaws.vpce.us-west-2.vpce-svc-09078651a4db7980b"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: true
+    route53_record_name: ""
+    tags: 
+      Request: "RITM0062512"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "SRE Teams"
+      Product: "SRE Teams"

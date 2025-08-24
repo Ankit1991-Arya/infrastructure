@@ -1,0 +1,8 @@
+route53_record_data:
+  record1:
+    hosted_zone_id: "Z02884893KQSIB2C7JTO4"
+    record_name: "mon-na1.nicecxone-dev.com"
+    record_type: "A"
+    loadbalancer_arn: "grafana-ingress-1672458137.us-west-2.elb.amazonaws.com"
+    loadbalancer_zone_id: "Z1H1FL5HABSF5"
+    evaluate_target_health: "true"

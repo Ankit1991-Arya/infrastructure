@@ -1,0 +1,177 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: AWS CloudFormation Template for Network Only
+
+
+Mappings:
+  Data:
+    values:
+      wfoVPC: "vpc-0143a9c3a8df17454"
+      wfoAccount: "814740517824"
+      wfoCIDR: "10.233.64.0/18"
+      dfoCIDR: "10.232.16.0/20"
+      DFOPeering: "pcx-0043fdfca67d95a43"
+      Owner: 'Network Teams'
+
+# the role has to be requested from enterprise team
+
+Resources:
+  VPCPeeringConnectionCore:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      VpcId: !ImportValue 'CoreNetwork-Vpc'
+      PeerVpcId: !FindInMap [ Data,values,wfoVPC ]
+      PeerOwnerId: !FindInMap [ Data,values,wfoAccount ]
+      PeerRegion: !Ref AWS::Region
+      PeerRoleArn: arn:aws:iam::814740517824:role/ServiceAccess-IC-Vpc-Peering-Role
+
+  VPCPeeringConnectionVoice1:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      VpcId: !ImportValue 'VoiceNetwork-Vpc'
+      PeerVpcId: !FindInMap [ Data,values,wfoVPC ]
+      PeerOwnerId: !FindInMap [ Data,values,wfoAccount ]
+      PeerRegion: !Ref AWS::Region
+      PeerRoleArn: arn:aws:iam::814740517824:role/ServiceAccess-IC-Vpc-Peering-Role
+
+  VPCPeeringConnectionVoice2:
+    Type: AWS::EC2::VPCPeeringConnection
+    Properties:
+      VpcId: !ImportValue 'VoiceNetwork2-Vpc'
+      PeerVpcId: !FindInMap [ Data,values,wfoVPC ]
+      PeerOwnerId: !FindInMap [ Data,values,wfoAccount ]
+      PeerRegion: !Ref AWS::Region
+      PeerRoleArn: arn:aws:iam::814740517824:role/ServiceAccess-IC-Vpc-Peering-Role
+
+
+  VPCPeeringRouteCore1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az1CoreRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,wfoCIDR ]
+      VpcPeeringConnectionId: !Ref VPCPeeringConnectionCore
+
+  VPCPeeringRouteCore2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az1LambdaRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,wfoCIDR ]
+      VpcPeeringConnectionId: !Ref VPCPeeringConnectionCore
+
+  VPCPeeringRouteCore3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az1UntrustRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,wfoCIDR ]
+      VpcPeeringConnectionId: !Ref VPCPeeringConnectionCore
+
+  VPCPeeringRouteCore4:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az1VIPRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,wfoCIDR ]
+      VpcPeeringConnectionId: !Ref VPCPeeringConnectionCore
+
+  VPCPeeringRouteCore5:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az2CoreRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,wfoCIDR ]
+      VpcPeeringConnectionId: !Ref VPCPeeringConnectionCore
+
+  VPCPeeringRouteCore6:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az2LambdaRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,wfoCIDR ]
+      VpcPeeringConnectionId: !Ref VPCPeeringConnectionCore
+
+  VPCPeeringRouteCore7:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az2UntrustRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,wfoCIDR ]
+      VpcPeeringConnectionId: !Ref VPCPeeringConnectionCore
+
+  VPCPeeringRouteCore8:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az2VIPRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,wfoCIDR ]
+      VpcPeeringConnectionId: !Ref VPCPeeringConnectionCore
+
+  VPCPeeringRouteCore9:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-ManagementRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,wfoCIDR ]
+      VpcPeeringConnectionId: !Ref VPCPeeringConnectionCore
+
+  VPCPeeringRouteVoice1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'Voice-Az1TrustRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,wfoCIDR ]
+      VpcPeeringConnectionId: !Ref VPCPeeringConnectionVoice1
+
+  VPCPeeringRouteVoice2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'Voice-VPC2Az2TrustRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,wfoCIDR ]
+      VpcPeeringConnectionId: !Ref VPCPeeringConnectionVoice2
+
+##Once Core to DFO Peering in place, for Korea we build it manually so i have added Peer Id directly.Conditions:
+
+  DFOVPCPeeringRouteCore1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az1CoreRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,dfoCIDR ]
+      VpcPeeringConnectionId: !FindInMap [ Data,values,DFOPeering ]
+
+  DFOVPCPeeringRouteCore2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az1LambdaRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,dfoCIDR ]
+      VpcPeeringConnectionId: !FindInMap [ Data,values,DFOPeering ]
+
+  DFOVPCPeeringRouteCore3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az1VIPRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,dfoCIDR ]
+      VpcPeeringConnectionId: !FindInMap [ Data,values,DFOPeering ]
+
+  DFOVPCPeeringRouteCore4:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az2CoreRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,dfoCIDR ]
+      VpcPeeringConnectionId: !FindInMap [ Data,values,DFOPeering ]
+
+  DFOVPCPeeringRouteCore5:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az2LambdaRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,dfoCIDR ]
+      VpcPeeringConnectionId: !FindInMap [ Data,values,DFOPeering ]
+
+  DFOVPCPeeringRouteCore6:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue 'CoreNetwork-Az2VIPRouteTable'
+      DestinationCidrBlock: !FindInMap [ Data,values,dfoCIDR ]
+      VpcPeeringConnectionId: !FindInMap [ Data,values,DFOPeering ]
+
+Outputs:
+  VPCPeeringConnectionIdCore:
+    Value: !Ref VPCPeeringConnectionCore
+
+  VPCPeeringConnectionIdVoice1:
+    Value: !Ref VPCPeeringConnectionVoice1
+
+  VPCPeeringConnectionIdVoice2:
+    Value: !Ref VPCPeeringConnectionVoice2
+
+

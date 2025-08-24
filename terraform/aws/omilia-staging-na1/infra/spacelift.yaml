@@ -1,0 +1,25 @@
+before_init:
+  - "cat /mnt/workspace/github.netrc >> ~/.netrc"
+  - "chmod 600 ~/.netrc"
+
+after_plan:
+  - "tflint --init"
+  - "tflint; if [ $? -eq 0 ]; then echo -e \"No tflint error(s) found.\\n\"; else printf \"${RED}ERROR: tflint found the failures listed above!${NC}\\n\"; val_errors=2; fi"
+
+contexts:
+  cxossp-github-personal-access-token: 0
+
+integrations:
+  aws: omilia-staging-na1
+
+maintainers:
+  - name: kubernetes-admins
+    email: devops-cloud-native-core@niceincontact.com
+
+worker_pool_name: omilia-ec2-so
+runner_image: "369498121101.dkr.ecr.us-west-2.amazonaws.com/cnc/spacelift-runner:1.9"
+branch: omilia-demo-staging
+auto_deploy: false
+remove_default_after_plan: true
+
+terraform_version: 1.6.2

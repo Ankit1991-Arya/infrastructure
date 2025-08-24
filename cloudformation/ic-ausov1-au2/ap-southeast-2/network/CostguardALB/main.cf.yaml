@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS CloudFormation Template for creating CostGuard base alb
+Parameters:
+  CertificateARN:
+    Description: >-
+      The ARN of the SSL certificate created in this account and region (e.g.
+      arn:aws:acm:us-west-2:545209810301:certificate/8a3d4b9e-5aa0-46fd-8381-0d1ab83b9621)
+    Type: String
+    Default: 'arn:aws:acm:ap-southeast-2:637423616941:certificate/e44b4005-a7b0-4d5c-9eef-f1f784a9eae6'
+Resources:
+  CostGuardDefault:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      HealthCheckPort: '80'
+      HealthCheckPath: /costguardws/incostguardws.asmx
+      HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 5
+      HealthCheckTimeoutSeconds: 4
+      HealthyThresholdCount: 5
+      UnhealthyThresholdCount: 2
+      Name: 'CostGuardDefault-tg'
+      Port: 80
+      Protocol: HTTP
+      Tags:
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: ApplicationOwner
+          Value: MIS
+        - Key: Product
+          Value: Billing
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 300
+        - Key: stickiness.enabled
+          Value: true
+        - Key: stickiness.type
+          Value: lb_cookie
+        - Key: stickiness.lb_cookie.duration_seconds
+          Value: 86400
+      Targets:
+        - Id: !ImportValue GlobalWorldwide-CostGuardWebServiceA
+        - Id: !ImportValue GlobalWorldwide-CostGuardWebServiceB
+      VpcId: !ImportValue DMZNetwork-Vpc
+  LoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '300'
+        - Key: deletion_protection.enabled
+          Value: 'false'
+      Name: CostGuardDefault-ALB
+      Scheme: internet-facing
+      SecurityGroups:
+        - !ImportValue GlobalSecurityGroups-ClusterALBSecurityGroup
+      Subnets:
+        - !ImportValue DMZNetwork-Az13rdPartyDMZSubnet
+        - !ImportValue DMZNetwork-Az23rdPartyDMZSubnet
+      Tags:
+        - Key: InfrastructureOwner
+          Value: Network Teams
+        - Key: DeviceType
+          Value: Application Load Balancer
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Billing
+        - Key: ApplicationOwner
+          Value: MIS
+  ListenerSSL:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      DefaultActions:
+        - TargetGroupArn: !Ref CostGuardDefault
+          Type: forward
+      Certificates:
+        - CertificateArn: !Ref CertificateARN
+      SslPolicy: ELBSecurityPolicy-TLS-1-2-2017-01
+  CostguardDNS:
+    Type: 'AWS::Route53::RecordSet'
+    #Condition: CreateDNSRecords
+    Properties:
+      HostedZoneName: !Join
+        - ''
+        - - !ImportValue RegionConfig-ExternalDomainName-NiceCxoneDomain
+      Name: !Join
+        - ''
+        - - costguardws
+          - .
+          - !ImportValue RegionConfig-ExternalDomainName-NiceCxoneDomain
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt
+          - LoadBalancer
+          - DNSName
+        HostedZoneId: !GetAtt
+          - LoadBalancer
+          - CanonicalHostedZoneID

@@ -1,0 +1,5 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation example stack used to test spacelift stack-provisioner'
+Resources:
+  NullResource:
+    Type: AWS::CloudFormation::WaitConditionHandle

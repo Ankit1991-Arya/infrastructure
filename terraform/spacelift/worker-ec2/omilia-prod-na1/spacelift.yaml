@@ -1,0 +1,13 @@
+before_init:
+  - "cat /mnt/workspace/github.netrc >> ~/.netrc"
+  - "chmod 600 ~/.netrc"
+contexts:
+  cxossp-github-personal-access-token: 0
+  omilia-spacelift-workerpool-prod: 1
+integrations:
+  aws: omilia-prod-na1
+maintainers:
+  - name: kubernetes-admins
+    email: devops-cloud-native-core@niceincontact.com
+
+terraform_version: 1.5.7

@@ -1,0 +1,33 @@
+sns_topic_subscriptions: {
+  "eu-central-1": [
+    "arn:aws:sns:eu-central-1:851725368241:mon-eusov1-eu2-cloudwatch-bmc-critical",
+    "arn:aws:sns:eu-central-1:851725368241:mon-eusov1-eu2-cloudwatch-bmc-minor",
+    "arn:aws:sns:eu-central-1:851725368241:mon-eusov1-eu2-cloudwatch-bmc-major",
+    "arn:aws:sns:eu-central-1:851725368241:mon-eusov1-eu2-cloudwatch-bmc-info",
+    "arn:aws:sns:eu-central-1:851725368241:mon-eusov1-eu2-cloudwatch-bmc-custom"
+  ]
+}
+lambda_name: "mon-eusov1-eu2-lifesaver-lambda"
+queue_name: "mon-eusov1-eu2-lifesaver-queue"
+dlq_name: "mon-eusov1-eu2-lifesaver-dlq"
+whitelisted_accounts: [
+  "851725368241"
+]
+role_name: "arn:aws:iam::851725368241:role/ServiceAccess-sre-lifesaver-lambda-role"
+aws_region: "eu-central-1"
+lambda_memory_megabytes: 128
+lambda_debug_logging: true
+secret_name: "mon-eusov1-eu2-lifesaver-secrets"
+vpc_id: "vpc-0521dde8bcb283eb9"
+subnet_ids: ["subnet-06d8ca4dfcc6c4628","subnet-0e2ece697372d3212"]
+tags: {
+  Product: "Monitoring-tool",
+  ServiceOwner: "SRE",
+  ApplicationOwner: "SRE",
+  Owner: "SRE",
+  InfrastructureOwner: "SRE"
+  }
+fips_compliant: true
+fips_supported_regions:
+  - "us-east-1"
+  - "us-west-2"

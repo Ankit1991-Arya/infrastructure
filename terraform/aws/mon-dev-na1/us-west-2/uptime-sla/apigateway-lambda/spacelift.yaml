@@ -1,0 +1,18 @@
+before_init:
+- cat /mnt/workspace/github.netrc >> ~/.netrc
+- chmod 600 ~/.netrc
+contexts:
+  cxossp-github-personal-access-token: 0
+integrations:
+  aws: mon-dev-na1
+maintainers:
+- email: nishu.bansal@nice.com
+  name: UptimeCalculationService
+  
+data:
+  role_and_policy:
+    role_name: "ServiceAccess-sre-uptime-calculation-mon-role"
+    role_arn: arn:aws:iam::300101013673:role/ServiceAccess-sre-uptime-calculation-mon-role
+    policy_arn: arn:aws:iam::300101013673:policy/terraform-20250131053744782700000001
+  layer:
+    arn: "arn:aws:lambda:us-west-2:300101013673:layer:node_modules_layer:2"

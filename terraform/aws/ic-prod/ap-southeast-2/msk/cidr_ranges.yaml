@@ -1,0 +1,45 @@
+allowed_cidrs:
+  - cidr: "54.206.248.157/32"
+    description: "shared_eks-ap-southeast-2b"
+  - cidr: "3.104.51.206/32"
+    description: "shared_eks-ap-southeast-2c"
+  - cidr: "3.24.37.98/32"
+    description: "shared_eks-ap-southeast-2a"
+  - cidr: "52.64.174.99/32"
+    description: "CoreNetwork_ap-southeast-2a"
+  - cidr: "13.210.82.48/32"
+    description: "CoreNetwork_ap-southeast-2b"
+  - cidr: "54.214.205.249/32"
+    description: "nice-devops-sandboxCICD-WFO.ToolsNATGatewayA"
+  - cidr: "54.71.107.74/32"
+    description: "nice-devops-sandboxCICD-WFO.ToolsNATGatewayB"
+  - cidr: "54.189.111.43/32"
+    description: "nice-devops-sandboxCICD-WFO.ToolsNATGatewayC"
+  - cidr: "54.149.7.150/32"
+    description: "nice-devops-sandboxCICD-WFO.ToolsNATGatewayD"
+  - cidr: "100.20.86.60/32"
+    description: "NGW for nice-devops us-west-2 shared_eks VPC (kbastion)"
+  - cidr: "44.233.241.98/32"
+    description: "NGW for nice-devops us-west-2 shared_eks VPC (kbastion)"
+  - cidr: "44.231.249.232/32"
+    description: "NGW for nice-devops us-west-2 shared_eks VPC (kbastion)"
+  - cidr: "52.62.191.213/32"
+    description: "DigitalEngagement NAT Gateway ap-southeast-2a"
+  - cidr: "3.24.249.20/32"
+    description: "DigitalEngagement NAT Gateway ap-southeast-2b"
+  - cidr: "3.24.88.73/32"
+    description: "DigitalEngagement NAT Gateway ap-southeast-2c"
+  - cidr: "13.238.131.94/32"
+    description: "WFO-PROD NAT Gateway ap-southeast-2a"
+  - cidr: "54.66.251.84/32"
+    description: "WFO-PROD NAT Gateway ap-southeast-2b"
+  - cidr: "54.71.185.219/32"
+    description: "NGW for ic-dba us-west-2 shared_eks VPC"
+
+prometheus_cidr_blocks: #NAT Gatewy IPs of Shared EKS VPC
+  - "3.24.37.98/32"     # shared_eks-ap-southeast-2a
+  - "54.206.248.157/32" # shared_eks-ap-southeast-2b
+  - "3.104.51.206/32"   # shared_eks-ap-southeast-2c
+
+sasl_iam_cidr_blocks:
+  - "10.0.0.0/16"

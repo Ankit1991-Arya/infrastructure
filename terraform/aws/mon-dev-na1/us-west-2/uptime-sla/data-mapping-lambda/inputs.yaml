@@ -1,0 +1,3 @@
+data:
+  role:
+    arn: "arn:aws:iam::300101013673:role/ServiceAccess-sre-uptime-calculation-mon-role"

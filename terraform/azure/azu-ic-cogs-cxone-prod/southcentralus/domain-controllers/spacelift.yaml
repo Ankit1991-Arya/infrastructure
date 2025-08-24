@@ -1,0 +1,6 @@
+integrations:
+  azure: "AZU-IC-COGS-CXONE-PROD"
+maintainers:
+  - name: system-engineers
+    email: systemengineering@nice.com
+terraform_version: 1.3.1

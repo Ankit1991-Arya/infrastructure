@@ -1,0 +1,123 @@
+custom_alert_nat_gateway:
+  packets_dropped_percent_natGateway_2a:
+    alarm_name           : "mon-prod-kr1-openapm-openAPMInfra-natGateway-nat-09213e86a4b12e373-percent-packet-dropped-critical"
+    alarm_description           : "more than 0.01 percent of packets dropped There may be an issue with Amazon VPC service"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    threshold                 : 0.01
+    sns_topic_arn             : "arn:aws:sns:ap-northeast-2:744126299712:mon-prod-kr1-cloudwatch-bmc-critical"     
+    expression                : "(m1/(m2+m3))*100"
+    label                     : "percent packet dropped"
+
+    metric_name_m1            : "PacketsDropCount"
+    namespace_m1              : "AWS/NATGateway"
+    period_m1                 : 60
+    stat_m1                   : "Sum"    
+    unit_m1                   : "Count"  
+    dimensions_m1             :
+      NatGatewayId         : "nat-09213e86a4b12e373"
+
+    metric_name_m2            : "PacketsInFromSource"
+    namespace_m2              : "AWS/NATGateway"
+    period_m2                 : 60
+    stat_m2                   : "Sum"    
+    unit_m2                   : "Count"  
+    dimensions_m2             :
+      NatGatewayId         : "nat-09213e86a4b12e373"
+
+    metric_name_m3            : "PacketsInFromDestination"
+    namespace_m3              : "AWS/NATGateway"
+    period_m3                 : 60
+    stat_m3                   : "Sum"    
+    unit_m3                   : "Count"  
+    dimensions_m3             :
+      NatGatewayId         : "nat-09213e86a4b12e373"      
+
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"	  
+
+  packets_dropped_percent_natGateway_2b:
+    alarm_name           : "mon-prod-kr1-openapm-openAPMInfra-natGateway-nat-0c53a8fc2a7bdea3f-percent-packet-dropped-critical"
+    alarm_description           : "more than 0.01 percent of packets dropped There may be an issue with Amazon VPC service"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    threshold                 : 0.01
+    sns_topic_arn             : "arn:aws:sns:ap-northeast-2:744126299712:mon-prod-kr1-cloudwatch-bmc-critical"     
+    expression                : "(m1/(m2+m3))*100"
+    label                     : "percent packet dropped"
+
+    metric_name_m1            : "PacketsDropCount"
+    namespace_m1              : "AWS/NATGateway"
+    period_m1                 : 60
+    stat_m1                   : "Sum"    
+    unit_m1                   : "Count"  
+    dimensions_m1             :
+      NatGatewayId         : "nat-0c53a8fc2a7bdea3f"
+
+    metric_name_m2            : "PacketsInFromSource"
+    namespace_m2              : "AWS/NATGateway"
+    period_m2                 : 60
+    stat_m2                   : "Sum"    
+    unit_m2                   : "Count"  
+    dimensions_m2             :
+      NatGatewayId         : "nat-0c53a8fc2a7bdea3f"
+
+    metric_name_m3            : "PacketsInFromDestination"
+    namespace_m3              : "AWS/NATGateway"
+    period_m3                 : 60
+    stat_m3                   : "Sum"    
+    unit_m3                   : "Count"  
+    dimensions_m3             :
+      NatGatewayId         : "nat-0c53a8fc2a7bdea3f"      
+
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"	
+
+  packets_dropped_percent_natGateway_2c:
+    alarm_name           : "mon-prod-kr1-openapm-openAPMInfra-natGateway-nat-0c1e120d56ffa76ad-percent-packet-dropped-critical"
+    alarm_description           : "more than 0.01 percent of packets dropped There may be an issue with Amazon VPC service"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    threshold                 : 0.01
+    sns_topic_arn             : "arn:aws:sns:ap-northeast-2:744126299712:mon-prod-kr1-cloudwatch-bmc-critical"     
+    expression                : "(m1/(m2+m3))*100"
+    label                     : "percent packet dropped"
+
+    metric_name_m1            : "PacketsDropCount"
+    namespace_m1              : "AWS/NATGateway"
+    period_m1                 : 60
+    stat_m1                   : "Sum"    
+    unit_m1                   : "Count"  
+    dimensions_m1             :
+      NatGatewayId         : "nat-0c1e120d56ffa76ad"
+
+    metric_name_m2            : "PacketsInFromSource"
+    namespace_m2              : "AWS/NATGateway"
+    period_m2                 : 60
+    stat_m2                   : "Sum"    
+    unit_m2                   : "Count"  
+    dimensions_m2             :
+      NatGatewayId         : "nat-0c1e120d56ffa76ad"
+
+    metric_name_m3            : "PacketsInFromDestination"
+    namespace_m3              : "AWS/NATGateway"
+    period_m3                 : 60
+    stat_m3                   : "Sum"    
+    unit_m3                   : "Count"  
+    dimensions_m3             :
+      NatGatewayId         : "nat-0c1e120d56ffa76ad"      
+
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"	

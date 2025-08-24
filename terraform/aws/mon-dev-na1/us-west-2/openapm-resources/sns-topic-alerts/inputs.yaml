@@ -1,0 +1,105 @@
+alerts:
+  FailedNotifications_SNS_Minor:
+    alarm_name          : "openAPMInfra-SNS-mon-dev-na1-cloudwatch-bmc-minor-NumberOfNotificationsFailed"
+    description         : "Alarm when the number of failed notifications exceeds the threshold"
+    comparison_operator : "GreaterThanThreshold"
+    evaluation_periods  : 1
+    metric_name         : "NumberOfNotificationsFailed"
+    namespace           : "AWS/SNS"
+    period              : 60
+    statistic           : "Sum"
+    threshold           : 0
+    dimensions:
+      TopicName         : "mon-dev-na1-cloudwatch-bmc-minor"
+    sns_topic_arn       : "arn:aws:sns:us-west-2:300101013673:mon-dev-na1-sns-topic-critical"
+    treat_missing_data  : "notBreaching"
+    tags:
+      Product           : "Grafana-LGMT"
+      ServiceOwner      : "SRE"
+      ApplicationOwner  : "SRE"
+      Owner             : "SRE"
+      InfrastructureOwner: "SRE"
+
+  FailedNotifications_SNS_Critical:
+    alarm_name          : "openAPMInfra-SNS-mon-dev-na1-cloudwatch-bmc-critical-NumberOfNotificationsFailed"
+    description         : "Alarm when the number of failed notifications exceeds the threshold"
+    comparison_operator : "GreaterThanThreshold"
+    evaluation_periods  : 1
+    metric_name         : "NumberOfNotificationsFailed"
+    namespace           : "AWS/SNS"
+    period              : 60
+    statistic           : "Sum"
+    threshold           : 0
+    dimensions:
+      TopicName         : "mon-dev-na1-cloudwatch-bmc-critical"
+    sns_topic_arn       : "arn:aws:sns:us-west-2:300101013673:mon-dev-na1-sns-topic-critical"
+    treat_missing_data  : "notBreaching"
+    tags:
+      Product           : "Grafana-LGMT"
+      ServiceOwner      : "SRE"
+      ApplicationOwner  : "SRE"
+      Owner             : "SRE"
+      InfrastructureOwner: "SRE"
+
+  FailedNotifications_SNS_Custom:
+    alarm_name          : "openAPMInfra-SNS-mon-dev-na1-cloudwatch-bmc-custom-NumberOfNotificationsFailed"
+    description         : "Alarm when the number of failed notifications exceeds the threshold"
+    comparison_operator : "GreaterThanThreshold"
+    evaluation_periods  : 1
+    metric_name         : "NumberOfNotificationsFailed"
+    namespace           : "AWS/SNS"
+    period              : 60
+    statistic           : "Sum"
+    threshold           : 0
+    dimensions:
+      TopicName         : "mon-dev-na1-cloudwatch-bmc-custom"
+    sns_topic_arn       : "arn:aws:sns:us-west-2:300101013673:mon-dev-na1-sns-topic-critical"
+    treat_missing_data  : "notBreaching"
+    tags:
+      Product           : "Grafana-LGMT"
+      ServiceOwner      : "SRE"
+      ApplicationOwner  : "SRE"
+      Owner             : "SRE"
+      InfrastructureOwner: "SRE"
+
+  FailedNotifications_SNS_Info:
+    alarm_name          : "openAPMInfra-SNS-mon-dev-na1-cloudwatch-bmc-info-NumberOfNotificationsFailed"
+    description         : "Alarm when the number of failed notifications exceeds the threshold"
+    comparison_operator : "GreaterThanThreshold"
+    evaluation_periods  : 1
+    metric_name         : "NumberOfNotificationsFailed"
+    namespace           : "AWS/SNS"
+    period              : 60
+    statistic           : "Sum"
+    threshold           : 0
+    dimensions:
+      TopicName         : "mon-dev-na1-cloudwatch-bmc-info"
+    sns_topic_arn       : "arn:aws:sns:us-west-2:300101013673:mon-dev-na1-sns-topic-critical"
+    treat_missing_data  : "notBreaching"
+    tags:
+      Product           : "Grafana-LGMT"
+      ServiceOwner      : "SRE"
+      ApplicationOwner  : "SRE"
+      Owner             : "SRE"
+      InfrastructureOwner: "SRE"
+
+  FailedNotifications_SNS_Major:
+    alarm_name          : "openAPMInfra-SNS-mon-dev-na1-cloudwatch-bmc-major-NumberOfNotificationsFailed"
+    description         : "Alarm when the number of failed notifications exceeds the threshold"
+    comparison_operator : "GreaterThanThreshold"
+    evaluation_periods  : 1
+    metric_name         : "NumberOfNotificationsFailed"
+    namespace           : "AWS/SNS"
+    period              : 60
+    statistic           : "Sum"
+    threshold           : 0
+    dimensions:
+      TopicName         : "mon-dev-na1-cloudwatch-bmc-major"
+    sns_topic_arn       : "arn:aws:sns:us-west-2:300101013673:mon-dev-na1-sns-topic-critical"
+    treat_missing_data  : "notBreaching"
+    tags:
+      Product           : "Grafana-LGMT"
+      ServiceOwner      : "SRE"
+      ApplicationOwner  : "SRE"
+      Owner             : "SRE"
+      InfrastructureOwner: "SRE"

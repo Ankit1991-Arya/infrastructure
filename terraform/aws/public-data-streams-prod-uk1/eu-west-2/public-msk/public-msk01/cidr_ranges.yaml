@@ -1,0 +1,13 @@
+allowed_cidrs:
+  - cidr: "100.20.86.60/32"
+    description: "NGW for nice-devops us-west-2 shared_eks VPC (kbastion)"
+  - cidr: "44.233.241.98/32"
+    description: "NGW for nice-devops us-west-2 shared_eks VPC (kbastion)"
+  - cidr: "44.231.249.232/32"
+    description: "NGW for nice-devops us-west-2 shared_eks VPC (kbastion)"
+  - cidr: "18.132.85.173/32"
+    description: "ic-prod shared_eks-eu-west-2a NAT Gateway"
+  - cidr: "18.168.126.74/32"
+    description: "ic-prod shared_eks-eu-west-2b NAT Gateway"
+  - cidr: "18.134.39.137/32"
+    description: "ic-prod shared_eks-eu-west-2c NAT Gateway"

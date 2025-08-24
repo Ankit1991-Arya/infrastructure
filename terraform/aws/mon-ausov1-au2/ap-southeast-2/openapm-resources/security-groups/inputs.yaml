@@ -1,0 +1,49 @@
+security_group_data:
+  grafana-security-group-1:
+    prefix_list_names:
+      - "mon-ausov1-au2-openapm-company-wide-list"
+    security_group_name: "mon-ausov1-au2-openapm-grafana-security-group-1"
+    security_group_description: "Security Group for OpenAPM Grafana"
+    vpc_id: "vpc-0e0230c9299fda9c2"
+    security_group_tags:
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  grafana-security-group-2:
+    prefix_list_names:
+      - "mon-ausov1-au2-openapm-secure-internet-access-1"
+    security_group_name: "mon-ausov1-au2-openapm-grafana-security-group-2"
+    security_group_description: "Security Group for OpenAPM Grafana"
+    vpc_id: "vpc-0e0230c9299fda9c2"
+    security_group_tags:
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  grafana-security-group-3:
+    prefix_list_names:
+      - "mon-ausov1-au2-openapm-secure-internet-access-2"
+    security_group_name: "mon-ausov1-au2-openapm-grafana-security-group-3"
+    security_group_description: "Security Group for OpenAPM Grafana"
+    vpc_id: "vpc-0e0230c9299fda9c2"
+    security_group_tags:
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"
+  grafana-security-group-4:
+    prefix_list_names:
+      - "mon-ausov1-au2-openapm-secure-internet-access-3"
+    security_group_name: "mon-ausov1-au2-openapm-grafana-security-group-4"
+    security_group_description: "Security Group for OpenAPM Grafana"
+    vpc_id: "vpc-0e0230c9299fda9c2"
+    security_group_tags:
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"

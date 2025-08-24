@@ -1,0 +1,15 @@
+data:
+  role:
+    arn: "arn:aws:iam::300101013673:role/ServiceAccess-sre-uptime-calculation-mon-role"
+  vpc:
+    cidr: "10.0.0.0/24"
+    allowed_principals: ""
+    log_group_arn: ""  
+  subnet:
+    cidr: "10.0.0.0/24"
+    availability_zone: "us-west-2a"
+  nlb:
+    port: "443"
+    protocol: "TCP"
+
+

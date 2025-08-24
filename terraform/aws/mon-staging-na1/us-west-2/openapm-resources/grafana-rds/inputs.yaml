@@ -1,0 +1,16 @@
+#availability_zones:
+#  - us-west-2a
+#  - us-west-2b
+#  - us-west-2c
+#shared_eks_private_subnets:
+#  - subnet-078b8f659e1c9b547
+#  - subnet-080c1f210217c4fcc
+#  - subnet-058d3dbae4fe78ae5
+#vpc_security_group_ids:
+#  - sg-03b460f2bc9e35796
+#tags:
+#  Product: "Grafana-LGMT"
+#  ServiceOwner: "SRE"
+#  ApplicationOwner: "SRE"
+#  Owner: "SRE"
+#  InfrastructureOwner: "SRE"

@@ -1,0 +1,9 @@
+data:
+  role:
+    billing_mode: "PROVISIONED"
+    read_capacity: 20
+    write_capacity: 20
+  GSI:
+    projection_type: "ALL"
+    read_capacity: 20
+    write_capacity: 20

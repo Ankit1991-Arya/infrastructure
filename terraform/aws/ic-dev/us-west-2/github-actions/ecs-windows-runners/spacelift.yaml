@@ -1,0 +1,9 @@
+integrations:
+  aws: ic-dev
+maintainers:
+- email: devops-cloud-native-core@niceincontact.com
+  name: kubernetes-admins
+- name: media-services-team
+  email: r&dplatform-media@nice.com
+
+terraform_version: 1.8.2

@@ -1,0 +1,10 @@
+before_init:
+- cat /mnt/workspace/github.netrc >> ~/.netrc
+- chmod 600 ~/.netrc
+contexts:
+  cxossp-github-personal-access-token: 0
+integrations:
+  aws: nice-devops-sandbox
+maintainers:
+- email: devops-cloud-native-core@nice.com
+  name: kubernetes-admins

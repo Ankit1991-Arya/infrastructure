@@ -1,0 +1,315 @@
+custom_alerts:
+  error_rate_loki:
+    alarm_name           : "mon-dev-openapm-openAPMInfra-s3Bucket-mon-dev-openapm-loki-request-error-rate-critical"
+    alarm_description           : "more than 2 percent of s3 bucket requests call are 5xx"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    threshold                 : 2
+    sns_topic_arn             : "arn:aws:sns:us-west-2:300101013673:mon-dev-na1-cloudwatch-bmc-critical"     
+    expression                : "m2/m1*100"
+    label                     : "Error Rate"
+
+    metric_name_m1            : "AllRequests"
+    namespace_m1              : "AWS/S3/Storage-Lens"
+    period_m1                 : 300
+    stat_m1                   : "Sum"    
+    unit_m1                   : "Count"  
+    dimensions_m1             :
+      metrics_version         : "1.0"
+      storage_class           : "-"
+      aws_region              : "us-west-2"
+      aws_account_number      : "300101013673"
+      bucket_name             : "mon-dev-openapm-loki"
+      configuration_id        : "Open-APM"
+      record_type             : "BUCKET" 
+
+
+    metric_name_m2            : "5xxErrors"
+    namespace_m2              : "AWS/S3/Storage-Lens"
+    period_m2                 : 300
+    stat_m2                   : "Sum"    
+    unit_m2                   : "Count"  
+    dimensions_m2             :
+      metrics_version         : "1.0"
+      storage_class           : "-"
+      aws_region              : "us-west-2"
+      aws_account_number      : "300101013673"
+      bucket_name             : "mon-dev-openapm-loki"
+      configuration_id        : "Open-APM"
+      record_type             : "BUCKET"
+    
+    treat_missing_data   : "notBreaching"  # Add this line 
+    
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"	  
+
+  error_rate_mimir_ruler:
+    alarm_name           : "mon-dev-openapm-openAPMInfra-s3Bucket-mon-dev-openapm-mimir-ruler-request-error-rate-critical"
+    alarm_description           : "more than 2 percent of s3 bucket requests call are 5xx"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    threshold                 : 2
+    sns_topic_arn             : "arn:aws:sns:us-west-2:300101013673:mon-dev-na1-cloudwatch-bmc-critical"     
+    expression                : "m2/m1*100"
+    label                     : "Error Rate"
+
+    metric_name_m1            : "AllRequests"
+    namespace_m1              : "AWS/S3/Storage-Lens"
+    period_m1                 : 300
+    stat_m1                   : "Sum"    
+    unit_m1                   : "Count"  
+    dimensions_m1             :
+      metrics_version         : "1.0"
+      storage_class           : "-"
+      aws_region              : "us-west-2"
+      aws_account_number      : "300101013673"
+      bucket_name             : "mon-dev-openapm-mimir-ruler"
+      configuration_id        : "Open-APM"
+      record_type             : "BUCKET" 
+
+
+    metric_name_m2            : "5xxErrors"
+    namespace_m2              : "AWS/S3/Storage-Lens"
+    period_m2                 : 300
+    stat_m2                   : "Sum"    
+    unit_m2                   : "Count"  
+    dimensions_m2             :
+      metrics_version         : "1.0"
+      storage_class           : "-"
+      aws_region              : "us-west-2"
+      aws_account_number      : "300101013673"
+      bucket_name             : "mon-dev-openapm-mimir-ruler"
+      configuration_id        : "Open-APM"
+      record_type             : "BUCKET"
+    
+    treat_missing_data   : "notBreaching"  # Add this line 
+    
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"	  
+
+  error_rate_mimir_alerts:
+    alarm_name           : "mon-dev-openapm-openAPMInfra-s3Bucket-mon-dev-openapm-mimir-alerts-request-error-rate-critical"
+    alarm_description           : "more than 2 percent of s3 bucket requests call are 5xx"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    threshold                 : 2
+    sns_topic_arn             : "arn:aws:sns:us-west-2:300101013673:mon-dev-na1-cloudwatch-bmc-critical"     
+    expression                : "m2/m1*100"
+    label                     : "Error Rate"
+
+    metric_name_m1            : "AllRequests"
+    namespace_m1              : "AWS/S3/Storage-Lens"
+    period_m1                 : 300
+    stat_m1                   : "Sum"    
+    unit_m1                   : "Count"  
+    dimensions_m1             :
+      metrics_version         : "1.0"
+      storage_class           : "-"
+      aws_region              : "us-west-2"
+      aws_account_number      : "300101013673"
+      bucket_name             : "mon-dev-openapm-mimir-alerts"
+      configuration_id        : "Open-APM"
+      record_type             : "BUCKET" 
+
+
+    metric_name_m2            : "5xxErrors"
+    namespace_m2              : "AWS/S3/Storage-Lens"
+    period_m2                 : 300
+    stat_m2                   : "Sum"    
+    unit_m2                   : "Count"  
+    dimensions_m2             :
+      metrics_version         : "1.0"
+      storage_class           : "-"
+      aws_region              : "us-west-2"
+      aws_account_number      : "300101013673"
+      bucket_name             : "mon-dev-openapm-mimir-alerts"
+      configuration_id        : "Open-APM"
+      record_type             : "BUCKET"
+
+    treat_missing_data   : "notBreaching"  # Add this line 
+    
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"	  
+
+  error_rate_mimir_blocks:
+    alarm_name           : "mon-dev-openapm-openAPMInfra-s3Bucket-mon-dev-openapm-mimir-blocks-request-error-rate-critical"
+    alarm_description           : "more than 2 percent of s3 bucket requests call are 5xx"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    threshold                 : 2
+    sns_topic_arn             : "arn:aws:sns:us-west-2:300101013673:mon-dev-na1-cloudwatch-bmc-critical"     
+    expression                : "m2/m1*100"
+    label                     : "Error Rate"
+
+    metric_name_m1            : "AllRequests"
+    namespace_m1              : "AWS/S3/Storage-Lens"
+    period_m1                 : 300
+    stat_m1                   : "Sum"    
+    unit_m1                   : "Count"  
+    dimensions_m1             :
+      metrics_version         : "1.0"
+      storage_class           : "-"
+      aws_region              : "us-west-2"
+      aws_account_number      : "300101013673"
+      bucket_name             : "mon-dev-openapm-mimir-blocks"
+      configuration_id        : "Open-APM"
+      record_type             : "BUCKET" 
+
+
+    metric_name_m2            : "5xxErrors"
+    namespace_m2              : "AWS/S3/Storage-Lens"
+    period_m2                 : 300
+    stat_m2                   : "Sum"    
+    unit_m2                   : "Count"  
+    dimensions_m2             :
+      metrics_version         : "1.0"
+      storage_class           : "-"
+      aws_region              : "us-west-2"
+      aws_account_number      : "300101013673"
+      bucket_name             : "mon-dev-openapm-mimir-blocks"
+      configuration_id        : "Open-APM"
+      record_type             : "BUCKET"
+
+    treat_missing_data   : "notBreaching"  # Add this line 
+      
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"	  
+
+  error_rate_tempo:
+    alarm_name           : "mon-dev-openapm-openAPMInfra-s3Bucket-mon-dev-openapm-tempo-request-error-rate-critical"
+    alarm_description           : "more than 2 percent of s3 bucket requests call are 5xx"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    threshold                 : 2
+    sns_topic_arn             : "arn:aws:sns:us-west-2:300101013673:mon-dev-na1-cloudwatch-bmc-critical"     
+    expression                : "m2/m1*100"
+    label                     : "Error Rate"
+
+    metric_name_m1            : "AllRequests"
+    namespace_m1              : "AWS/S3/Storage-Lens"
+    period_m1                 : 300
+    stat_m1                   : "Sum"    
+    unit_m1                   : "Count"  
+    dimensions_m1             :
+      metrics_version         : "1.0"
+      storage_class           : "-"
+      aws_region              : "us-west-2"
+      aws_account_number      : "300101013673"
+      bucket_name             : "mon-dev-openapm-tempo"
+      configuration_id        : "Open-APM"
+      record_type             : "BUCKET" 
+
+
+    metric_name_m2            : "5xxErrors"
+    namespace_m2              : "AWS/S3/Storage-Lens"
+    period_m2                 : 300
+    stat_m2                   : "Sum"    
+    unit_m2                   : "Count"  
+    dimensions_m2             :
+      metrics_version         : "1.0"
+      storage_class           : "-"
+      aws_region              : "us-west-2"
+      aws_account_number      : "300101013673"
+      bucket_name             : "mon-dev-openapm-tempo"
+      configuration_id        : "Open-APM"
+      record_type             : "BUCKET"
+
+    treat_missing_data   : "notBreaching"  # Add this line 
+    
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"	  
+
+  error_rate_ALB_target:
+    alarm_name           : "mon-dev-openapm-openAPMInfra-ALBTarget-grafana-ingress-request-error-rate-critical"
+    alarm_description           : "more than 2 percent of ALB target requests call are 5xx"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 1
+    threshold                 : 2
+    sns_topic_arn             : "arn:aws:sns:us-west-2:300101013673:mon-dev-na1-cloudwatch-bmc-critical"     
+    expression                : "m2/m1*100"
+    label                     : "Error Rate"
+
+    metric_name_m1            : "RequestCountPerTarget"
+    namespace_m1              : "AWS/ApplicationELB"
+    period_m1                 : 300
+    stat_m1                   : "Sum"    
+    unit_m1                   : "Count"  
+    dimensions_m1             :
+      TargetGroup          : "targetgroup/k8s-grafana-grafanaa-3f9f4084fb/e928093f4f51a9b7"
+      LoadBalancer         : "app/grafana-ingress/d69bfcdfa5c99bba"
+
+
+    metric_name_m2            : "HTTPCode_Target_5XX_Count"
+    namespace_m2              : "AWS/ApplicationELB"
+    period_m2                 : 300
+    stat_m2                   : "Sum"    
+    unit_m2                   : "Count"  
+    dimensions_m2             :
+      TargetGroup          : "targetgroup/k8s-grafana-grafanaa-3f9f4084fb/e928093f4f51a9b7"
+      LoadBalancer         : "app/grafana-ingress/d69bfcdfa5c99bba"
+
+    treat_missing_data   : "notBreaching"  # Add this line      
+    
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"	  
+
+  error_rate_ALB:
+    alarm_name           : "mon-dev-openapm-openAPMInfra-ALB-grafana-ingress-request-error-rate-critical"
+    alarm_description           : "more than 2 percent of ALB target requests call are 5xx"
+    comparison_operator       : "GreaterThanThreshold"
+    evaluation_periods        : 5
+    threshold                 : 2
+    sns_topic_arn             : "arn:aws:sns:us-west-2:300101013673:mon-dev-na1-cloudwatch-bmc-critical"     
+    expression                : "m2/m1*100"
+    label                     : "Error Rate"
+
+    metric_name_m1            : "RequestCount"
+    namespace_m1              : "AWS/ApplicationELB"
+    period_m1                 : 300
+    stat_m1                   : "Sum"    
+    unit_m1                   : "Count"  
+    dimensions_m1             :      
+      LoadBalancer         : "app/grafana-ingress/d69bfcdfa5c99bba"
+
+
+    metric_name_m2            : "HTTPCode_ELB_5XX_Count"
+    namespace_m2              : "AWS/ApplicationELB"
+    period_m2                 : 300
+    stat_m2                   : "Sum"    
+    unit_m2                   : "Count"  
+    dimensions_m2             :      
+      LoadBalancer         : "app/grafana-ingress/d69bfcdfa5c99bba"
+
+    treat_missing_data   : "notBreaching"  # Add this line      
+    
+    tags: 
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      ApplicationOwner: "SRE"
+      Owner: "SRE"
+      InfrastructureOwner: "SRE"	  
+

@@ -1,0 +1,158 @@
+private_link_data:
+  # Private link for API Facade and MediaPlayback
+  Facade-MediaPlayback:
+    vpc_id: vpc-a416f5c3
+    subnet_ids:
+      - subnet-e6082b90
+      - subnet-07c3ca63
+    security_group_ids:
+      - sg-0be6abc904d11b37e
+    service_name: "com.amazonaws.vpce.us-west-2.vpce-svc-0fe9fbc51d14770b7"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: false
+    route53_record_name: ""
+    tags: 
+      Request: "REQ0055678"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "apifacade"
+      Product: "apifacade"
+  # Private link for API Facade and IHub
+  Facade-IHub:
+    vpc_id: vpc-a416f5c3
+    subnet_ids:
+      - subnet-e6082b90
+      - subnet-06c3ca62
+    security_group_ids:
+      - sg-0be6abc904d11b37e
+    service_name: "com.amazonaws.vpce.us-west-2.vpce-svc-07eebbc4a29e838a9"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: false
+    route53_record_name: ""
+    tags: 
+      Request: "REQ0055678"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "apifacade"
+      Product: "apifacade"
+  # Private link for API Facade and Illuminate
+  Facade-Illuminate:
+    vpc_id: vpc-a416f5c3
+    subnet_ids:
+      - subnet-e6082b90
+      - subnet-06c3ca62
+    security_group_ids:
+      - sg-0be6abc904d11b37e
+    service_name: "com.amazonaws.vpce.us-west-2.vpce-svc-0c5cfa46ffa2a13f7"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: false
+    route53_record_name: ""
+    tags: 
+      Request: "REQ0055615"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "apifacade"
+      Product: "apifacade"
+  # Private link for Orchestration and Illuminate
+  Orchestration:
+    vpc_id: vpc-24ff1f43
+    subnet_ids:
+      - subnet-ee4c6c98
+      - subnet-58141a3c
+    security_group_ids:
+      - sg-0c27bd23b5a6545ec
+    service_name: "com.amazonaws.vpce.us-west-2.vpce-svc-09078651a4db7980b"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: true
+    route53_record_name: ""
+    tags: 
+      Request: "RITM0057893, RITM0067787"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "SRE"
+      Product: "SRE"
+  # Shared Private link for Illuminate Services - Core
+  Shared-Illuminate-Core:
+    vpc_id: vpc-24ff1f43
+    subnet_ids:
+      - subnet-ee4c6c98
+      - subnet-58141a3c
+    security_group_ids:
+      - sg-05770ad1cae7d6484
+    service_name: "com.amazonaws.vpce.us-west-2.vpce-svc-0bb23ef198798fb59"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: false
+    route53_record_name: ""
+    tags: 
+      Request: "RITM0058663"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "CXAIILInfraPhoenix@nice.com"
+      Product: "ILLUM"
+  # Shared Private link for Illuminate Services - DMZ
+  Shared-Illuminate-DMZ:
+    vpc_id: vpc-a416f5c3
+    subnet_ids:
+      - subnet-e6082b90
+      - subnet-06c3ca62
+    security_group_ids:
+      - sg-0560b18ad4ed24f30
+    service_name: "com.amazonaws.vpce.us-west-2.vpce-svc-0bb23ef198798fb59"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: false
+    route53_record_name: ""
+    tags: 
+      Request: "RITM0058663"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "CXAIILInfraPhoenix@nice.com"
+      Product: "ILLUM"
+  # Private link for RSR - Core
+  PrivateLink-RSR:
+    vpc_id: vpc-24ff1f43
+    subnet_ids:
+      - subnet-ee4c6c98
+      - subnet-58141a3c
+    security_group_ids:
+      - sg-046e12b32d0582376
+    service_name: "com.amazonaws.vpce.us-west-2.vpce-svc-01c8028806077b07b"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: true
+    route53_record_name: ""
+    tags: 
+      Request: "RITM0060426"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "Lynx"
+      Product: "Realtime ASR"
+  # Private link for OpenAPM - DMZ
+  PrivateLink-OpenAPM:
+    vpc_id: vpc-a416f5c3
+    subnet_ids:
+      - subnet-e6082b90
+      - subnet-06c3ca62
+    security_group_ids:
+      - sg-00bbdde73382affd1
+    service_name: "com.amazonaws.vpce.us-west-2.vpce-svc-09078651a4db7980b"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: true
+    route53_record_name: ""
+    tags: 
+      Request: "RITM0064332"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "SRE"
+      Product: "Grafana-LGMT"
+      ServiceOwner: "SRE"
+      Owner: "SRE"
+  # Private link for HA DR Initiative API Facade - Core
+  PrivateLink-HA-DR-Facade-Core:
+    vpc_id: vpc-a416f5c3
+    subnet_ids:
+      - subnet-e6082b90
+      - subnet-06c3ca62
+    security_group_ids:
+      - sg-0be6abc904d11b37e
+    service_name: "com.amazonaws.vpce.us-west-2.vpce-svc-0cb23bd28d1904ea1"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: false
+    route53_record_name: ""
+    tags: 
+      Request: "RITM0078669"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "CXone_Platform_UH_Mars@nice.com"
+      Product: "Platform"
+      ServiceOwner: "CXone_Platform_UH_Mars@nice.com"
+      Owner: "CXone_Platform_UH_Mars@nice.com"      

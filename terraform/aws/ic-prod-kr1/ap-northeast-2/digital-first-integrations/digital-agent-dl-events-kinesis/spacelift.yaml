@@ -1,0 +1,12 @@
+before_init:
+- cat /mnt/workspace/github.netrc >> ~/.netrc
+- chmod 600 ~/.netrc
+contexts:
+  cxossp-github-personal-access-token: 0
+integrations:
+  aws: ic-prod-kr1
+maintainers:
+- email: digitalfirst-integrations@niceincontact.com
+  name: digifirstintegrations
+
+terraform_version: 1.4.5

@@ -1,0 +1,17 @@
+cost_monitor:
+  name: "SREOpenAPMCostMonitor"
+  monitor_type: "CUSTOM"
+  # monitor_scope: "SERVICE"
+  # subscription_name: "OpenAPMCostAnomalySubscription"
+  # sns_topic_name: "OpenAPMCostAnomalyAlerts"
+  # sns_topic_arn: "arn:aws:sns:us-west-2:300101013673:OpenAPMCostAnomalyAlerts"
+  # subscription_email: "ishika.khandare@nice.com"
+  # dimension:
+  #   - key: "TAG"
+  #     value: "Grafana-LGMT"    # Changed from values to value
+  #     match_options: "EQUALS" 
+  # tags:
+  #   - key: "Product"
+  #     value: "Grafana-LGMT"
+  #     # match_options: "EQUALS"
+

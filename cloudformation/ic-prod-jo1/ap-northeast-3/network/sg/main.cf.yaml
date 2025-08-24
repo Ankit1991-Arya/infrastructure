@@ -1,0 +1,4881 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS CloudFormation Template for inbound Global security groups
+
+Mappings:
+  VPCaddressPrefix:
+    values:
+      DMZVPCSubnet: '10.230.32.0/21'
+      CoreVPCSubnet: '10.230.40.0/21'
+      VoiceNetwork1Trust: '10.230.80.0/24'
+      VoiceNetwork2Trust: '10.230.84.0/24'
+      ASideADCSelfIP : '100.18.0.1'
+      BSideADCSelfIP : '100.18.0.2'
+      ASideADCSNATIP : '100.18.0.3'
+      BSideADCSNATIP : '100.18.0.4'
+      Owner: 'Network Teams'
+
+
+Resources:
+  SBCTrustInterface:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue VoiceNetwork-Vpc
+      GroupDescription: Security group for Voice Trust Interfaces
+      Tags:
+        - Key: Name
+          Value: voicenetwork_sbc_trust_interface
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+  SBCTrustInterface2:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue VoiceNetwork2-Vpc
+      GroupDescription: Security group for Voice Trust Interfaces
+      Tags:
+        - Key: Name
+          Value: voicenetwork_sbc_trust_interface
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  NoConnTrackF5:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: Security group for Core Interface of F5
+      Tags:
+        - Key: Name
+          Value: no_conntrack_core_F5_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+  NoConnTrack:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: Security group for Infrastructure
+      Tags:
+        - Key: Name
+          Value: no_conntrack_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+  NoConnTrackUntrust:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: Security group for Infrastructure
+      Tags:
+        - Key: Name
+          Value: no_conntrack_untrust_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: udp
+          FromPort: 500
+          ToPort: 500
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+  ClusterALBSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue DMZNetwork-Vpc
+      GroupDescription: Security group for ALB
+      Tags:
+        - Key: Name
+          Value: alb_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8800
+          ToPort: 8800
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  DomainControllerSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for Domain Controllers
+      Tags:
+        - Key: Name
+          Value: global_systems_domain_controllers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+      - IpProtocol: "tcp"   #LDAP
+        CidrIp: "0.0.0.0/0"
+        FromPort: "389"
+        ToPort: "389"
+        Description: "LDAP"
+      - IpProtocol: "udp"   #LDAP
+        CidrIp: "0.0.0.0/0"
+        FromPort: "389"
+        ToPort: "389"
+        Description: "LDAP"
+      - IpProtocol: "tcp"   #LDAP SSL
+        CidrIp: "0.0.0.0/0"
+        FromPort: "636"
+        ToPort: "636"
+        Description: "LDAP SSL"
+      - IpProtocol: "tcp"   #Kerberos
+        CidrIp: "0.0.0.0/0"
+        FromPort: "88"
+        ToPort: "88"
+        Description: "Kerberos"
+      - IpProtocol: "udp"   #Kerberos
+        CidrIp: "0.0.0.0/0"
+        FromPort: "88"
+        ToPort: "88"
+        Description: "Kerberos"
+      - IpProtocol: "tcp"   #DNS
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+        Description: "DNS"
+      - IpProtocol: "udp"   #DNS
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+        Description: "DNS"
+      - IpProtocol: "tcp"   #SMB
+        CidrIp: "0.0.0.0/0"
+        FromPort: "445"
+        ToPort: "445"
+        Description: "SMB"
+      - IpProtocol: "udp"   #SMB
+        CidrIp: "0.0.0.0/0"
+        FromPort: "445"
+        ToPort: "445"
+        Description: "SMB"
+      - IpProtocol: "tcp"   #SMTP
+        CidrIp: "0.0.0.0/0"
+        FromPort: "25"
+        ToPort: "25"
+        Description: "SMTP"
+      - IpProtocol: "tcp"   #RPC
+        CidrIp: "0.0.0.0/0"
+        FromPort: "135"
+        ToPort: "135"
+        Description: "RPC"
+      - IpProtocol: "tcp"   #RPC DCOM FRS
+        CidrIp: "0.0.0.0/0"
+        FromPort: "1025"
+        ToPort: "5000"
+        Description: "RPC FRS DCOM"
+      - IpProtocol: "tcp"   #RPC DCOM FRS
+        CidrIp: "0.0.0.0/0"
+        FromPort: "49152"
+        ToPort: "65535"
+        Description: "RPC FRS DCOM"
+      - IpProtocol: "tcp"   #RPC
+        CidrIp: "0.0.0.0/0"
+        FromPort: "5722"
+        ToPort: "5722"
+        Description: "RPC"
+      - IpProtocol: "udp"   #Windows Time
+        CidrIp: "0.0.0.0/0"
+        FromPort: "123"
+        ToPort: "123"
+        Description: "NTP"
+      - IpProtocol: "tcp"   #Kerberos Password MGMT
+        CidrIp: "0.0.0.0/0"
+        FromPort: "464"
+        ToPort: "464"
+        Description: "Kerberos PWS MGMT"
+      - IpProtocol: "udp"   #Kerberos Password MGMT
+        CidrIp: "0.0.0.0/0"
+        FromPort: "464"
+        ToPort: "464"
+        Description: "Kerberos PWD MGMT"
+      - IpProtocol: "udp"   #RPC DCOM Group Policy
+        CidrIp: "0.0.0.0/0"
+        FromPort: "49152"
+        ToPort: "65535"
+        Description: "Group Policy"
+      - IpProtocol: "udp"   #DFSN, NETLOGON
+        CidrIp: "0.0.0.0/0"
+        FromPort: "138"
+        ToPort: "138"
+        Description: "Netlogon"
+      - IpProtocol: "tcp"   #Kerberos Password MGMT
+        CidrIp: "0.0.0.0/0"
+        FromPort: "9389"
+        ToPort: "9389"
+        Description: "Kerberos"
+      - IpProtocol: "udp"   #DHCP MADCAP
+        CidrIp: "0.0.0.0/0"
+        FromPort: "67"
+        ToPort: "67"
+        Description: "MADCAP"
+      - IpProtocol: "udp"   #DHCP MADCAP
+        CidrIp: "0.0.0.0/0"
+        FromPort: "2535"
+        ToPort: "2535"
+        Description: "MADCAP"
+      - IpProtocol: "udp"   #NETLOGON, NetBIOS
+        CidrIp: "0.0.0.0/0"
+        FromPort: "137"
+        ToPort: "137"
+        Description: "NetBIOS"
+      - IpProtocol: "tcp"   #NetLogon
+        CidrIp: "0.0.0.0/0"
+        FromPort: "139"
+        ToPort: "139"
+        Description: "Netlogon"
+      - IpProtocol: "udp"   #Kerberos
+        CidrIp: "0.0.0.0/0"
+        FromPort: "749"
+        ToPort: "750"
+        Description: "Kerberos"
+      - IpProtocol: "tcp"   #Kerberos
+        CidrIp: "0.0.0.0/0"
+        FromPort: "749"
+        ToPort: "750"
+        Description: "Kerberos"
+      - IpProtocol: "tcp"   #RDP
+        CidrIp: "0.0.0.0/0"
+        FromPort: "3389"
+        ToPort: "3389"
+        Description: "RDP"
+      - IpProtocol: "udp"   #RDP
+        CidrIp: "0.0.0.0/0"
+        FromPort: "3389"
+        ToPort: "3389"
+        Description: "RDP"
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: "10.21.0.0/19"
+        Description: "VPN IP"
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: "10.209.0.0/17"
+        Description: "Aus Data Center IP"
+      - IpProtocol: -1   #Office IP Space
+        CidrIp: "172.27.0.0/16"
+        Description: "Office IP"
+      - IpProtocol: -1   #Oregon AWS IP Space
+        CidrIp: "172.25.0.0/16"
+        Description: "Oregon AWS IP"
+      - IpProtocol: -1   #LA2
+        CidrIp: "172.23.0.0/16"
+        Description: "LA IP"
+      - IpProtocol: -1   #DAL
+        CidrIp: "172.19.0.0/16"
+        Description: "DAL IP"
+      - IpProtocol: -1   #EU
+        CidrIp: "172.21.0.0/16"
+        Description: "EU IP"
+      - IpProtocol: -1   #SGP
+        CidrIp: "172.29.0.0/16"
+      - IpProtocol: -1   #HKO-1
+        CidrIp: "216.20.228.64/26"
+      - IpProtocol: -1   #HKO-2
+        CidrIp: "216.20.228.128/27"
+      - IpProtocol: -1   #DMZ Subnet
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+        Description: "DMZ VPC"
+      - IpProtocol: -1 # DMZ Addon Subnet
+        CidrIp: "10.209.200.0/22"
+        Description: "DMZ Addon Subnet"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+        Description: "BMC Discovery"
+      - IpProtocol: -1
+        CidrIp: "205.214.10.0/24"
+        Description: "CDR"
+      - IpProtocol: -1
+        CidrIp: "10.209.0.0/17"
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: "172.16.0.0/12"
+      - IpProtocol: -1
+        CidrIp: "10.0.0.0/8"
+      - IpProtocol: -1
+        CidrIp: "192.168.0.0/16"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+  IntDNSServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for Internal DNS Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_dns_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: "10.21.0.0/19"
+      - IpProtocol: -1   #Office IP Space
+        CidrIp: "172.27.0.0/16"
+      - IpProtocol: -1   #LA2
+        CidrIp: "172.23.0.0/16"
+      - IpProtocol: -1   #DAL
+        CidrIp: "172.19.0.0/16"
+      - IpProtocol: -1   #EU
+        CidrIp: "172.21.0.0/16"
+      - IpProtocol: -1   #SGP
+        CidrIp: "172.29.0.0/16"
+      - IpProtocol: -1   #HKO-1
+        CidrIp: "216.20.228.64/26"
+      - IpProtocol: -1   #HKO-2
+        CidrIp: "216.20.228.128/27"
+      - IpProtocol: -1   #LAB
+        CidrIp: "172.20.0.0/16"
+      - IpProtocol: -1   #DMZ Subnet
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+        Description: "DMZ VPC"
+      - IpProtocol: -1 # DMZ Addon Subnet
+        CidrIp: "10.209.200.0/22"
+        Description: "DMZ Addon Subnet"
+      - IpProtocol: "tcp"   #Chef
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: -1
+        CidrIp: "10.209.0.0/17"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+        Description: "BMC Discovery"
+      - IpProtocol: -1
+        CidrIp: "205.214.10.0/24"
+        Description: "CDR"
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: "172.16.0.0/12"
+      - IpProtocol: -1
+        CidrIp: "10.0.0.0/8"
+      - IpProtocol: -1
+        CidrIp: "192.168.0.0/16"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+  ChefServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for Chef Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_chef_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: "10.21.0.0/19"
+        - IpProtocol: -1   #Office IP Space
+          CidrIp: "172.27.0.0/16"
+        - IpProtocol: -1   #LA2
+          CidrIp: "172.23.0.0/16"
+        - IpProtocol: -1   #DAL
+          CidrIp: "172.19.0.0/16"
+        - IpProtocol: -1   #EU
+          CidrIp: "172.21.0.0/16"
+        - IpProtocol: -1   #SGP
+          CidrIp: "172.29.0.0/16"
+        - IpProtocol: -1   #HKO-1
+          CidrIp: "216.20.228.64/26"
+        - IpProtocol: -1   #HKO-2
+          CidrIp: "216.20.228.128/27"
+        - IpProtocol: -1   #LAB
+          CidrIp: "172.20.0.0/16"
+        - IpProtocol: -1   #DMZ Subnet
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+          Description: "DMZ VPC"
+        - IpProtocol: -1 # DMZ Addon Subnet
+          CidrIp: "10.209.200.0/22"
+          Description: "DMZ Addon Subnet"
+        - IpProtocol: "tcp"   #Chef
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: -1
+          CidrIp: "10.209.0.0/17"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "10.0.0.0/8"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: -1
+          CidrIp: "216.20.244.0/24"
+        - IpProtocol: -1
+          CidrIp: "216.20.248.0/24"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+  SnowdiscSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for SNOW Discovery Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_snowdisc_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: "10.21.0.0/16"
+        - IpProtocol: -1   #Office IP Space
+          CidrIp: "172.27.0.0/16"
+        - IpProtocol: -1   #LA2
+          CidrIp: "172.23.0.0/16"
+        - IpProtocol: -1   #DAL
+          CidrIp: "172.19.0.0/16"
+        - IpProtocol: -1   #EU
+          CidrIp: "172.21.0.0/16"
+        - IpProtocol: -1   #SGP
+          CidrIp: "172.29.0.0/16"
+        - IpProtocol: -1   #HKO-1
+          CidrIp: "216.20.228.64/26"
+        - IpProtocol: -1   #HKO-2
+          CidrIp: "216.20.228.128/27"
+        - IpProtocol: -1   #LAB
+          CidrIp: "172.20.0.0/16"
+        - IpProtocol: -1   #DMZ Subnet
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+          Description: "DMZ VPC"
+        - IpProtocol: -1
+          CidrIp: "10.209.0.0/17"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "10.0.0.0/8"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: -1
+          CidrIp: "216.20.244.0/24"
+        - IpProtocol: -1
+          CidrIp: "216.20.248.0/24"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+  NWRadiusSG:
+      Type: 'AWS::EC2::SecurityGroup'
+      Properties:
+        VpcId: !ImportValue CoreNetwork-Vpc
+        GroupDescription: sg for Network Radius Servers
+        Tags:
+          - Key: Name
+            Value: global_systems_nwradius_sg
+          - Key: DeviceType
+            Value: Network Security Group
+          - Key: Cluster
+            Value: Global
+          - Key: Product
+            Value: Network
+          - Key: Owner
+            Value: Network Teams
+        SecurityGroupIngress:
+          - IpProtocol: -1   #VPN IPs
+            CidrIp: 10.21.0.0/16
+          - IpProtocol: -1   #Office IP Space
+            CidrIp: 172.27.0.0/16
+          - IpProtocol: -1   #LA2
+            CidrIp: "172.23.0.0/16"
+          - IpProtocol: -1   #DAL
+            CidrIp: "172.19.0.0/16"
+          - IpProtocol: -1   #EU
+            CidrIp: "172.21.0.0/16"
+          - IpProtocol: -1   #SGP
+            CidrIp: "172.29.0.0/16"
+          - IpProtocol: -1   #HKO-1
+            CidrIp: "216.20.228.64/26"
+          - IpProtocol: -1   #HKO-2
+            CidrIp: "216.20.228.128/27"
+          - IpProtocol: -1   #LAB
+            CidrIp: "172.20.0.0/16"
+          - IpProtocol: -1   #DMZ Subnet
+            CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+            Description: "DMZ VPC"
+          - IpProtocol: -1
+            CidrIp: "10.209.0.0/17"
+          - IpProtocol: "udp"
+            CidrIp: "10.7.0.0/16"
+            FromPort: "1812"
+            ToPort: "1813"
+          - IpProtocol: "udp"
+            CidrIp: "10.7.0.0/16"
+            FromPort: "1645"
+            ToPort: "1646"
+        SecurityGroupEgress:
+          - IpProtocol: -1
+            CidrIp: "172.16.0.0/12"
+          - IpProtocol: -1
+            CidrIp: "10.0.0.0/8"
+          - IpProtocol: -1
+            CidrIp: "192.168.0.0/16"
+          - IpProtocol: -1
+            CidrIp: "216.20.244.0/24"
+          - IpProtocol: -1
+            CidrIp: "216.20.248.0/24"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "53"
+            ToPort: "53"
+          - IpProtocol: "udp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "53"
+            ToPort: "53"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "443"
+            ToPort: "443"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "80"
+            ToPort: "80"
+
+  JumpServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for Jump Servers
+      Tags:
+        - Key: Name
+          Value: global_tools_jump_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: 10.21.0.0/19
+        - IpProtocol: -1   #Office IP Space
+          CidrIp: 172.27.0.0/16
+        - IpProtocol: -1   #LA2
+          CidrIp: "172.23.0.0/16"
+        - IpProtocol: -1   #DAL
+          CidrIp: "172.19.0.0/16"
+        - IpProtocol: -1   #EU
+          CidrIp: "172.21.0.0/16"
+        - IpProtocol: -1   #SGP
+          CidrIp: "172.29.0.0/16"
+        - IpProtocol: -1   #HKO-1
+          CidrIp: "216.20.228.64/26"
+        - IpProtocol: -1   #HKO-2
+          CidrIp: "216.20.228.128/27"
+        - IpProtocol: -1   #DMZ Subnet
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+          Description: "DMZ VPC"
+        - IpProtocol: -1 # DMZ Addon Subnet
+          CidrIp: "10.209.200.0/22"
+          Description: "DMZ Addon Subnet"
+        - IpProtocol: "tcp"   #Core Subnet A
+          CidrIp: "10.208.0.0/23"
+          FromPort: "445"
+          ToPort: "445"
+        - IpProtocol: "tcp"   #Core Subnet b
+          CidrIp: "10.208.32.0/23"
+          FromPort: "445"
+          ToPort: "445"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+          Description: "BMC Discovery"
+        - IpProtocol: -1
+          CidrIp: "205.214.10.0/24"
+          Description: "CDR"
+        - IpProtocol: -1
+          CidrIp: "10.209.0.0/17"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "10.0.0.0/8"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: -1
+          CidrIp: "216.20.244.0/24"
+        - IpProtocol: -1
+          CidrIp: "216.20.248.0/24"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+  BidServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for BID Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_bid_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"   #msrpc
+          CidrIp: "0.0.0.0/0"
+          FromPort: "135"
+          ToPort: "135"
+        - IpProtocol: "tcp"   #MSSQL
+          CidrIp: "0.0.0.0/0"
+          FromPort: "1433"
+          ToPort: "1433"
+          Description: "SQL"
+        - IpProtocol: "tcp"   #SMB
+          CidrIp: "0.0.0.0/0"
+          FromPort: "445"
+          ToPort: "445"
+          Description: "SMB"
+        - IpProtocol: "tcp"   #WMI
+          CidrIp: "0.0.0.0/0"
+          FromPort: "49154"
+          ToPort: "49154"
+          Description: "WMI"
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: 10.21.0.0/19
+        - IpProtocol: -1   #Office IP Space
+          CidrIp: 172.27.0.0/16
+        - IpProtocol: -1   #LA2
+          CidrIp: "172.23.0.0/16"
+        - IpProtocol: -1   #DAL
+          CidrIp: "172.19.0.0/16"
+        - IpProtocol: -1   #EU
+          CidrIp: "172.21.0.0/16"
+        - IpProtocol: -1   #SGP
+          CidrIp: "172.29.0.0/16"
+        - IpProtocol: -1   #HKO-1
+          CidrIp: "216.20.228.64/26"
+        - IpProtocol: -1   #HKO-2
+          CidrIp: "216.20.228.128/27"
+        - IpProtocol: -1   #DMZ Subnet
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+          Description: "DMZ VPC"
+        - IpProtocol: -1 # DMZ Addon Subnet
+          CidrIp: "10.209.200.0/22"
+          Description: "DMZ Addon Subnet"
+        - IpProtocol: -1
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+          Description: "BMC Discovery"
+        - IpProtocol: -1
+          CidrIp: "205.214.10.0/24"
+          Description: "CDR"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "10.0.0.0/8"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: -1
+          CidrIp: "216.20.244.0/24"
+        - IpProtocol: -1
+          CidrIp: "216.20.248.0/24"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+  ASRServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue VoiceNetwork-Vpc
+      GroupDescription: sg for ASR Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_asr_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: 10.21.0.0/19
+        - IpProtocol: -1   #Office IP Space
+          CidrIp: 172.27.0.0/16
+        - IpProtocol: -1   #LA2
+          CidrIp: "172.23.0.0/16"
+        - IpProtocol: -1   #DAL
+          CidrIp: "172.19.0.0/16"
+        - IpProtocol: -1   #EU
+          CidrIp: "172.21.0.0/16"
+        - IpProtocol: -1   #SGP
+          CidrIp: "172.29.0.0/16"
+        - IpProtocol: -1   #HKO-1
+          CidrIp: "216.20.228.64/26"
+        - IpProtocol: -1   #HKO-2
+          CidrIp: "216.20.228.128/27"
+        - IpProtocol: -1   #DC IPs
+          CidrIp: 10.209.0.0/17
+        - IpProtocol: -1   #DMZ Subnet
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+          Description: "DMZ VPC"
+        - IpProtocol: -1 # DMZ Addon Subnet
+          CidrIp: "10.209.200.0/22"
+          Description: "DMZ Addon Subnet"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+          Description: "BMC Discovery"
+        - IpProtocol: -1
+          CidrIp: "205.214.10.0/24"
+          Description: "CDR"
+        - IpProtocol: -1
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "8010"
+          ToPort: "8010"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "8929"
+          ToPort: "8929"
+        - IpProtocol: -1
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,VoiceNetwork1Trust ]
+        - IpProtocol: -1
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,VoiceNetwork2Trust ]
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "10.0.0.0/8"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+  TTSServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue VoiceNetwork-Vpc
+      GroupDescription: sg for TTS Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_tts_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: "10.21.0.0/19"
+        - IpProtocol: -1   #Office IP Space
+          CidrIp: "172.27.0.0/16"
+        - IpProtocol: -1   #LA2
+          CidrIp: "172.23.0.0/16"
+        - IpProtocol: -1   #DAL
+          CidrIp: "172.19.0.0/16"
+        - IpProtocol: -1   #EU
+          CidrIp: "172.21.0.0/16"
+        - IpProtocol: -1   #SGP
+          CidrIp: "172.29.0.0/16"
+        - IpProtocol: -1   #HKO-1
+          CidrIp: "216.20.228.64/26"
+        - IpProtocol: -1   #HKO-2
+          CidrIp: "216.20.228.128/27"
+        - IpProtocol: -1   #DMZ Subnet
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+          Description: "DMZ VPC"
+        - IpProtocol: -1 # DMZ Addon Subnet
+          CidrIp: "10.209.200.0/22"
+          Description: "DMZ Addon Subnet"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+          Description: "BMC Discovery"
+        - IpProtocol: -1
+          CidrIp: "205.214.10.0/24"
+          Description: "CDR"
+        - IpProtocol: -1
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,VoiceNetwork1Trust ]
+        - IpProtocol: -1
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,VoiceNetwork2Trust ]
+        - IpProtocol: -1
+          CidrIp: "10.4.30.0/24"
+          Description: "UK Voice 1"
+        - IpProtocol: -1
+          CidrIp: "10.5.24.0/24"
+          Description: "UK Voice 2"
+        - IpProtocol: -1
+          CidrIp: "10.4.67.0/24"
+          Description: "Canada Voice 1"          
+        - IpProtocol: -1
+          CidrIp: "10.5.64.0/24"
+          Description: "Canada Voice 2"
+        - IpProtocol: -1
+          CidrIp: "10.5.16.0/24"
+          Description: "Tokyo Voice 1"
+        - IpProtocol: -1
+          CidrIp: "10.5.20.0/24"
+          Description: "Tokyo Voice 2"
+        - IpProtocol: -1
+          CidrIp: "10.230.80.0/24"
+          Description: "Osaka Voice 1"
+        - IpProtocol: -1
+          CidrIp: "10.230.84.0/24"
+          Description: "Osaka Voice 2"
+        - IpProtocol: -1
+          CidrIp: "10.230.224.0/24"
+          Description: "UAE Voice 1"
+        - IpProtocol: -1
+          CidrIp: "10.230.228.0/24"
+          Description: "UAE Voice 2"
+        - IpProtocol: -1
+          CidrIp: "10.7.19.0/24"
+          Description: "Abu Dhabi Voice"
+        - IpProtocol: -1
+          CidrIp: "10.7.51.0/24"
+          Description: "Dubai Voice"
+        - IpProtocol: -1
+          CidrIp: "10.7.73.0/24"
+          Description: "Mumbai India Voice"
+        - IpProtocol: -1
+          CidrIp: "10.7.105.0/24"
+          Description: "HYD India Voice"
+        - IpProtocol: -1
+          CidrIp: "10.4.16.0/21"
+          Description: "Brazil Voice"
+        - IpProtocol: -1
+          CidrIp: "10.7.59.0/24"
+          Description: "DB2 Voice"
+        - IpProtocol: -1
+          CidrIp: "10.7.27.0/24"
+          Description: "AD2 Voice"
+        - IpProtocol: -1
+          CidrIp: "10.232.0.0/21"
+          Description: "Korea Voice"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "10.0.0.0/8"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: -1
+          CidrIp: "216.20.244.0/24"
+        - IpProtocol: -1
+          CidrIp: "216.20.248.0/24"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+  COMServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue VoiceNetwork-Vpc
+      GroupDescription: sg for COM Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_com_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: 10.21.0.0/19
+        - IpProtocol: -1   #Office IP Space
+          CidrIp: 172.27.0.0/16
+        - IpProtocol: -1   #LA2
+          CidrIp: "172.23.0.0/16"
+        - IpProtocol: -1   #DAL
+          CidrIp: "172.19.0.0/16"
+        - IpProtocol: -1   #EU
+          CidrIp: "172.21.0.0/16"
+        - IpProtocol: -1   #SGP
+          CidrIp: "172.29.0.0/16"
+        - IpProtocol: -1   #HKO-1
+          CidrIp: "216.20.228.64/26"
+        - IpProtocol: -1   #HKO-2
+          CidrIp: "216.20.228.128/27"
+        - IpProtocol: -1   #DC IPs
+          CidrIp: 10.209.0.0/17
+        - IpProtocol: -1   #DMZ Subnet
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+          Description: "DMZ VPC"
+        - IpProtocol: -1 # DMZ Addon Subnet
+          CidrIp: "10.209.200.0/22"
+          Description: "DMZ Addon Subnet"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+          Description: "BMC Discovery"
+        - IpProtocol: -1
+          CidrIp: "205.214.10.0/24"
+          Description: "CDR"
+        - IpProtocol: -1
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "8010"
+          ToPort: "8010"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "8929"
+          ToPort: "8929"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "10.0.0.0/8"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+
+  VPC2ASRServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue VoiceNetwork2-Vpc
+      GroupDescription: sg for ASR Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_asr_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: "10.21.0.0/19"
+      - IpProtocol: -1   #Office IP Space
+        CidrIp: "172.27.0.0/16"
+      - IpProtocol: -1   #LA2
+        CidrIp: "172.23.0.0/16"
+      - IpProtocol: -1   #DAL
+        CidrIp: "172.19.0.0/16"
+      - IpProtocol: -1   #EU
+        CidrIp: "172.21.0.0/16"
+      - IpProtocol: -1   #SGP
+        CidrIp: "172.29.0.0/16"
+      - IpProtocol: -1   #HKO-1
+        CidrIp: "216.20.228.64/26"
+      - IpProtocol: -1   #HKO-2
+        CidrIp: "216.20.228.128/27"
+      - IpProtocol: -1   #DC IPs
+        CidrIp: 10.209.0.0/17
+      - IpProtocol: -1   #DMZ Subnet
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+        Description: "DMZ VPC"
+      - IpProtocol: -1 # DMZ Addon Subnet
+        CidrIp: "10.209.200.0/22"
+        Description: "DMZ Addon Subnet"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+        Description: "BMC Discovery"
+      - IpProtocol: -1
+        CidrIp: "205.214.10.0/24"
+        Description: "CDR"
+      - IpProtocol: -1
+        CidrIp: "10.209.0.0/17"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "8010"
+        ToPort: "8010"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "8929"
+        ToPort: "8929"
+      - IpProtocol: -1
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,VoiceNetwork1Trust ]
+      - IpProtocol: -1
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,VoiceNetwork2Trust ]
+
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: "172.16.0.0/12"
+      - IpProtocol: -1
+        CidrIp: "10.0.0.0/8"
+      - IpProtocol: -1
+        CidrIp: "192.168.0.0/16"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+  VPC2TTSServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue VoiceNetwork2-Vpc
+      GroupDescription: sg for TTS Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_tts_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: 10.21.0.0/19
+      - IpProtocol: -1   #Office IP Space
+        CidrIp: 172.27.0.0/16
+      - IpProtocol: -1   #LA2
+        CidrIp: "172.23.0.0/16"
+      - IpProtocol: -1   #DAL
+        CidrIp: "172.19.0.0/16"
+      - IpProtocol: -1   #EU
+        CidrIp: "172.21.0.0/16"
+      - IpProtocol: -1   #SGP
+        CidrIp: "172.29.0.0/16"
+      - IpProtocol: -1   #HKO-1
+        CidrIp: "216.20.228.64/26"
+      - IpProtocol: -1   #HKO-2
+        CidrIp: "216.20.228.128/27"
+      - IpProtocol: -1   #DMZ Subnet
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+        Description: "DMZ VPC"
+      - IpProtocol: -1 # DMZ Addon Subnet
+        CidrIp: "10.209.200.0/22"
+        Description: "DMZ Addon Subnet"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+        Description: "BMC Discovery"
+      - IpProtocol: -1
+        CidrIp: "205.214.10.0/24"
+        Description: "CDR"
+      - IpProtocol: -1
+        CidrIp: "10.209.0.0/17"
+      - IpProtocol: -1
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,VoiceNetwork1Trust ]
+      - IpProtocol: -1
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,VoiceNetwork2Trust ]
+      - IpProtocol: -1
+        CidrIp: "10.4.30.0/24"
+        Description: "UK Voice 1"
+      - IpProtocol: -1
+        CidrIp: "10.5.24.0/24"
+        Description: "UK Voice 2"
+      - IpProtocol: -1
+        CidrIp: "10.4.67.0/24"
+        Description: "Canada Voice 1"        
+      - IpProtocol: -1
+        CidrIp: "10.5.64.0/24"
+        Description: "Canada Voice 2"
+      - IpProtocol: -1
+        CidrIp: "10.5.16.0/24"
+        Description: "Tokyo Voice 1"
+      - IpProtocol: -1
+        CidrIp: "10.5.20.0/24"
+        Description: "Tokyo Voice 2"
+      - IpProtocol: -1
+        CidrIp: "10.230.80.0/24"
+        Description: "Osaka Voice 1"
+      - IpProtocol: -1
+        CidrIp: "10.230.84.0/24"
+        Description: "Osaka Voice 2"
+      - IpProtocol: -1
+        CidrIp: "10.230.224.0/24"
+        Description: "UAE Voice 1"
+      - IpProtocol: -1
+        CidrIp: "10.230.228.0/24"
+        Description: "UAE Voice 2"
+      - IpProtocol: -1
+        CidrIp: "10.7.19.0/24"
+        Description: "Abu Dhabi Voice"
+      - IpProtocol: -1
+        CidrIp: "10.7.51.0/24"
+        Description: "Dubai Voice"
+      - IpProtocol: -1
+        CidrIp: "10.7.73.0/24"
+        Description: "Mumbai India Voice"
+      - IpProtocol: -1
+        CidrIp: "10.7.105.0/24"
+        Description: "HYD India Voice"
+      - IpProtocol: -1
+        CidrIp: "10.4.16.0/21"
+        Description: "Brazil Voice"
+      - IpProtocol: -1
+        CidrIp: "10.7.59.0/24"
+        Description: "DB2 Voice"
+      - IpProtocol: -1
+        CidrIp: "10.7.27.0/24"
+        Description: "AD2 Voice"
+      - IpProtocol: -1
+        CidrIp: "10.232.0.0/21"
+        Description: "Korea Voice"
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: "172.16.0.0/12"
+      - IpProtocol: -1
+        CidrIp: "10.0.0.0/8"
+      - IpProtocol: -1
+        CidrIp: "192.168.0.0/16"
+      - IpProtocol: -1
+        CidrIp: "216.20.244.0/24"
+      - IpProtocol: -1
+        CidrIp: "216.20.248.0/24"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+  VPC2COMServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue VoiceNetwork2-Vpc
+      GroupDescription: sg for COM Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_com_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: 10.21.0.0/19
+        - IpProtocol: -1   #Office IP Space
+          CidrIp: 172.27.0.0/16
+        - IpProtocol: -1   #LA2
+          CidrIp: "172.23.0.0/16"
+        - IpProtocol: -1   #DAL
+          CidrIp: "172.19.0.0/16"
+        - IpProtocol: -1   #EU
+          CidrIp: "172.21.0.0/16"
+        - IpProtocol: -1   #SGP
+          CidrIp: "172.29.0.0/16"
+        - IpProtocol: -1   #HKO-1
+          CidrIp: "216.20.228.64/26"
+        - IpProtocol: -1   #HKO-2
+          CidrIp: "216.20.228.128/27"
+        - IpProtocol: -1   #DC IPs
+          CidrIp: 10.209.0.0/17
+        - IpProtocol: -1   #DMZ Subnet
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+          Description: "DMZ VPC"
+        - IpProtocol: -1 # DMZ Addon Subnet
+          CidrIp: "10.209.200.0/22"
+          Description: "DMZ Addon Subnet"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+          Description: "BMC Discovery"
+        - IpProtocol: -1
+          CidrIp: "205.214.10.0/24"
+          Description: "CDR"
+        - IpProtocol: -1
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "8010"
+          ToPort: "8010"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "8929"
+          ToPort: "8929"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "10.0.0.0/8"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+
+  FTPINTServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for FTP Internal Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_ftp_int_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: 10.21.0.0/19
+      - IpProtocol: -1   #Office IP Space
+        CidrIp: 172.27.0.0/16
+      - IpProtocol: -1   #LA2
+        CidrIp: "172.23.0.0/16"
+      - IpProtocol: -1   #DAL
+        CidrIp: "172.19.0.0/16"
+      - IpProtocol: -1   #EU
+        CidrIp: "172.21.0.0/16"
+      - IpProtocol: -1   #SGP
+        CidrIp: "172.29.0.0/16"
+      - IpProtocol: -1   #HKO-1
+        CidrIp: "216.20.228.64/26"
+      - IpProtocol: -1   #HKO-2
+        CidrIp: "216.20.228.128/27"
+      - IpProtocol: -1   #DMZ Subnet
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+        Description: "DMZ VPC"
+      - IpProtocol: -1 # DMZ Addon Subnet
+        CidrIp: "10.209.200.0/22"
+        Description: "DMZ Addon Subnet"
+      - IpProtocol: -1  #FTP
+        CidrIp: "0.0.0.0/0"
+        FromPort: "21"
+        ToPort: "22"
+      - IpProtocol: -1 #FTP
+        CidrIp: "0.0.0.0/0"
+        FromPort: "445"
+        ToPort: "445"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+        Description: "BMC Discovery"
+      - IpProtocol: -1
+        CidrIp: "205.214.10.0/24"
+        Description: "CDR"
+      - IpProtocol: -1
+        CidrIp: "10.209.0.0/17"
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: "172.16.0.0/12"
+      - IpProtocol: -1
+        CidrIp: "10.0.0.0/8"
+      - IpProtocol: -1
+        CidrIp: "192.168.0.0/16"
+      - IpProtocol: -1
+        CidrIp: "216.20.244.0/24"
+      - IpProtocol: -1
+        CidrIp: "216.20.248.0/24"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+  SophosServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for Sophos Servers
+      Tags:
+        - Key: Name
+          Value: global_tools_sophos_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: 10.21.0.0/19
+      - IpProtocol: -1   #Office IP Space
+        CidrIp: 172.27.0.0/16
+      - IpProtocol: -1   #LA2
+        CidrIp: "172.23.0.0/16"
+      - IpProtocol: -1   #DAL
+        CidrIp: "172.19.0.0/16"
+      - IpProtocol: -1   #EU
+        CidrIp: "172.21.0.0/16"
+      - IpProtocol: -1   #SGP
+        CidrIp: "172.29.0.0/16"
+      - IpProtocol: -1   #HKO-1
+        CidrIp: "216.20.228.64/26"
+      - IpProtocol: -1   #HKO-2
+        CidrIp: "216.20.228.128/27"
+      - IpProtocol: -1   #LAB
+        CidrIp: "172.20.0.0/16"
+      - IpProtocol: -1   #DMZ Subnet
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+        Description: "DMZ VPC"
+      - IpProtocol: -1 # DMZ Addon Subnet
+        CidrIp: "10.209.200.0/22"
+        Description: "DMZ Addon Subnet"
+      - IpProtocol: -1
+        CidrIp: "10.209.0.0/17"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+        Description: "BMC Discovery"
+      - IpProtocol: -1
+        CidrIp: "205.214.10.0/24"
+        Description: "CDR"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "8192"
+        ToPort: "8194"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "5007"
+        ToPort: "5007"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "445"
+        ToPort: "445"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: "172.16.0.0/12"
+      - IpProtocol: -1
+        CidrIp: "10.0.0.0/8"
+      - IpProtocol: -1
+        CidrIp: "192.168.0.0/16"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+  MailDirectorServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for Mail Director Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_mdr_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+      - IpProtocol: -1   #AAA-Self-IP
+        CidrIp: "10.209.128.14/32"
+      - IpProtocol: -1   #AAA-SNAT
+        CidrIp: "10.209.128.15/32"
+      - IpProtocol: -1   #AAB-Self-IP
+        CidrIp: "10.209.160.14/32"
+      - IpProtocol: -1   #AAB-SNAT
+        CidrIp: "10.209.160.15/32"
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: 10.21.0.0/19
+      - IpProtocol: -1   #Office IP Space
+        CidrIp: 172.27.0.0/16
+      - IpProtocol: -1   #LA2
+        CidrIp: "172.23.0.0/16"
+      - IpProtocol: -1   #DAL
+        CidrIp: "172.19.0.0/16"
+      - IpProtocol: -1   #EU
+        CidrIp: "172.21.0.0/16"
+      - IpProtocol: -1   #SGP
+        CidrIp: "172.29.0.0/16"
+      - IpProtocol: -1   #HKO-1
+        CidrIp: "216.20.228.64/26"
+      - IpProtocol: -1   #HKO-2
+        CidrIp: "216.20.228.128/27"
+      - IpProtocol: -1   #LAB
+        CidrIp: "172.20.0.0/16"
+      - IpProtocol: -1   #DMZ Subnet
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+        Description: "DMZ VPC"
+      - IpProtocol: -1 # DMZ Addon Subnet
+        CidrIp: "10.209.200.0/22"
+        Description: "DMZ Addon Subnet"
+      - IpProtocol: "tcp"
+        CidrIp: 0.0.0.0/0
+        FromPort: "25"
+        ToPort: "25"
+        Description: "SMTP"
+      - IpProtocol: -1
+        CidrIp: "10.209.0.0/17"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+        Description: "BMC Discovery"
+      - IpProtocol: -1
+        CidrIp: "205.214.10.0/24"
+        Description: "CDR"
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: "172.16.0.0/12"
+      - IpProtocol: -1
+        CidrIp: "10.0.0.0/8"
+      - IpProtocol: -1
+        CidrIp: "192.168.0.0/16"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+  BMINTServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for BMINT Servers
+      Tags:
+        - Key: Name
+          Value: global_tools_BMINT_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: 10.21.0.0/19
+      - IpProtocol: -1   #Office IP Space
+        CidrIp: 172.27.0.0/16
+      - IpProtocol: -1   #LA2
+        CidrIp: "172.23.0.0/16"
+      - IpProtocol: -1   #DAL
+        CidrIp: "172.19.0.0/16"
+      - IpProtocol: -1   #EU
+        CidrIp: "172.21.0.0/16"
+      - IpProtocol: -1   #SGP
+        CidrIp: "172.29.0.0/16"
+      - IpProtocol: -1   #HKO-1
+        CidrIp: "216.20.228.64/26"
+      - IpProtocol: -1   #HKO-2
+        CidrIp: "216.20.228.128/27"
+      - IpProtocol: -1   #LAB
+        CidrIp: "172.20.0.0/16"
+      - IpProtocol: -1   #DMZ Subnet
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+        Description: "DMZ VPC"
+      - IpProtocol: -1 # DMZ Addon Subnet
+        CidrIp: "10.209.200.0/22"
+        Description: "DMZ Addon Subnet"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "3183"
+        ToPort: "3183"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "3184"
+        ToPort: "3184"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "162"
+        ToPort: "162"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "162"
+        ToPort: "162"
+      - IpProtocol: -1
+        CidrIp: "10.209.0.0/17"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+        Description: "BMC Discovery"
+      - IpProtocol: -1
+        CidrIp: "205.214.10.0/24"
+        Description: "CDR"
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: "172.16.0.0/12"
+      - IpProtocol: -1
+        CidrIp: "10.0.0.0/8"
+      - IpProtocol: -1
+        CidrIp: "192.168.0.0/16"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+  BMPCSServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for BMPCS Servers
+      Tags:
+        - Key: Name
+          Value: global_tools_BMPCS_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: 10.21.0.0/19
+      - IpProtocol: -1   #Office IP Space
+        CidrIp: 172.27.0.0/16
+      - IpProtocol: -1   #LA2
+        CidrIp: "172.23.0.0/16"
+      - IpProtocol: -1   #DAL
+        CidrIp: "172.19.0.0/16"
+      - IpProtocol: -1   #EU
+        CidrIp: "172.21.0.0/16"
+      - IpProtocol: -1   #SGP
+        CidrIp: "172.29.0.0/16"
+      - IpProtocol: -1   #HKO-1
+        CidrIp: "216.20.228.64/26"
+      - IpProtocol: -1   #HKO-2
+        CidrIp: "216.20.228.128/27"
+      - IpProtocol: -1   #LAB
+        CidrIp: "172.20.0.0/16"
+      - IpProtocol: -1   #DMZ Subnet
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+        Description: "DMZ VPC"
+      - IpProtocol: -1 # DMZ Addon Subnet
+        CidrIp: "10.209.200.0/22"
+        Description: "DMZ Addon Subnet"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "2059"
+        ToPort: "2059"
+      - IpProtocol: -1
+        CidrIp: "10.209.0.0/17"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+        Description: "BMC Discovery"
+      - IpProtocol: -1
+        CidrIp: "205.214.10.0/24"
+        Description: "CDR"
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: "172.16.0.0/12"
+      - IpProtocol: -1
+        CidrIp: "10.0.0.0/8"
+      - IpProtocol: -1
+        CidrIp: "192.168.0.0/16"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+  WSUSServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for WSUS Servers
+      Tags:
+        - Key: Name
+          Value: global_tools_WSUS_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: 10.21.0.0/19
+      - IpProtocol: -1   #Office IP Space
+        CidrIp: 172.27.0.0/16
+      - IpProtocol: -1   #LA2
+        CidrIp: "172.23.0.0/16"
+      - IpProtocol: -1   #DAL
+        CidrIp: "172.19.0.0/16"
+      - IpProtocol: -1   #EU
+        CidrIp: "172.21.0.0/16"
+      - IpProtocol: -1   #SGP
+        CidrIp: "172.29.0.0/16"
+      - IpProtocol: -1   #HKO-1
+        CidrIp: "216.20.228.64/26"
+      - IpProtocol: -1   #HKO-2
+        CidrIp: "216.20.228.128/27"
+      - IpProtocol: -1   #LAB
+        CidrIp: "172.20.0.0/16"
+      - IpProtocol: -1   #DMZ Subnet
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+        Description: "DMZ VPC"
+      - IpProtocol: -1 # DMZ Addon Subnet
+        CidrIp: "10.209.200.0/22"
+        Description: "DMZ Addon Subnet"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "8530"
+        ToPort: "8531"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+      - IpProtocol: -1
+        CidrIp: "10.209.0.0/17"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+        Description: "BMC Discovery"
+      - IpProtocol: -1
+        CidrIp: "205.214.10.0/24"
+        Description: "CDR"
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: "172.16.0.0/12"
+      - IpProtocol: -1
+        CidrIp: "10.0.0.0/8"
+      - IpProtocol: -1
+        CidrIp: "192.168.0.0/16"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+  DBMonServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for DBMon Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_DBMon_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: 10.21.0.0/19
+      - IpProtocol: -1   #Office IP Space
+        CidrIp: 172.27.0.0/16
+      - IpProtocol: -1   #LA2
+        CidrIp: "172.23.0.0/16"
+      - IpProtocol: -1   #DAL
+        CidrIp: "172.19.0.0/16"
+      - IpProtocol: -1   #EU
+        CidrIp: "172.21.0.0/16"
+      - IpProtocol: -1   #SGP
+        CidrIp: "172.29.0.0/16"
+      - IpProtocol: -1   #HKO-1
+        CidrIp: "216.20.228.64/26"
+      - IpProtocol: -1   #HKO-2
+        CidrIp: "216.20.228.128/27"
+      - IpProtocol: -1   #LAB
+        CidrIp: "172.20.0.0/16"
+      - IpProtocol: -1   #DMZ Subnet
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+        Description: "DMZ VPC"
+      - IpProtocol: -1 # DMZ Addon Subnet
+        CidrIp: "10.209.200.0/22"
+        Description: "DMZ Addon Subnet"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "1433"
+        ToPort: "1434"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "1450"
+        ToPort: "1450"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "445"
+        ToPort: "445"
+      - IpProtocol: -1
+        CidrIp: "10.209.0.0/17"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+        Description: "BMC Discovery"
+      - IpProtocol: -1
+        CidrIp: "205.214.10.0/24"
+        Description: "CDR"
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: "172.16.0.0/12"
+      - IpProtocol: -1
+        CidrIp: "10.0.0.0/8"
+      - IpProtocol: -1
+        CidrIp: "192.168.0.0/16"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+  GlobalDBServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for globaldb Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_globaldb_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: 10.21.0.0/16
+        - IpProtocol: -1   #Office IP Space
+          CidrIp: 172.27.0.0/16
+        - IpProtocol: -1   #LA2
+          CidrIp: "172.23.0.0/16"
+        - IpProtocol: -1   #DAL
+          CidrIp: "172.19.0.0/16"
+        - IpProtocol: -1   #EU
+          CidrIp: "172.21.0.0/16"
+        - IpProtocol: -1   #SGP
+          CidrIp: "172.29.0.0/16"
+        - IpProtocol: -1   #HKO-1
+          CidrIp: "216.20.228.64/26"
+        - IpProtocol: -1   #HKO-2
+          CidrIp: "216.20.228.128/27"
+        - IpProtocol: -1   #LAB
+          CidrIp: "172.20.0.0/16"
+        - IpProtocol: -1   #DMZ Subnet
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+          Description: "DMZ VPC"
+        - IpProtocol: -1 # DMZ Addon Subnet
+          CidrIp: "10.209.200.0/22"
+          Description: "DMZ Addon Subnet"
+        - IpProtocol: "tcp"
+          CidrIp: "10.7.0.0/16"
+          FromPort: "1433"
+          ToPort: "1434"
+        - IpProtocol: "tcp"
+          CidrIp: "10.7.0.0/16"
+          FromPort: "1450"
+          ToPort: "1450"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "445"
+          ToPort: "445"
+        - IpProtocol: -1
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+          Description: "BMC Discovery"
+        - IpProtocol: -1
+          CidrIp: "205.214.10.0/24"
+          Description: "CDR"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "10.0.0.0/8"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+
+  InlogServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for Inlog Servers
+      Tags:
+        - Key: Name
+          Value: global_tools_Inlog_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: 10.21.0.0/19
+      - IpProtocol: -1   #Office IP Space
+        CidrIp: 172.27.0.0/16
+      - IpProtocol: -1   #LA2
+        CidrIp: "172.23.0.0/16"
+      - IpProtocol: -1   #DAL
+        CidrIp: "172.19.0.0/16"
+      - IpProtocol: -1   #EU
+        CidrIp: "172.21.0.0/16"
+      - IpProtocol: -1   #SGP
+        CidrIp: "172.29.0.0/16"
+      - IpProtocol: -1   #HKO-1
+        CidrIp: "216.20.228.64/26"
+      - IpProtocol: -1   #HKO-2
+        CidrIp: "216.20.228.128/27"
+      - IpProtocol: -1   #LAB
+        CidrIp: "172.20.0.0/16"
+      - IpProtocol: -1   #DMZ Subnet
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+        Description: "DMZ VPC"
+      - IpProtocol: -1 # DMZ Addon Subnet
+        CidrIp: "10.209.200.0/22"
+        Description: "DMZ Addon Subnet"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "514"
+        ToPort: "514"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "445"
+        ToPort: "445"
+      - IpProtocol: -1
+        CidrIp: "10.209.0.0/17"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+        Description: "BMC Discovery"
+      - IpProtocol: -1
+        CidrIp: "205.214.10.0/24"
+        Description: "CDR"
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: "172.16.0.0/12"
+      - IpProtocol: -1
+        CidrIp: "10.0.0.0/8"
+      - IpProtocol: -1
+        CidrIp: "192.168.0.0/16"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+  InCDRServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for InCDR Servers
+      Tags:
+        - Key: Name
+          Value: global_tools_InCDR_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: 10.21.0.0/19
+      - IpProtocol: -1   #Office IP Space
+        CidrIp: 172.27.0.0/16
+      - IpProtocol: -1   #LA2
+        CidrIp: "172.23.0.0/16"
+      - IpProtocol: -1   #DAL
+        CidrIp: "172.19.0.0/16"
+      - IpProtocol: -1   #EU
+        CidrIp: "172.21.0.0/16"
+      - IpProtocol: -1   #SGP
+        CidrIp: "172.29.0.0/16"
+      - IpProtocol: -1   #HKO-1
+        CidrIp: "216.20.228.64/26"
+      - IpProtocol: -1   #HKO-2
+        CidrIp: "216.20.228.128/27"
+      - IpProtocol: -1   #LAB
+        CidrIp: "172.20.0.0/16"
+      - IpProtocol: -1   #DMZ Subnet
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+        Description: "DMZ VPC"
+      - IpProtocol: -1 # DMZ Addon Subnet
+        CidrIp: "10.209.200.0/22"
+        Description: "DMZ Addon Subnet"
+      - IpProtocol: -1
+        CidrIp: "10.209.0.0/17"
+      - IpProtocol: -1 # BMC DIS
+        CidrIp: "205.214.8.0/24"
+        Description: "BMC Discovery"
+      - IpProtocol: -1
+        CidrIp: "205.214.10.0/24"
+        Description: "CDR"
+      - IpProtocol: -1
+        CidrIp: "10.230.80.0/24"
+        Description: "Osaka Voice 1"
+      - IpProtocol: -1
+        CidrIp: "10.230.84.0/24"
+        Description: "Osaka Voice 2"
+      - IpProtocol: -1
+        CidrIp: "10.5.16.0/24"
+        Description: "Tokyo Voice 1"
+      - IpProtocol: -1
+        CidrIp: "10.5.20.0/24"
+        Description: "Tokyo Voice 2"
+
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: "172.16.0.0/12"
+      - IpProtocol: -1
+        CidrIp: "10.0.0.0/8"
+      - IpProtocol: -1
+        CidrIp: "192.168.0.0/16"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+  NWFMServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for NWFM Servers
+      Tags:
+        - Key: Name
+          Value: global_network_NWFM_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+      - IpProtocol: -1   #VPN IPs
+        CidrIp: 10.21.0.0/19
+      - IpProtocol: -1   #Office IP Space
+        CidrIp: 172.27.0.0/16
+      - IpProtocol: -1   #LA2
+        CidrIp: "172.23.0.0/16"
+      - IpProtocol: -1   #DAL
+        CidrIp: "172.19.0.0/16"
+      - IpProtocol: -1   #EU
+        CidrIp: "172.21.0.0/16"
+      - IpProtocol: -1   #SGP
+        CidrIp: "172.29.0.0/16"
+      - IpProtocol: -1   #HKO-1
+        CidrIp: "216.20.228.64/26"
+      - IpProtocol: -1   #HKO-2
+        CidrIp: "216.20.228.128/27"
+      - IpProtocol: -1   #LAB
+        CidrIp: "172.20.0.0/16"
+      - IpProtocol: -1   #DMZ Subnet
+        CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+        Description: "DMZ VPC"
+      - IpProtocol: -1 # DMZ Addon Subnet
+        CidrIp: "10.209.200.0/22"
+        Description: "DMZ Addon Subnet"
+      SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: "169.254.0.0/16"
+      - IpProtocol: -1
+        CidrIp: "172.16.0.0/12"
+      - IpProtocol: -1
+        CidrIp: "10.0.0.0/8"
+      - IpProtocol: -1
+        CidrIp: "192.168.0.0/16"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "udp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "53"
+        ToPort: "53"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "443"
+        ToPort: "443"
+      - IpProtocol: "tcp"
+        CidrIp: "0.0.0.0/0"
+        FromPort: "80"
+        ToPort: "80"
+  GlobalWebServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue DMZNetwork-Vpc
+      GroupDescription: sg for Global Web Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_web_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: 10.21.0.0/19
+        - IpProtocol: -1   #Office IP Space
+          CidrIp: 172.27.0.0/16
+        - IpProtocol: -1   #LA2
+          CidrIp: "172.23.0.0/16"
+        - IpProtocol: -1   #DAL
+          CidrIp: "172.19.0.0/16"
+        - IpProtocol: -1   #EU
+          CidrIp: "172.21.0.0/16"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,CoreVPCSubnet ]
+        - IpProtocol: -1   #AUS Core
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+        - IpProtocol: -1
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+          Description: "BMC Discovery"
+        - IpProtocol: -1
+          CidrIp: "205.214.10.0/24"
+          Description: "CDR"
+        - IpProtocol: -1
+          CidrIp: "10.230.32.0/21"
+          Description: "DMZ VPC"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "21"
+          ToPort: "22"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+        - IpProtocol: -1   #DC Subnet
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: "10.209.128.0/18"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: "10.4.96.0/21"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,CoreVPCSubnet ]
+  InternalGlobalWebServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for Internal Web Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_internal_web_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: 10.21.0.0/16
+        - IpProtocol: -1   #AWS DMZ VPC
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+        - IpProtocol: -1
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+          Description: "BMC Discovery"
+        - IpProtocol: -1
+          CidrIp: "205.214.10.0/24"
+          Description: "CDR"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "21"
+          ToPort: "22"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+        - IpProtocol: -1   #DC Subnet
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: "10.209.128.0/18"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: "10.4.96.0/21"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,CoreVPCSubnet ]
+        - IpProtocol: -1   #AWS DMZ VPC
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+  InternalCertificateServersSG:
+      Type: 'AWS::EC2::SecurityGroup'
+      Properties:
+        VpcId: !ImportValue CoreNetwork-Vpc
+        GroupDescription: sg for Internal Certificate Servers
+        Tags:
+          - Key: Name
+            Value: global_systems_internal_certificate_sg
+          - Key: DeviceType
+            Value: Network Security Group
+          - Key: Cluster
+            Value: Global
+          - Key: Product
+            Value: Network
+          - Key: Owner
+            Value: Network Teams
+        SecurityGroupIngress:
+          - IpProtocol: -1   #VPN IPs
+            CidrIp: 10.21.0.0/16
+          - IpProtocol: -1   #AWS DMZ VPC
+            CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+          - IpProtocol: -1 # BMC DIS
+            CidrIp: "205.214.8.0/24"
+          - IpProtocol: -1
+            CidrIp: "10.209.0.0/17"
+          - IpProtocol: -1 # BMC DIS
+            CidrIp: "205.214.8.0/24"
+            Description: "BMC Discovery"
+          - IpProtocol: -1
+            CidrIp: "205.214.10.0/24"
+            Description: "CDR"
+        SecurityGroupEgress:
+          - IpProtocol: -1
+            CidrIp: "172.16.0.0/12"
+          - IpProtocol: -1
+            CidrIp: "192.168.0.0/16"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "53"
+            ToPort: "53"
+          - IpProtocol: "udp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "53"
+            ToPort: "53"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "443"
+            ToPort: "443"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "21"
+            ToPort: "22"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "80"
+            ToPort: "80"
+          - IpProtocol: -1   #DC Subnet
+            CidrIp: "10.209.0.0/17"
+          - IpProtocol: -1   #AWS Core VPC
+            CidrIp: "10.209.128.0/18"
+          - IpProtocol: -1   #AWS Core VPC
+            CidrIp: "10.4.96.0/21"
+          - IpProtocol: -1 # BMC DIS
+            CidrIp: "205.214.8.0/24"
+          - IpProtocol: -1   #AWS Core VPC
+            CidrIp: !FindInMap [ VPCaddressPrefix,values,CoreVPCSubnet ]
+          - IpProtocol: -1   #AWS DMZ VPC
+            CidrIp: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+
+  InFTPSGDMZ:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue DMZNetwork-Vpc
+      GroupDescription: sg for InFTP Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_inftp_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: 10.21.0.0/19
+        - IpProtocol: -1   #Office IP Space
+          CidrIp: 172.27.0.0/16
+        - IpProtocol: -1   #LA2
+          CidrIp: "172.23.0.0/16"
+        - IpProtocol: -1   #DAL
+          CidrIp: "172.19.0.0/16"
+        - IpProtocol: -1   #EU
+          CidrIp: "172.21.0.0/16"
+        - IpProtocol: -1   #AUS Core
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,CoreVPCSubnet ]
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "21"
+          ToPort: "22"
+        - IpProtocol: -1
+          CidrIp: "10.209.0.0/17"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "21"
+          ToPort: "22"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+        - IpProtocol: -1   #DC Subnet
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,CoreVPCSubnet ]
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: "10.4.96.0/21"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: "10.4.32.0/21"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+  InmailSGDMZ:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue DMZNetwork-Vpc
+      GroupDescription: sg for Inmail Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_inmail_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: 10.21.0.0/19
+        - IpProtocol: -1   #Office IP Space
+          CidrIp: 172.27.0.0/16
+        - IpProtocol: -1   #LA2
+          CidrIp: "172.23.0.0/16"
+        - IpProtocol: -1   #DAL
+          CidrIp: "172.19.0.0/16"
+        - IpProtocol: -1   #EU
+          CidrIp: "172.21.0.0/16"
+        - IpProtocol: -1   #AUS Core
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: "10.209.128.0/18"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,CoreVPCSubnet ]
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "25"
+          ToPort: "25"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+          Description: "BMC Discovery"
+        - IpProtocol: -1
+          CidrIp: "205.214.10.0/24"
+          Description: "CDR"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "21"
+          ToPort: "22"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "25"
+          ToPort: "25"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+        - IpProtocol: -1   #DC Subnet
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: "10.209.128.0/18"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: "10.4.96.0/21"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: "10.4.32.0/21"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,CoreVPCSubnet ]
+  RLRServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue VoiceNetwork-Vpc
+      GroupDescription: sg for RLR Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_RLR_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: 10.21.0.0/19
+        - IpProtocol: -1   #Global Protect
+          CidrIp: 10.21.40.0/22
+          Description: "Global Protect"
+        - IpProtocol: -1   #Office IP Space
+          CidrIp: 172.27.0.0/16
+        - IpProtocol: -1   #LA2
+          CidrIp: "172.23.0.0/16"
+        - IpProtocol: -1   #DAL
+          CidrIp: "172.19.0.0/16"
+        - IpProtocol: -1   #EU
+          CidrIp: "172.21.0.0/16"
+        - IpProtocol: -1   #AUS Core
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: "10.209.128.0/18"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "25"
+          ToPort: "25"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+          Description: "BMC Discovery"
+        - IpProtocol: -1
+          CidrIp: "205.214.10.0/24"
+          Description: "CDR"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: -1
+          CidrIp: "10.0.0.0/8"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "21"
+          ToPort: "22"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "25"
+          ToPort: "25"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+        - IpProtocol: -1   #DC Subnet
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: "10.209.128.0/18"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,CoreVPCSubnet ]
+  VPC2RLRServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue VoiceNetwork2-Vpc
+      GroupDescription: sg for RLR Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_RLR_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: 10.21.0.0/19
+        - IpProtocol: -1   #Global Protect
+          CidrIp: 10.21.40.0/22
+          Description: "Global Protect"        
+        - IpProtocol: -1   #Office IP Space
+          CidrIp: 172.27.0.0/16
+        - IpProtocol: -1   #LA2
+          CidrIp: "172.23.0.0/16"
+        - IpProtocol: -1   #DAL
+          CidrIp: "172.19.0.0/16"
+        - IpProtocol: -1   #EU
+          CidrIp: "172.21.0.0/16"
+        - IpProtocol: -1   #AUS Core
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: "10.209.128.0/18"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "25"
+          ToPort: "25"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+          Description: "BMC Discovery"
+        - IpProtocol: -1
+          CidrIp: "205.214.10.0/24"
+          Description: "CDR"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: -1
+          CidrIp: "10.0.0.0/8"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "21"
+          ToPort: "22"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "25"
+          ToPort: "25"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+        - IpProtocol: -1   #DC Subnet
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: "10.209.128.0/18"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,CoreVPCSubnet ]
+  ACOVOCServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue VoiceNetwork-Vpc
+      GroupDescription: sg for Audio Codes OVOC Servers
+      Tags:
+        - Key: Name
+          Value: global_systems_acovoc_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: 10.21.0.0/19
+        - IpProtocol: -1   #Office IP Space
+          CidrIp: 172.27.0.0/16
+        - IpProtocol: -1   #LA2
+          CidrIp: "172.23.0.0/16"
+        - IpProtocol: -1   #DAL
+          CidrIp: "172.19.0.0/16"
+        - IpProtocol: -1   #EU
+          CidrIp: "172.21.0.0/16"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "25"
+          ToPort: "25"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+          Description: "BMC Discovery"
+        - IpProtocol: -1
+          CidrIp: "205.214.10.0/24"
+          Description: "CDR"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: -1
+          CidrIp: "10.0.0.0/8"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "21"
+          ToPort: "22"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "25"
+          ToPort: "25"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+        - IpProtocol: -1   #AWS Core VPC
+          CidrIp: !FindInMap [ VPCaddressPrefix,values,CoreVPCSubnet ]
+  ACOVOC2ServersSG:
+      Type: 'AWS::EC2::SecurityGroup'
+      Properties:
+        VpcId: !ImportValue VoiceNetwork2-Vpc
+        GroupDescription: sg for Audio Codes OVOC Servers
+        Tags:
+          - Key: Name
+            Value: global_systems_acovoc2_servers_sg
+          - Key: DeviceType
+            Value: Network Security Group
+          - Key: Cluster
+            Value: Global
+          - Key: Product
+            Value: Network
+          - Key: Owner
+            Value: Network Teams
+        SecurityGroupIngress:
+          - IpProtocol: -1   #VPN IPs
+            CidrIp: 10.21.0.0/19
+          - IpProtocol: -1   #Office IP Space
+            CidrIp: 172.27.0.0/16
+          - IpProtocol: -1   #LA2
+            CidrIp: "172.23.0.0/16"
+          - IpProtocol: -1   #DAL
+            CidrIp: "172.19.0.0/16"
+          - IpProtocol: -1   #EU
+            CidrIp: "172.21.0.0/16"
+          - IpProtocol: -1 # BMC DIS
+            CidrIp: "205.214.8.0/24"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "25"
+            ToPort: "25"
+          - IpProtocol: -1 # BMC DIS
+            CidrIp: "205.214.8.0/24"
+            Description: "BMC Discovery"
+          - IpProtocol: -1
+            CidrIp: "205.214.10.0/24"
+            Description: "CDR"
+        SecurityGroupEgress:
+          - IpProtocol: -1
+            CidrIp: "172.16.0.0/12"
+          - IpProtocol: -1
+            CidrIp: "192.168.0.0/16"
+          - IpProtocol: -1
+            CidrIp: "10.0.0.0/8"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "53"
+            ToPort: "53"
+          - IpProtocol: "udp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "53"
+            ToPort: "53"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "443"
+            ToPort: "443"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "21"
+            ToPort: "22"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "25"
+            ToPort: "25"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "80"
+            ToPort: "80"
+          - IpProtocol: -1 # BMC DIS
+            CidrIp: "205.214.8.0/24"
+          - IpProtocol: -1   #AWS Core VPC
+            CidrIp: !FindInMap [ VPCaddressPrefix,values,CoreVPCSubnet ]
+  InfraToolsServersSG:
+      Type: 'AWS::EC2::SecurityGroup'
+      Properties:
+        VpcId: !ImportValue CoreNetwork-Vpc
+        GroupDescription: sg for infra tools Servers
+        Tags:
+          - Key: Name
+            Value: global_tools_Infra_tools_servers_sg
+          - Key: DeviceType
+            Value: Network Security Group
+          - Key: Cluster
+            Value: Global
+          - Key: Product
+            Value: Network
+          - Key: Owner
+            Value: Network Teams
+        SecurityGroupIngress:
+          - IpProtocol: -1   #VPN IPs
+            CidrIp: 10.21.0.0/19
+          - IpProtocol: -1   #LA2
+            CidrIp: "172.23.0.0/16"
+          - IpProtocol: -1   #DAL
+            CidrIp: "172.19.0.0/16"
+          - IpProtocol: -1   #EU
+            CidrIp: "172.31.0.0/16"
+          - IpProtocol: -1   #SGP
+            CidrIp: "172.29.0.0/16"
+          - IpProtocol: "udp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "514"
+            ToPort: "514"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "445"
+            ToPort: "445"
+          - IpProtocol: -1
+            CidrIp: "10.209.0.0/17"
+          - IpProtocol: -1
+            CidrIp: "205.214.10.0/24"
+            Description: "CDR"
+        SecurityGroupEgress:
+          - IpProtocol: -1
+            CidrIp: "172.16.0.0/12"
+          - IpProtocol: -1
+            CidrIp: "10.0.0.0/8"
+          - IpProtocol: -1
+            CidrIp: "192.168.0.0/16"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "53"
+            ToPort: "53"
+          - IpProtocol: "udp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "53"
+            ToPort: "53"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "443"
+            ToPort: "443"
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0"
+            FromPort: "80"
+            ToPort: "80"
+  DomainControllerSGChefRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref DomainControllerSG
+      IpProtocol: "tcp"   #Chef
+      SourceSecurityGroupId: !Ref ChefServersSG
+      FromPort: "443"
+      ToPort: "443"
+  DomainControllerSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref DomainControllerSG
+      IpProtocol: -1   #Jump Servers
+      SourceSecurityGroupId: !Ref JumpServersSG
+  DomainControllerSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref DomainControllerSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref SophosServersSG
+      FromPort: "8194"
+      ToPort: "8194"
+  DomainControllerSGBMINTRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref DomainControllerSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMINTServersSG
+      FromPort: "3181"
+      ToPort: "3181"
+  DomainControllerSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref DomainControllerSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "2059"
+      ToPort: "2059"
+  DomainControllerSGBMPCS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref DomainControllerSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "135"
+      ToPort: "135"
+  DomainControllerSGBMPC32Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref DomainControllerSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "445"
+      ToPort: "445"
+  DomainControllerSGDomainControllersRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref DomainControllerSG
+      IpProtocol: -1   #Domain Controllers
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  IntDNSServersSGDomaincontrollerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref IntDNSServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  IntDNSServersSGCheffRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref IntDNSServersSG
+      IpProtocol: -1   #DNS Servers Self All In
+      SourceSecurityGroupId: !Ref IntDNSServersSG
+  IntDNSServersSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref IntDNSServersSG
+      IpProtocol: -1   #Jump Servers All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  IntDNSSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref IntDNSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref SophosServersSG
+      FromPort: "8194"
+      ToPort: "8194"
+  IntDNSSGBMINTRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref IntDNSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMINTServersSG
+      FromPort: "3181"
+      ToPort: "3181"
+  IntDNSSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref IntDNSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "2059"
+      ToPort: "2059"
+  IntDNSSGBMPCS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref IntDNSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "135"
+      ToPort: "135"
+  IntDNSSGBMPCS3Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref IntDNSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "445"
+      ToPort: "445"
+  IntDNSSGF5CoreRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref IntDNSServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref NoConnTrackF5
+
+  ChefServersSGDomaincontrollerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref ChefServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  ChefServersSGCheffRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref ChefServersSG
+      IpProtocol: -1   #Chef Servers All In
+      SourceSecurityGroupId: !Ref ChefServersSG
+  ChefServersSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref ChefServersSG
+      IpProtocol: -1   #Jump Servers All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  JumpServersSGDomainControllerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref JumpServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  JumpServersSGChefRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref JumpServersSG
+      IpProtocol: "tcp"   #Chef All In
+      SourceSecurityGroupId: !Ref ChefServersSG
+      FromPort: "443"
+      ToPort: "443"
+  JumpServersSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref JumpServersSG
+      IpProtocol: -1   #Jump All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  JumpServersSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref JumpServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref SophosServersSG
+      FromPort: "8194"
+      ToPort: "8194"
+  JumpServersSGBMINTRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref JumpServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMINTServersSG
+      FromPort: "3181"
+      ToPort: "3181"
+  JumpServersSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref JumpServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "2059"
+      ToPort: "2059"
+  JumpServersSGBMPCS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref JumpServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "135"
+      ToPort: "135"
+  JumpServersSGBMPCS3Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref JumpServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "445"
+      ToPort: "445"
+  BidServersSGBidRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BidServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref BidServersSG
+  BidServersSGDomainControllerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BidServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  BidServerSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BidServersSG
+      IpProtocol: -1   #Jump All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  BidServerSGChefRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BidServersSG
+      IpProtocol: "tcp"   #Chef All In
+      SourceSecurityGroupId: !Ref ChefServersSG
+      FromPort: "443"
+      ToPort: "443"
+  BidServerSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BidServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref SophosServersSG
+      FromPort: "8194"
+      ToPort: "8194"
+  BidServerSGBMINTRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BidServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMINTServersSG
+      FromPort: "3181"
+      ToPort: "3181"
+  BidServerSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BidServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "2059"
+      ToPort: "2059"
+  BidServerSGBMPCS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BidServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "135"
+      ToPort: "135"
+  BidServerSGBMPCS3Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BidServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "445"
+      ToPort: "445"
+  ASRServersSGASRRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref ASRServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref ASRServersSG
+  ASRServersSGDomainControllerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref ASRServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  ASRServerSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref ASRServersSG
+      IpProtocol: -1   #Jump All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  ASRServerSGChefRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref ASRServersSG
+      IpProtocol: "tcp"   #Chef All In
+      SourceSecurityGroupId: !Ref ChefServersSG
+      FromPort: "443"
+      ToPort: "443"
+  ASRServerSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref ASRServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref SophosServersSG
+      FromPort: "8194"
+      ToPort: "8194"
+  ASRServerSGBMINTRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref ASRServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMINTServersSG
+      FromPort: "3181"
+      ToPort: "3181"
+  ASRServerSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref ASRServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "2059"
+      ToPort: "2059"
+  ASRServerSGBMPCS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref ASRServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "135"
+      ToPort: "135"
+  ASRServerSGBMPCS3Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref ASRServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "445"
+      ToPort: "445"
+
+  ASR2ServersSGASR2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2ASRServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref VPC2ASRServersSG
+
+  ASR2ServersSGASRRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2ASRServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref ASRServersSG
+  ASRServersSGASR2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref ASRServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref VPC2ASRServersSG
+
+  ASR2ServersSGDomainControllerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2ASRServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  ASR2ServerSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2ASRServersSG
+      IpProtocol: -1   #Jump All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  ASR2ServerSGChefRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2ASRServersSG
+      IpProtocol: "tcp"   #Chef All In
+      SourceSecurityGroupId: !Ref ChefServersSG
+      FromPort: "443"
+      ToPort: "443"
+  ASR2ServerSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2ASRServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref SophosServersSG
+      FromPort: "8194"
+      ToPort: "8194"
+  ASR2ServerSGBMINTRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2ASRServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMINTServersSG
+      FromPort: "3181"
+      ToPort: "3181"
+  ASR2ServerSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2ASRServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "2059"
+      ToPort: "2059"
+  ASR2ServerSGBMPCS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2ASRServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "135"
+      ToPort: "135"
+  ASR2ServerSGBMPCS3Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2ASRServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "445"
+      ToPort: "445"
+
+
+  TTSServersSGTTSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref TTSServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref TTSServersSG
+  TTSServersSGDomainControllerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref TTSServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  TTSServerSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref TTSServersSG
+      IpProtocol: -1   #Jump All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  TTSServerSGChefRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref TTSServersSG
+      IpProtocol: "tcp"   #Chef All In
+      SourceSecurityGroupId: !Ref ChefServersSG
+      FromPort: "443"
+      ToPort: "443"
+  TTSServersSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref TTSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref SophosServersSG
+      FromPort: "8194"
+      ToPort: "8194"
+  TTSServersSGBMINTRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref TTSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMINTServersSG
+      FromPort: "3181"
+      ToPort: "3181"
+  TTSServersSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref TTSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "2059"
+      ToPort: "2059"
+  TTSServersSGBMPCS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref TTSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "135"
+      ToPort: "135"
+  TTSServersSGBMPCS3Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref TTSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "445"
+      ToPort: "445"
+
+  TTS2ServersSGTTSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2TTSServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref TTSServersSG
+  TTSServersSGTTS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref TTSServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref VPC2TTSServersSG
+
+
+  TTS2ServersSGTTS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2TTSServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref VPC2TTSServersSG
+  TTS2ServersSGDomainControllerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2TTSServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  TTS2ServerSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2TTSServersSG
+      IpProtocol: -1   #Jump All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  TTS2ServerSGChefRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2TTSServersSG
+      IpProtocol: "tcp"   #Chef All In
+      SourceSecurityGroupId: !Ref ChefServersSG
+      FromPort: "443"
+      ToPort: "443"
+  TTS2ServersSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2TTSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref SophosServersSG
+      FromPort: "8194"
+      ToPort: "8194"
+  TTS2ServersSGBMINTRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2TTSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMINTServersSG
+      FromPort: "3181"
+      ToPort: "3181"
+  TTS2ServersSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2TTSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "2059"
+      ToPort: "2059"
+  TTS2ServersSGBMPCS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2TTSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "135"
+      ToPort: "135"
+  TTS2ServersSGBMPCS3Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2TTSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "445"
+      ToPort: "445"
+
+  COMServersSGCOMRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref COMServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref COMServersSG
+  COMServersSGDomainControllerRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref COMServersSG
+        IpProtocol: -1   #Domain Controllers All In
+        SourceSecurityGroupId: !Ref DomainControllerSG
+  COMServerSGJumpRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref COMServersSG
+        IpProtocol: -1   #Jump All In
+        SourceSecurityGroupId: !Ref JumpServersSG
+  COMServerSGChefRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref COMServersSG
+        IpProtocol: "tcp"   #Chef All In
+        SourceSecurityGroupId: !Ref ChefServersSG
+        FromPort: "443"
+        ToPort: "443"
+  COMServerSGSophosRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref COMServersSG
+        IpProtocol: 'tcp'
+        SourceSecurityGroupId: !Ref SophosServersSG
+        FromPort: "8194"
+        ToPort: "8194"
+  COMServerSGBMINTRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref COMServersSG
+        IpProtocol: 'tcp'
+        SourceSecurityGroupId: !Ref BMINTServersSG
+        FromPort: "3181"
+        ToPort: "3181"
+  COMServerSGBMPCSRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref COMServersSG
+        IpProtocol: 'tcp'
+        SourceSecurityGroupId: !Ref BMPCSServersSG
+        FromPort: "2059"
+        ToPort: "2059"
+  COMServerSGBMPCS2Rule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref COMServersSG
+        IpProtocol: 'tcp'
+        SourceSecurityGroupId: !Ref BMPCSServersSG
+        FromPort: "135"
+        ToPort: "135"
+  COMServerSGBMPCS3Rule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref COMServersSG
+        IpProtocol: 'tcp'
+        SourceSecurityGroupId: !Ref BMPCSServersSG
+        FromPort: "445"
+        ToPort: "445"
+
+  COM2ServersSGCOM2Rule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref VPC2COMServersSG
+        IpProtocol: -1
+        SourceSecurityGroupId: !Ref VPC2COMServersSG
+
+  COM2ServersSGCOMRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref VPC2COMServersSG
+        IpProtocol: -1
+        SourceSecurityGroupId: !Ref COMServersSG
+  COMServersSGCOM2Rule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref COMServersSG
+        IpProtocol: -1
+        SourceSecurityGroupId: !Ref VPC2COMServersSG
+
+  COM2ServersSGDomainControllerRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref VPC2COMServersSG
+        IpProtocol: -1   #Domain Controllers All In
+        SourceSecurityGroupId: !Ref DomainControllerSG
+  COM2ServerSGJumpRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref VPC2COMServersSG
+        IpProtocol: -1   #Jump All In
+        SourceSecurityGroupId: !Ref JumpServersSG
+  COM2ServerSGChefRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref VPC2COMServersSG
+        IpProtocol: "tcp"   #Chef All In
+        SourceSecurityGroupId: !Ref ChefServersSG
+        FromPort: "443"
+        ToPort: "443"
+  COM2ServerSGSophosRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref VPC2COMServersSG
+        IpProtocol: 'tcp'
+        SourceSecurityGroupId: !Ref SophosServersSG
+        FromPort: "8194"
+        ToPort: "8194"
+  COM2ServerSGBMINTRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref VPC2COMServersSG
+        IpProtocol: 'tcp'
+        SourceSecurityGroupId: !Ref BMINTServersSG
+        FromPort: "3181"
+        ToPort: "3181"
+  COM2ServerSGBMPCSRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref VPC2COMServersSG
+        IpProtocol: 'tcp'
+        SourceSecurityGroupId: !Ref BMPCSServersSG
+        FromPort: "2059"
+        ToPort: "2059"
+  COM2ServerSGBMPCS2Rule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref VPC2COMServersSG
+        IpProtocol: 'tcp'
+        SourceSecurityGroupId: !Ref BMPCSServersSG
+        FromPort: "135"
+        ToPort: "135"
+  COM2ServerSGBMPCS3Rule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref VPC2COMServersSG
+        IpProtocol: 'tcp'
+        SourceSecurityGroupId: !Ref BMPCSServersSG
+        FromPort: "445"
+        ToPort: "445"
+
+  FTPINTServerSGFTPRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref FTPINTServersSG
+      IpProtocol: -1  #ftp self rule
+      SourceSecurityGroupId: !Ref FTPINTServersSG
+  FTPINTServersSGDomainControllerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref FTPINTServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  FTPINTServerSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref FTPINTServersSG
+      IpProtocol: -1   #Jump All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  FTPINTServerSGChefRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref FTPINTServersSG
+      IpProtocol: "tcp"   #Chef All In
+      SourceSecurityGroupId: !Ref ChefServersSG
+      FromPort: "443"
+      ToPort: "443"
+  FTPINTServersSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref FTPINTServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref SophosServersSG
+      FromPort: "8194"
+      ToPort: "8194"
+  FTPINTServersSGBMINTRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref FTPINTServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMINTServersSG
+      FromPort: "3181"
+      ToPort: "3181"
+  FTPINTServersSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref FTPINTServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "2059"
+      ToPort: "2059"
+  FTPINTServersSGBMPCS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref FTPINTServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "135"
+      ToPort: "135"
+  FTPINTServersSGBMPCS3Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref FTPINTServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "445"
+      ToPort: "445"
+  SophosServersSGDomaincontrollerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref SophosServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  SophosServersSGCheffRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref SophosServersSG
+      IpProtocol: -1   #DNS Servers Self All In
+      SourceSecurityGroupId: !Ref IntDNSServersSG
+  SophosServersSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref SophosServersSG
+      IpProtocol: -1   #Jump Servers All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  SophosSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref SophosServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref SophosServersSG
+  SophosDirectorSGBMINTRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref SophosServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMINTServersSG
+      FromPort: "3181"
+      ToPort: "3181"
+  SophosDirectorSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref SophosServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "2059"
+      ToPort: "2059"
+  SophosDirectorSGBMPCS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref SophosServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "135"
+      ToPort: "135"
+  SophosDirectorSGBMPCS3Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref SophosServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "445"
+      ToPort: "445"
+  BMINTServersSGDomaincontrollerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BMINTServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  BMINTServersSGCheffRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BMINTServersSG
+      IpProtocol: -1   #DNS Servers Self All In
+      SourceSecurityGroupId: !Ref IntDNSServersSG
+  BMINTServersSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BMINTServersSG
+      IpProtocol: -1   #Jump Servers All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  BMINTSGSelfRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BMINTServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref BMINTServersSG
+  BMINTServersSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BMINTServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref SophosServersSG
+      FromPort: "8194"
+      ToPort: "8194"
+  BMINTServersSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BMINTServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "2059"
+      ToPort: "2059"
+  BMINTServersSGBMPCS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BMINTServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "135"
+      ToPort: "135"
+  BMINTServersSGBMPCS3Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BMINTServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "445"
+      ToPort: "445"
+  BMPCSServersSGDomaincontrollerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BMPCSServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  BMPCSServersSGCheffRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BMPCSServersSG
+      IpProtocol: -1   #DNS Servers Self All In
+      SourceSecurityGroupId: !Ref IntDNSServersSG
+  BMPCSServersSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BMPCSServersSG
+      IpProtocol: -1   #Jump Servers All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  BMPCSSGSelfRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BMPCSServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref BMINTServersSG
+  BMPCSServersSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BMPCSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref SophosServersSG
+      FromPort: "8194"
+      ToPort: "8194"
+  BMPCSServersSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref BMPCSServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+  MailDirectorServersSGDomaincontrollerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref MailDirectorServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  MailDirectorServersSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref MailDirectorServersSG
+      IpProtocol: -1   #Jump Servers All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  MailDirectorSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref MailDirectorServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref SophosServersSG
+      FromPort: "8194"
+      ToPort: "8194"
+  MailDirectorSGBMINTRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref MailDirectorServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMINTServersSG
+      FromPort: "3181"
+      ToPort: "3181"
+  MailDirectorSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref MailDirectorServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "2059"
+      ToPort: "2059"
+  MailDirectorSGBMPCS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref MailDirectorServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "135"
+      ToPort: "135"
+  MailDirectorSGBMPCS3Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref MailDirectorServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "445"
+      ToPort: "445"
+  MailDirectorServersSGSelfRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref MailDirectorServersSG
+      IpProtocol: -1   #Self Rule
+      SourceSecurityGroupId: !Ref MailDirectorServersSG
+  WSUSSGDomaincontrollerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref WSUSServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  WSUSServersSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref WSUSServersSG
+      IpProtocol: -1   #Jump Servers All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  WSUSSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref WSUSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref SophosServersSG
+      FromPort: "8194"
+      ToPort: "8194"
+  WSUSSGBMINTRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref WSUSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMINTServersSG
+      FromPort: "3181"
+      ToPort: "3181"
+  WSUSSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref WSUSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "2059"
+      ToPort: "2059"
+  WSUSSGBMPCS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref WSUSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "135"
+      ToPort: "135"
+  WSUSSGBMPCS3Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref WSUSServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "445"
+      ToPort: "445"
+  WSUSServersSGSelfRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref WSUSServersSG
+      IpProtocol: -1   #Self Rule
+      SourceSecurityGroupId: !Ref WSUSServersSG
+  DBMonSGDomaincontrollerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref DBMonServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  DBMonServersSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref DBMonServersSG
+      IpProtocol: -1   #Jump Servers All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  DBMonSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref DBMonServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref SophosServersSG
+      FromPort: "8194"
+      ToPort: "8194"
+  DBMonSGBMINTRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref DBMonServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMINTServersSG
+      FromPort: "3181"
+      ToPort: "3181"
+  DBMonSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref DBMonServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "2059"
+      ToPort: "2059"
+  DBMonSGBMPCS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref DBMonServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "135"
+      ToPort: "135"
+  DBMonSGBMPCS3Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref DBMonServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "445"
+      ToPort: "445"
+  DBMonServersSGSelfRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref DBMonServersSG
+      IpProtocol: -1   #Self Rule
+      SourceSecurityGroupId: !Ref DBMonServersSG
+
+#  DBWitnessSGDomaincontrollerRule:
+#    Type: 'AWS::EC2::SecurityGroupIngress'
+#    Properties:
+#      GroupId: !Ref DBWitnessServersSG
+#      IpProtocol: -1   #Domain Controllers All In
+#      SourceSecurityGroupId: !Ref DomainControllerSG
+#  DBWitnessServersSGJumpRule:
+#      Type: 'AWS::EC2::SecurityGroupIngress'
+#      Properties:
+#        GroupId: !Ref DBWitnessServersSG
+#        IpProtocol: -1   #Jump Servers All In
+#        SourceSecurityGroupId: !Ref JumpServersSG
+#  DBWitnessSGSophosRule:
+#      Type: 'AWS::EC2::SecurityGroupIngress'
+#      Properties:
+#        GroupId: !Ref DBWitnessServersSG
+#        IpProtocol: 'tcp'
+#        SourceSecurityGroupId: !Ref SophosServersSG
+#        FromPort: "8194"
+#        ToPort: "8194"
+#  DBWitnessSGBMINTRule:
+#      Type: 'AWS::EC2::SecurityGroupIngress'
+#      Properties:
+#        GroupId: !Ref DBWitnessServersSG
+#        IpProtocol: 'tcp'
+#        SourceSecurityGroupId: !Ref BMINTServersSG
+#        FromPort: "3181"
+#        ToPort: "3181"
+#  DBWitnessSGBMPCSRule:
+#      Type: 'AWS::EC2::SecurityGroupIngress'
+#      Properties:
+#        GroupId: !Ref DBWitnessServersSG
+#        IpProtocol: 'tcp'
+#        SourceSecurityGroupId: !Ref BMPCSServersSG
+#        FromPort: "2059"
+#        ToPort: "2059"
+#  DBWitnessSGBMPCS2Rule:
+#      Type: 'AWS::EC2::SecurityGroupIngress'
+#      Properties:
+#        GroupId: !Ref DBWitnessServersSG
+#        IpProtocol: 'tcp'
+#        SourceSecurityGroupId: !Ref BMPCSServersSG
+#        FromPort: "135"
+#        ToPort: "135"
+#  DBWitnessSGBMPCS3Rule:
+#      Type: 'AWS::EC2::SecurityGroupIngress'
+#      Properties:
+#        GroupId: !Ref DBWitnessServersSG
+#        IpProtocol: 'tcp'
+#        SourceSecurityGroupId: !Ref BMPCSServersSG
+#        FromPort: "445"
+#        ToPort: "445"
+#  DBWitnessServersSGSelfRule:
+#      Type: 'AWS::EC2::SecurityGroupIngress'
+#      Properties:
+#        GroupId: !Ref DBWitnessServersSG
+#        IpProtocol: -1   #Self Rule
+#        SourceSecurityGroupId: !Ref DBWitnessServersSG
+
+
+
+  InlogSGDomaincontrollerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InlogServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  InlogServersSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InlogServersSG
+      IpProtocol: -1   #Jump Servers All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  InlogSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InlogServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref SophosServersSG
+      FromPort: "8194"
+      ToPort: "8194"
+  InlogSGBMINTRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InlogServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMINTServersSG
+      FromPort: "3181"
+      ToPort: "3181"
+  InlogSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InlogServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "2059"
+      ToPort: "2059"
+  InlogSGBMPCS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InlogServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "135"
+      ToPort: "135"
+  InlogSGBMPCS3Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InlogServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "445"
+      ToPort: "445"
+  InlogServersSGSelfRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InlogServersSG
+      IpProtocol: -1   #Self Rule
+      SourceSecurityGroupId: !Ref InlogServersSG
+  InCDRSGDomaincontrollerRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InCDRServersSG
+      IpProtocol: -1   #Domain Controllers All In
+      SourceSecurityGroupId: !Ref DomainControllerSG
+  InCDRServersSGJumpRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InCDRServersSG
+      IpProtocol: -1   #Jump Servers All In
+      SourceSecurityGroupId: !Ref JumpServersSG
+  InCDRSGSophosRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InCDRServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref SophosServersSG
+      FromPort: "8194"
+      ToPort: "8194"
+  InCDRSGBMINTRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InCDRServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMINTServersSG
+      FromPort: "3181"
+      ToPort: "3181"
+  InCDRSGBMPCSRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InCDRServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "2059"
+      ToPort: "2059"
+  InCDRSGBMPCS2Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InCDRServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "135"
+      ToPort: "135"
+  InCDRSGBMPCS3Rule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InCDRServersSG
+      IpProtocol: 'tcp'
+      SourceSecurityGroupId: !Ref BMPCSServersSG
+      FromPort: "445"
+      ToPort: "445"
+  InCDRServersSGSelfRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InCDRServersSG
+      IpProtocol: -1   #Self Rule
+      SourceSecurityGroupId: !Ref InCDRServersSG
+  GlobalWebServersSGSelfRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref GlobalWebServersSG
+      IpProtocol: -1   #Self Rule
+      SourceSecurityGroupId: !Ref GlobalWebServersSG
+  GlobalWebServersSGDMZLoadBalancerRuleIn:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref GlobalWebServersSG
+      IpProtocol: -1   #Internal Cluster
+      SourceSecurityGroupId: !Ref ClusterALBSecurityGroup
+  GlobalWebServersSGDMZLoadBalancerRuleHttp:
+    Type: 'AWS::EC2::SecurityGroupEgress'
+    Properties:
+      GroupId: !Ref GlobalWebServersSG
+      IpProtocol: "tcp"   #Internal Cluster
+      DestinationSecurityGroupId: !Ref ClusterALBSecurityGroup
+      FromPort: '80'
+      ToPort: '80'
+  GlobalWebServersSGDMZLoadBalancerRuleHttps:
+    Type: 'AWS::EC2::SecurityGroupEgress'
+    Properties:
+      GroupId: !Ref GlobalWebServersSG
+      IpProtocol: "tcp"   #Internal Cluster
+      DestinationSecurityGroupId: !Ref ClusterALBSecurityGroup
+      FromPort: '443'
+      ToPort: '443'
+  InFTPSGDMZSelfRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InFTPSGDMZ
+      IpProtocol: -1   #Internal Cluster
+      SourceSecurityGroupId: !Ref InFTPSGDMZ
+  InmailSGDMZSelfRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref InmailSGDMZ
+      IpProtocol: -1   #Internal Cluster
+      SourceSecurityGroupId: !Ref InmailSGDMZ
+  RLRSGSelfRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref RLRServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref RLRServersSG
+  RLRSG2SelfRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref VPC2RLRServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref VPC2RLRServersSG
+  GlobalDBServersSelfRule:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref GlobalDBServersSG
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref GlobalDBServersSG
+  RadiusServersSGJumpRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref NWRadiusSG
+        IpProtocol: -1   #Jump Servers All In
+        SourceSecurityGroupId: !Ref JumpServersSG
+  OVOCSGJumpRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref ACOVOCServersSG
+        IpProtocol: -1   #Jump Servers All In
+        SourceSecurityGroupId: !Ref JumpServersSG
+  OVOC2SGJumpRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref ACOVOC2ServersSG
+        IpProtocol: -1   #Jump Servers All In
+        SourceSecurityGroupId: !Ref JumpServersSG
+  InternalGlobalWebSGJumpRule:
+      Type: 'AWS::EC2::SecurityGroupIngress'
+      Properties:
+        GroupId: !Ref InternalGlobalWebServersSG
+        IpProtocol: -1   #Jump Servers All In
+        SourceSecurityGroupId: !Ref JumpServersSG
+
+
+  InlmoServersSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue 'CoreNetwork-Vpc'
+      GroupDescription: sg for Logic Monitor Servers
+      Tags:
+        - Key: Name
+          Value: global_tools_Inlmo_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs
+          CidrIp: 10.21.0.0/16
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "514"
+          ToPort: "514"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "445"
+          ToPort: "445"
+        - IpProtocol: -1
+          CidrIp: "172.23.140.55/32"
+          Description: "lax-rnaut01"
+        - IpProtocol: -1
+          CidrIp: "172.23.10.28/32"
+          Description: "lax-sndsc01"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "10.0.0.0/8"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+
+  ThousandEyesCoreSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !ImportValue CoreNetwork-Vpc
+      GroupDescription: sg for ThousandEyesCore Servers
+      Tags:
+        - Key: Name
+          Value: global_tools_thousandeyes_core_servers_sg
+        - Key: DeviceType
+          Value: Network Security Group
+        - Key: Cluster
+          Value: Global
+        - Key: Product
+          Value: Network
+        - Key: Owner
+          Value: Network Teams
+      SecurityGroupIngress:
+        - IpProtocol: -1   #VPN IPs]
+          CidrIp: 10.21.0.0/19
+        - IpProtocol: -1   #Office IP Space
+          CidrIp: 172.27.0.0/16
+        - IpProtocol: -1   #LA2
+          CidrIp: "172.23.0.0/16"
+        - IpProtocol: -1   #DAL
+          CidrIp: "172.19.0.0/16"
+        - IpProtocol: -1   #EU
+          CidrIp: "172.21.0.0/16"
+        - IpProtocol: -1   #SGP
+          CidrIp: "172.29.0.0/16"
+        - IpProtocol: -1   #HKO-1
+          CidrIp: "216.20.228.64/26"
+        - IpProtocol: -1   #HKO-2
+          CidrIp: "216.20.228.128/27"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "445"
+          ToPort: "445"
+        - IpProtocol: -1
+          CidrIp: "10.209.0.0/17"
+        - IpProtocol: -1 # BMC DIS
+          CidrIp: "205.214.8.0/24"
+          Description: "BMC Discovery"
+        - IpProtocol: -1
+          CidrIp: "205.214.10.0/24"
+          Description: "CDR"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: -1
+          CidrIp: "10.0.0.0/8"
+        - IpProtocol: -1
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "udp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "53"
+          ToPort: "53"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "443"
+          ToPort: "443"
+        - IpProtocol: "tcp"
+          CidrIp: "0.0.0.0/0"
+          FromPort: "80"
+          ToPort: "80"
+
+
+
+
+
+
+
+Outputs:
+  DMZVPCSubnet:
+    Description: DMZ VPC Subnet
+    Value: !FindInMap [ VPCaddressPrefix,values,DMZVPCSubnet ]
+    Export:
+      Name: GlobalSecurityGroups-DMZSubnet
+  CoreVPCSubnet:
+    Description: Core VPC Subnet
+    Value: !FindInMap [ VPCaddressPrefix,values,CoreVPCSubnet ]
+    Export:
+      Name: GlobalSecurityGroups-CoreSubnet
+  DomainControllerSG:
+    Description: Domain Controller Security Group
+    Value: !Ref DomainControllerSG
+    Export:
+      Name: GlobalSecurityGroups-DomainControllerSG
+  JumpServersSG:
+    Description: Jump Servers Security Group
+    Value: !Ref JumpServersSG
+    Export:
+      Name: GlobalSecurityGroups-JumpServersSG
+  IntDNSServersSG:
+    Description: Internal DNS Security Group
+    Value: !Ref IntDNSServersSG
+    Export:
+      Name: GlobalSecurityGroups-IntDNSServersSG
+  ChefServersSG:
+    Description: Chef Servers Security Group
+    Value: !Ref ChefServersSG
+    Export:
+      Name: GlobalSecurityGroups-ChefServersSG
+  BidServersSG:
+    Description: Bid Servers Security Group
+    Value: !Ref BidServersSG
+    Export:
+      Name: GlobalSecurityGroups-BidServersSG
+  ASRServersSG:
+    Description: ASR Servers Security Group
+    Value: !Ref ASRServersSG
+    Export:
+      Name: GlobalSecurityGroups-ASRServersSG
+  TTSServersSG:
+    Description: TTS Servers Security Group
+    Value: !Ref TTSServersSG
+    Export:
+      Name: GlobalSecurityGroups-TTSServersSG
+  FTPINTServersSG:
+    Description: FTP Internal Servers Security Group
+    Value: !Ref FTPINTServersSG
+    Export:
+      Name: GlobalSecurityGroups-FTPINTServersSG
+  SophosServersSG:
+    Description: Sophos Servers Security Group
+    Value: !Ref SophosServersSG
+    Export:
+      Name: GlobalSecurityGroups-SophosServersSG
+  BMINTServersSG:
+    Description: BMINT Servers Security Group
+    Value: !Ref BMINTServersSG
+    Export:
+      Name: GlobalSecurityGroups-BMINTServersSG
+  BMPCSServersSG:
+    Description: BMPCS Servers Security Group
+    Value: !Ref BMPCSServersSG
+    Export:
+      Name: GlobalSecurityGroups-BMPCSServersSG
+  MailDirectorServersSG:
+    Description: Mail Director Servers Security Group
+    Value: !Ref MailDirectorServersSG
+    Export:
+      Name: GlobalSecurityGroups-MailDirectorServersSG
+  GlobalWebServersSG:
+    Description: Global Web Servers Security Group
+    Value: !Ref GlobalWebServersSG
+    Export:
+      Name: GlobalSecurityGroups-GlobalWebServersSG
+  WSUSServersSG:
+    Description: WSUS Servers Security Group
+    Value: !Ref WSUSServersSG
+    Export:
+      Name: GlobalSecurityGroups-WSUSServersSG
+  InmailSGDMZ:
+    Description: Inmail Security Group
+    Value: !Ref InmailSGDMZ
+    Export:
+      Name: GlobalSecurityGroups-InmailSGDMZ
+  DBMonServersSG:
+    Description: DBMon Security Group
+    Value: !Ref DBMonServersSG
+    Export:
+      Name: GlobalSecurityGroups-DBMonServersSG
+  InlogServersSG:
+    Description: Inlog Security Group
+    Value: !Ref InlogServersSG
+    Export:
+      Name: GlobalSecurityGroups-InlogServersSG
+#  InlmoServersSG:
+#    Description: Logic Monitor Security Group
+#    Value: !Ref InlmoServersSG
+#    Export:
+#      Name: GlobalSecurityGroups-InlmoServersSG
+  InCDRServersSG:
+    Description: InCDR Security Group
+    Value: !Ref InCDRServersSG
+    Export:
+      Name: GlobalSecurityGroups-InCDRServersSG
+  InFTPSGDMZ:
+    Description: InFTP Security Group
+    Value: !Ref InFTPSGDMZ
+    Export:
+      Name: GlobalSecurityGroups-InFTPSGDMZ
+  NWFMServersSG:
+    Description: NWFWM Server Security Group
+    Value: !Ref NWFMServersSG
+    Export:
+      Name: GlobalSecurityGroups-NWFMServersSG
+  RLRServersSG:
+    Description: RLR Server Security Group
+    Value: !Ref RLRServersSG
+    Export:
+      Name: GlobalSecurityGroups-RLRServersSG
+  VPC2RLRServersSG:
+    Description: RLR Server Security Group
+    Value: !Ref VPC2RLRServersSG
+    Export:
+      Name: GlobalSecurityGroups-VPC2RLRServersSG
+  ClusterALBSecurityGroup:
+    Description: SG for Cluster SG's
+    Value: !Ref ClusterALBSecurityGroup
+    Export:
+      Name: GlobalSecurityGroups-ClusterALBSecurityGroup
+  VPC2ASRServersSG:
+    Description: ASR Servers Security Group
+    Value: !Ref VPC2ASRServersSG
+    Export:
+      Name: GlobalSecurityGroups-ASRServersSG-Vpc2
+  VPC2TTSServersSG:
+    Description: TTS Servers Security Group
+    Value: !Ref VPC2TTSServersSG
+    Export:
+      Name: GlobalSecurityGroups-TTSServersSG-Vpc2
+  ASideADCSelfIP:
+    Description: A Side F5 Self IP
+    Value: !FindInMap [ VPCaddressPrefix,values,ASideADCSelfIP ]
+    Export:
+      Name: GlobalSecurityGroups-ASideADCSelfIP
+  BSideADCSelfIP:
+      Description: B Side F5 Self IP
+      Value: !FindInMap [ VPCaddressPrefix,values,BSideADCSelfIP ]
+      Export:
+        Name: GlobalSecurityGroups-BSideADCSelfIP
+  ASideADCSNATIP:
+      Description: A Side F5 SNAT IP
+      Value: !FindInMap [ VPCaddressPrefix,values,ASideADCSNATIP ]
+      Export:
+        Name: GlobalSecurityGroups-ASideADCSNATIP
+  BSideADCSNATIP:
+      Description: B Side F5 SNAT IP
+      Value: !FindInMap [ VPCaddressPrefix,values,BSideADCSNATIP ]
+      Export:
+        Name: GlobalSecurityGroups-BSideADCSNATIP
+  NoConnTrackF5:
+      Description: F5 No Conntrack SG
+      Value: !Ref NoConnTrackF5
+      Export:
+        Name: GlobalSecurityGroups-NoConnTrackCoreF5
+  SBCTrustInterface:
+    Description: Trust interface for SBCs
+    Value: !Ref SBCTrustInterface
+    Export:
+      Name: GlobalSecurityGroups-SBCTrustInterface
+  SBCTrustInterface2:
+    Description: Trust interface for SBCs
+    Value: !Ref SBCTrustInterface2
+    Export:
+      Name: GlobalSecurityGroups-SBCTrustInterface2
+  VPC2COMServersSG:
+    Description: COM Servers Security Group
+    Value: !Ref VPC2COMServersSG
+    Export:
+      Name: GlobalSecurityGroups-CompressionServersSG-Vpc2
+  COMServersSG:
+      Description: COM Servers Security Group
+      Value: !Ref COMServersSG
+      Export:
+        Name: GlobalSecurityGroups-CompressionServersSG
+  GlobalDBServersSG:
+      Description: Global Database Server Security Group
+      Value: !Ref GlobalDBServersSG
+      Export:
+        Name: GlobalSecurityGroups-GlobalDBServersSG
+  InternalGlobalWebServersSG:
+      Description: Global Internal Web Server Security Group
+      Value: !Ref InternalGlobalWebServersSG
+      Export:
+        Name: GlobalSecurityGroups-InternalGlobalWebServersSG
+  InternalCertificateServersSG:
+      Description: Global Internal Certificate Servers Security Group
+      Value: !Ref InternalCertificateServersSG
+      Export:
+        Name: GlobalSecurityGroups-InternalCertificateServersSG
+  SnowdiscSG:
+      Description: SNOW Discovery Servers
+      Value: !Ref SnowdiscSG
+      Export:
+        Name: GlobalSecurityGroups-SnowdiscSG
+  NWRadiusSG:
+      Description: Network Radius Servers
+      Value: !Ref NWRadiusSG
+      Export:
+        Name: GlobalSecurityGroups-NWRadiusSG
+#    DBWitnessServersSG:
+#      Description: DB Witness Servers
+#      Value: !Ref DBWitnessServersSG
+#      Export:
+#        Name: GlobalSecurityGroups-DBWitnessServersSG
+#    ThousandEyesDMZSG:
+#      Description: Thousand Eyes DMZ Servers
+#      Value: !Ref ThousandEyesDMZSG
+#      Export:
+#        Name: GlobalSecurityGroups-ThousandEyesDMZSG
+#    ThousandEyesCoreSG:
+#      Description: Thousand Eyes Core Servers
+#      Value: !Ref ThousandEyesCoreSG
+#      Export:
+#        Name: GlobalSecurityGroups-ThousandEyesCoreSG
+  ACOVOC2ServersSG:
+      Description: Audio Codes OVOC Servers
+      Value: !Ref ACOVOC2ServersSG
+      Export:
+        Name: GlobalSecurityGroups-ACOVOC2ServersSG
+  ACOVOCServersSG:
+      Description: Audio Codes OVOC Servers
+      Value: !Ref ACOVOCServersSG
+      Export:
+        Name: GlobalSecurityGroups-ACOVOCServersSG
+  InfraToolsServersSG:
+      Description: Infra Tools Servers
+      Value: !Ref InfraToolsServersSG
+      Export:
+        Name: GlobalSecurityGroups-InfraToolsServersSG
+
+  InlmoServersSG:
+    Description: Logic Monitor Security Group
+    Value: !Ref InlmoServersSG
+    Export:
+      Name: GlobalSecurityGroups-InlmoServersSG
+
+
+  ThousandEyesCoreSG:
+    Description: Thousand Eyes Core Servers
+    Value: !Ref ThousandEyesCoreSG
+    Export:
+      Name: GlobalSecurityGroups-ThousandEyesCoreSG
+

@@ -1,0 +1,86 @@
+private_link_data:
+  # Private link for API Facade and MediaPlayback
+  Facade-MediaPlayback:
+    vpc_id: vpc-564a4e32
+    subnet_ids:
+      - subnet-226aa345
+      - subnet-c3966e8a
+    security_group_ids:
+      - sg-024b55dedc2eef6ff
+    service_name: "com.amazonaws.vpce.ap-southeast-2.vpce-svc-032ef91579c704d46"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: false
+    route53_record_name: ""
+    tags: 
+      Request: "RITM0057041"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "apifacade"
+      Product: "apifacade"
+  # Private link for API Facade and IHub
+  Facade-IHub:
+    vpc_id: vpc-564a4e32
+    subnet_ids:
+      - subnet-226aa345
+      - subnet-c3966e8a
+    security_group_ids:
+      - sg-024b55dedc2eef6ff
+    service_name: "com.amazonaws.vpce.ap-southeast-2.vpce-svc-0853a2d7e6961603b"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: false
+    route53_record_name: ""
+    tags: 
+      Request: "RITM0057041"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "apifacade"
+      Product: "apifacade"
+  # Private link for Illuminate Core VPC
+  Illuminate-CoreVPC:
+    vpc_id: vpc-ce494daa
+    subnet_ids:
+      - subnet-d76ba2b0
+      - subnet-33976f7a
+    security_group_ids:
+      - sg-055af2ac2eface162
+    service_name: "com.amazonaws.vpce.ap-southeast-2.vpce-svc-0ded0b254baaa36be"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: true
+    route53_record_name: ""
+    tags: 
+      Request: "REQ0060344"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "illuminate"
+      Product: "illuminate"
+  # Private link for Illuminate DMZ VPC
+  Illuminate-dmzVPC:
+    vpc_id: vpc-564a4e32
+    subnet_ids:
+      - subnet-226aa345
+      - subnet-c3966e8a
+    security_group_ids:
+      - sg-0873ac77843d3c9ef
+    service_name: "com.amazonaws.vpce.ap-southeast-2.vpce-svc-0ded0b254baaa36be"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: false
+    route53_record_name: ""
+    tags: 
+      Request: "REQ0060344"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "illuminate"
+      Product: "illuminate"
+  # Private link for Realtime ASR
+  Realtime-ASR-CoreVPC:
+    vpc_id: vpc-ce494daa
+    subnet_ids:
+      - subnet-d76ba2b0
+      - subnet-33976f7a
+    security_group_ids:
+      - sg-0e8e7c000cd738b58
+    service_name: "com.amazonaws.vpce.ap-southeast-2.vpce-svc-0f5928bba6ebc0464"
+    vpc_endpoint_type: "Interface"
+    private_dns_enabled: true
+    route53_record_name: ""
+    tags: 
+      Request: "CHG0104472"
+      InfrastructureOwner: "Network Teams"
+      ApplicationOwner: "Lynx"
+      Product: "Realtime: ASR"

@@ -1,0 +1,11 @@
+maintainers:
+  - name: pune-devops
+    email: PipelineInfraAutomationEast@nice.com
+platform: cloudformation
+cloudformation:
+  stack_name:  "cloudwatchToBmc"
+  entry_template_file: "main.cf.yaml"
+  region: "us-west-2"
+  template_bucket: cf-templates-cloudwatchtobmc-sandbox
+integrations:
+  aws: "nice-devops-sandbox"

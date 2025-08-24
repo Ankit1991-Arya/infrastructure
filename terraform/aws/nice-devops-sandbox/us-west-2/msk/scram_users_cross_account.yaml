@@ -1,0 +1,20 @@
+# ###########################################################################################
+# # The list of SCRAM users to create in the MSK cluster
+# # The format is -- <SecretName>: 
+# #   username: <username>
+# #   account: <account_id>
+# #   rolearn: <role_arn>
+# # The secret name is the name of the secret that will be created in the AWS Secrets Manager
+# # The username is the username that will be created in the MSK cluster
+# # The rolename is the name of the IAM role that will be used to assume the role in the cross-account
+# # The account is the AWS account ID associated with the secret
+# ###########################################################################################
+# scram_users_cross_account:
+#   CroosAccountTestUser:
+#     username: "cross-account-test-user"
+#     account: "032474939542"
+#     rolename: "msk-demo-role"
+#   CroosAccountTestUser2:
+#     username: "cross-account-test-user2"
+#     account: "934137132601"
+#     rolename: "dev-cxcv-nrt-writer-role-us-west-2"

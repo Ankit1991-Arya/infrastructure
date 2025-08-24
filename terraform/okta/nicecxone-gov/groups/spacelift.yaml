@@ -1,0 +1,8 @@
+contexts:
+  nicecxone-gov-okta-com: 0
+integrations:
+  aws: nice-devops
+maintainers:
+  - name: systems-engineering
+    email: systemengineering@nice.com
+terraform_version: 1.3.1

@@ -1,0 +1,382 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Set up of resources for ic-pref environment ASPF MockApi tool"
+Resources:
+  # Task Support Resources
+  ASPFMockAPIECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: aspf-mockapi-cluster
+      Tags:
+        - Key: Product
+          Value: ASPF
+        - Key: Service
+          Value: PerfTest_MockAPI
+        - Key: Name
+          Value: aspf-mockapi-cluster
+        - Key: ApplicationOwner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+        - Key: Infrastructure Owner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+  ASPFMockAPITaskSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ASPF mock API Fargate instances
+      GroupName: aspf-mockapi-sg-ecs
+      VpcId: "vpc-0011ddf0fc5d5c591"
+      SecurityGroupIngress:
+        - Description: "CoreNetwork VPC - CIDR 1"
+          IpProtocol: tcp
+          FromPort: 1080
+          ToPort: 1080
+          CidrIp: "10.9.160.0/21"
+        - Description: "CoreNetwork VPC - CIDR 2"
+          IpProtocol: tcp
+          FromPort: 1080
+          ToPort: 1080
+          CidrIp: "10.9.101.0/24"
+        - Description: "VPN IPs - access from employee workstations (copied from PO200 COR servers)"
+          IpProtocol: tcp
+          FromPort: 1080
+          ToPort: 1080
+          CidrIp: "10.21.0.0/19"
+        - Description: "NICE VPN - access from employee workstations (copied from PO200 COR servers)"
+          IpProtocol: tcp
+          FromPort: 1080
+          ToPort: 1080
+          CidrIp: "10.21.40.0/22"
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          CidrIp: "0.0.0.0/0"
+      Tags:
+        - Key: Product
+          Value: ASPF
+        - Key: Service
+          Value: PerfTest_MockAPI
+        - Key: Name
+          Value: aspf-mockapi-sg-ecs
+        - Key: ApplicationOwner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+        - Key: Infrastructure Owner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+  ASPFMockAPITaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: aspf-mockapi-taskDefinition
+      ContainerDefinitions:
+        - Name: mockserver
+          Image: mockserver/mockserver
+          Cpu: 2048
+          Memory: 4096
+          MemoryReservation: 3072
+          PortMappings:
+            - Name: mockserver-1080-tcp
+              ContainerPort: 1080
+              HostPort: 1080
+              Protocol: tcp
+              AppProtocol: http
+          Essential: true
+          EntryPoint:
+            - java
+            - -Xmx500m
+            - -Dfile.encoding=UTF-8
+            - -cp
+            - /mockserver-netty-jar-with-dependencies.jar:/libs/*
+            - -Dmockserver.propertyFile=/config/mockserver.properties
+            - org.mockserver.cli.Main
+          Environment:
+            - Name: MOCKSERVER_DISABLE_SYSTEM_OUT
+              Value: "false"
+            - Name: MOCKSERVER_MAX_LOG_ENTRIES
+              Value: "100"
+            - Name: MOCKSERVER_DISABLE_LOGGING
+              Value: "false"
+            - Name: MOCKSERVER_LOG_LEVEL
+              Value: "INFO"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-create-group: "true"
+              awslogs-group: /ecs/aspf-mockapi-taskDefinition
+              awslogs-region: us-west-2
+              awslogs-stream-prefix: ecs
+      ExecutionRoleArn: arn:aws:iam::150598861634:role/ServiceAccess-aspf-qa-mockapi-task-execution-perf
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "2048"
+      Memory: "4096"
+      Tags:
+        - Key: Product
+          Value: ASPF
+        - Key: Service
+          Value: PerfTest_MockAPI
+        - Key: Name
+          Value: aspf-mockapi-taskDefinition
+        - Key: ApplicationOwner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+        - Key: Infrastructure Owner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+
+  # Network/Routing Resources
+  ASPFMockAPITargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: aspf-mockapi-tg
+      VpcId: "vpc-0011ddf0fc5d5c591"
+      Protocol: HTTP
+      Port: 1080
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: "1080"
+      HealthCheckPath: /mockserver/dashboard
+      Matcher:
+        HttpCode: "200"
+      Tags:
+        - Key: Product
+          Value: ASPF
+        - Key: Service
+          Value: PerfTest_MockAPI
+        - Key: Name
+          Value: aspf-mockapi-tg
+        - Key: ApplicationOwner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+        - Key: Infrastructure Owner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+  ASPFMockAPILoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: aspf-mockapi-alb
+      Subnets:
+        - "subnet-0fa839fd9c266b4a6"
+        - "subnet-0558f1061f5144634"
+      SecurityGroups:
+        - Ref: ASPFMockAPITaskSecurityGroup
+      Scheme: internal
+      Type: application
+      Tags:
+        - Key: Product
+          Value: ASPF
+        - Key: Service
+          Value: PerfTest_MockAPI
+        - Key: Name
+          Value: aspf-mockapi-alb
+        - Key: ApplicationOwner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+        - Key: Infrastructure Owner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+  ASPFMockAPILoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn:
+        Ref: ASPFMockAPILoadBalancer
+      Protocol: HTTP
+      Port: 1080
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn:
+            Ref: ASPFMockAPITargetGroup
+  ASPFHostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: "aspf.perf.internal"
+      VPCs:
+        - VPCId: "vpc-0011ddf0fc5d5c591"
+          VPCRegion: us-west-2
+      HostedZoneTags:
+        - Key: Product
+          Value: ASPF
+        - Key: Service
+          Value: PerfTest_MockAPI
+        - Key: Name
+          Value: aspf-hostedzone
+        - Key: ApplicationOwner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+        - Key: Infrastructure Owner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+  ASPFMockAPIHostedZoneRecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId:
+        Fn::GetAtt:
+          - ASPFHostedZone
+          - Id
+      Name: "mockapi.aspf.perf.internal"
+      Type: A
+      AliasTarget:
+        DNSName:
+          Fn::GetAtt:
+            - ASPFMockAPILoadBalancer
+            - DNSName
+        HostedZoneId:
+          Fn::GetAtt:
+            - ASPFMockAPILoadBalancer
+            - CanonicalHostedZoneID
+
+  # SG to Support Lambda Expectations
+  ASPFMockApiLambdaConfigSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ASPF mock API lambda expectations functions
+      GroupName: aspf-mockapi-sg-lambda-expectations
+      VpcId: "vpc-0011ddf0fc5d5c591"
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          CidrIp: "0.0.0.0/0"
+
+  # Lambda Functions
+  ASPFMockAPILambdaStart:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+              return {
+                  'statusCode': 200,
+                  'body': 'Initial cloudformed lambda. Need to Publish C# code.'
+              }
+      Handler: index.lambda_handler
+      Description: Start a new MockApi ECS Task
+      FunctionName: aspf-mockapi-lambda-start
+      MemorySize: 128
+      Runtime: python3.9
+      Role: arn:aws:iam::150598861634:role/ServiceAccess-aspf-qa-mockapi-lambda-admin-perf
+      Tags:
+        - Key: Product
+          Value: ASPF
+        - Key: Service
+          Value: PerfTest_MockAPI
+        - Key: Name
+          Value: aspf-mockapi-lambda-start
+        - Key: ApplicationOwner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+        - Key: Infrastructure Owner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+      Timeout: 120
+  ASPFMockAPILambdaWait:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+              return {
+                  'statusCode': 200,
+                  'body': 'Initial cloudformed lambda. Need to Publish C# code.'
+              }
+      Handler: index.lambda_handler
+      Description: Wait for a MockApi ECS Task to be in RUNNING state
+      FunctionName: aspf-mockapi-lambda-wait
+      MemorySize: 128
+      Runtime: python3.9
+      Role: arn:aws:iam::150598861634:role/ServiceAccess-aspf-qa-mockapi-lambda-admin-perf
+      Tags:
+        - Key: Product
+          Value: ASPF
+        - Key: Service
+          Value: PerfTest_MockAPI
+        - Key: Name
+          Value: aspf-mockapi-lambda-wait
+        - Key: ApplicationOwner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+        - Key: Infrastructure Owner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+      Timeout: 180
+  ASPFMockAPILambdaConfig:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+              return {
+                  'statusCode': 200,
+                  'body': 'Initial cloudformed lambda. Need to Publish C# code.'
+              }
+      Handler: index.lambda_handler
+      Description: Add the MockApi ECS Task container into the load balancer's target group'
+      FunctionName: aspf-mockapi-lambda-config
+      MemorySize: 128
+      Runtime: python3.9
+      Role: arn:aws:iam::150598861634:role/ServiceAccess-aspf-qa-mockapi-lambda-admin-perf
+      Tags:
+        - Key: Product
+          Value: ASPF
+        - Key: Service
+          Value: PerfTest_MockAPI
+        - Key: Name
+          Value: aspf-mockapi-lambda-config
+        - Key: ApplicationOwner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+        - Key: Infrastructure Owner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+      Timeout: 90
+  ASPFMockAPILambdaStop:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+              return {
+                  'statusCode': 200,
+                  'body': 'Initial cloudformed lambda found. Need to VS Publish C# code.'
+              }
+      Handler: index.lambda_handler
+      Description: Stop a MockApi ECS Task and remove it from the load balancer's target group'
+      FunctionName: aspf-mockapi-lambda-stop
+      MemorySize: 128
+      Runtime: python3.9
+      Role: arn:aws:iam::150598861634:role/ServiceAccess-aspf-qa-mockapi-lambda-admin-perf
+      Tags:
+        - Key: Product
+          Value: ASPF
+        - Key: Service
+          Value: PerfTest_MockAPI
+        - Key: Name
+          Value: aspf-mockapi-lambda-stop
+        - Key: ApplicationOwner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+        - Key: Infrastructure Owner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+      Timeout: 45
+  ASPFMockAPILambdaExpectations:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+              return {
+                  'statusCode': 200,
+                  'body': 'Initial cloudformed lambda. Need to Publish C# code.'
+              }
+      Handler: index.lambda_handler
+      Description: Configure the MockAPI with expectations
+      FunctionName: aspf-mockapi-lambda-expectations
+      MemorySize: 128
+      Runtime: python3.9
+      Role: arn:aws:iam::150598861634:role/ServiceAccess-aspf-qa-mockapi-lambda-admin-perf
+      Tags:
+        - Key: Product
+          Value: ASPF
+        - Key: Service
+          Value: PerfTest_MockAPI
+        - Key: Name
+          Value: aspf-mockapi-lambda-expectations
+        - Key: ApplicationOwner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+        - Key: Infrastructure Owner
+          Value: Team ASPF / ACDSystemPerfTest@nice.com
+      Timeout: 45
+      VpcConfig:
+        SecurityGroupIds:
+            - Ref: ASPFMockApiLambdaConfigSecurityGroup
+        SubnetIds:
+          - "subnet-0fa839fd9c266b4a6"
+          - "subnet-0558f1061f5144634"

@@ -1,0 +1,10 @@
+---
+instance_name: openapm
+sns_topic_prefix: mon-perf-na1
+
+tags:
+  Product: "SRE-5181-cert-monitor"
+  ServiceOwner: "SRE"
+  ApplicationOwner: "SRE"
+  Owner: "SRE"
+  InfrastructureOwner: "SRE"

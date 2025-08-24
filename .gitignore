@@ -1,0 +1,7 @@
+.idea
+.terraform
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+**/.DS_Store
+backend_override.tf

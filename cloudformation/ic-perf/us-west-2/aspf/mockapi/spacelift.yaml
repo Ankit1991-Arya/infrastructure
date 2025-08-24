@@ -1,0 +1,11 @@
+cloudformation:
+  entry_template_file: main.cf.yaml
+  region: us-west-2
+  stack_name: aspf-mockapi
+  template_bucket: cf-templates-it2daac9r89s-us-west-2
+integrations:
+  aws: ic-perf
+maintainers:
+- email: ACDSystemPerfTest@nice.com
+  name: qa-team
+platform: cloudformation

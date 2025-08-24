@@ -1,0 +1,17 @@
+before_init:
+  - "cat /mnt/workspace/github.netrc >> ~/.netrc"
+  - "chmod 600 ~/.netrc"
+contexts:
+  cxossp-github-personal-access-token: 0
+drift_detection:
+  reconcile: true
+  schedule:
+    - "30 18 * * *" # This is UTC time, this will be midnight India Standard Time
+integrations:
+  aws: ic-staging
+worker_pool_name: "k8s-xo"
+maintainers:
+- name: media-services-team
+  email: r&dplatform-media@nice.com
+
+terraform_version: 1.5.2

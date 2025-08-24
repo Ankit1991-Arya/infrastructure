@@ -1,0 +1,26 @@
+sns_topic_subscriptions: {
+  # "us-west-2": [
+  #   "arn:aws:sns:us-west-2:837589194720:fips-test-lifesaver.fifo"
+  # ]
+}
+lambda_name: "mon-dev-lifesaver-sqs-processor"
+queue_name: "mon-dev-lifesaver-queue"
+dlq_name: "mon-dev-lifesaver-dlq"
+whitelisted_accounts: [
+  # "837589194720"
+]
+role_name: "arn:aws:iam::300101013673:role/service-role/sre-otel-test-role-qy3xpz22"
+aws_region: "us-west-2"
+lambda_memory_megabytes: 128
+lambda_debug_logging: true
+secret_name: "mon-dev-lifesaver-secrets"
+vpc_id: "vpc-03895dc0f823b86f1"
+subnet_ids: ["subnet-01957f7d807318e59"]
+tags: {
+  Product: "Monitoring-tool",
+  ServiceOwner: "SRE",
+  ApplicationOwner: "SRE",
+  Owner: "SRE",
+  InfrastructureOwner: "SRE"
+  }
+fips_compliant: false

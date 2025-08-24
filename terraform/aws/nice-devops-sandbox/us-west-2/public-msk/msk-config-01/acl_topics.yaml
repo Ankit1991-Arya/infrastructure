@@ -1,0 +1,13 @@
+- principal: "User:acd-script-engine-user"
+  resource_name: "acd-script-engine-user-topic"
+  operations: ["Read", "Write", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
+
+- principal: "User:queryable-api-user"
+  resource_name: "queryable-api-user-topic"
+  operations: ["Read", "Write", "Describe"]
+  resource_pattern_type: "Literal"
+  host: "*"
+  permission_type: "Allow"
