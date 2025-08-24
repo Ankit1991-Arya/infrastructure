@@ -166,36 +166,36 @@ resource "aws_lambda_permission" "uptime_allow_assumed_role" {
   principal     = local.config_data.data.role_and_policy.role_arn
 }
 
-resource "aws_lambda_function" "uptime_for_mimir" {
-  filename         = "uptime-lambda-mimir.zip"
-  function_name    = "uptime-lambda-mimir"
-  role             = local.config_data.data.role_and_policy.role_arn
-  handler          = "mimir.handler"
-  runtime          = "nodejs20.x"
-  source_code_hash = data.archive_file.uptime_for_mimir_zip.output_base64sha256
-  layers           = [local.config_data.data.layer.arn]
-  memory_size      = 256
-  timeout          = 540
-  vpc_config {
-    subnet_ids         = ["subnet-0d0e55f367c55a784", "subnet-0d26116b82f4c62a8"]
-    security_group_ids = ["sg-053e02252caa26080", "sg-09084444e8543c16d", "sg-044c539dae55be6dc", "sg-0321ef4d471ec60e0"]
-  }
-  environment {
-    variables = {
-      URL   = "https://grafana-ingress-623632499.us-west-2.elb.amazonaws.com/api/ds/query",
-      QUEUE = "https://sqs.us-west-2.amazonaws.com/300101013673/uptime-source-queue",
-      TOKEN = "glsa_9UGkIuWnopMEJg3o3eveknqgrsJDBFP8_c55bb852"
-    }
-  }
-}
+# resource "aws_lambda_function" "uptime_for_mimir" {
+#   filename         = "uptime-lambda-mimir.zip"
+#   function_name    = "uptime-lambda-mimir"
+#   role             = local.config_data.data.role_and_policy.role_arn
+#   handler          = "mimir.handler"
+#   runtime          = "nodejs20.x"
+#   source_code_hash = data.archive_file.uptime_for_mimir_zip.output_base64sha256
+#   layers           = [local.config_data.data.layer.arn]
+#   memory_size      = 256
+#   timeout          = 540
+#   vpc_config {
+#     subnet_ids         = ["subnet-0d0e55f367c55a784", "subnet-0d26116b82f4c62a8"]
+#     security_group_ids = ["sg-053e02252caa26080", "sg-09084444e8543c16d", "sg-044c539dae55be6dc", "sg-0321ef4d471ec60e0"]
+#   }
+#   environment {
+#     variables = {
+#       URL   = "https://grafana-ingress-623632499.us-west-2.elb.amazonaws.com/api/ds/query",
+#       QUEUE = "https://sqs.us-west-2.amazonaws.com/300101013673/uptime-source-queue",
+#       TOKEN = "glsa_9UGkIuWnopMEJg3o3eveknqgrsJDBFP8_c55bb852"
+#     }
+#   }
+# }
 
-data "archive_file" "uptime_for_mimir_zip" {
-  type        = "zip"
-  source_file = "../apigateway-lambda/source/handlers/mimir.js"
-  output_path = "${path.module}/uptime-lambda-mimir.zip"
-}
+# data "archive_file" "uptime_for_mimir_zip" {
+#   type        = "zip"
+#   source_file = "../apigateway-lambda/source/handlers/mimir.js"
+#   output_path = "${path.module}/uptime-lambda-mimir.zip"
+# }
 
-resource "aws_cloudwatch_log_group" "uptime_for_mimir_lambda_log_group" {
-  name              = "/aws/lambda/${aws_lambda_function.uptime_for_mimir.function_name}"
-  retention_in_days = 14
-}
+# resource "aws_cloudwatch_log_group" "uptime_for_mimir_lambda_log_group" {
+#   name              = "/aws/lambda/${aws_lambda_function.uptime_for_mimir.function_name}"
+#   retention_in_days = 14
+# }
