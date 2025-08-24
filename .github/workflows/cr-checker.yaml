@@ -1,0 +1,93 @@
+name: CR Checker
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+jobs:
+  analyze_changes:
+    runs-on: self-hosted
+    outputs:
+      region_code: ${{ steps.region_code.outputs.region_code }}
+      filepath: ${{ steps.filepath-regex.outputs.filepath-regex }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v46.0.1
+
+      - name: Determine modified files based on exclude.txt
+        id: determine-files
+        run: |
+          # Get the list of all modified files from tj-actions output
+          modified_files="${{ steps.changed-files.outputs.all_modified_files }}"
+  
+          # Check if exclude.txt exists and is not empty
+          exclude_file=".github/config/cr_exclude_path.txt"
+          clean_exclude_file=$(mktemp)  # Create a temporary file to store cleaned patterns
+          sed '/^$/d' "$exclude_file" > "$clean_exclude_file"
+          
+          if [[ -f $clean_exclude_file && -s $clean_exclude_file ]]; then
+            echo "Filtering modified files with regex support..."
+  
+            # Initialize the variable to hold filtered files
+            filtered_files=""
+  
+            # Loop through modified files and exclude those matching patterns in exclude.txt (using regex)
+            for file in $modified_files; do
+              if grep -E -f $clean_exclude_file <<< "$file"; then
+                echo "Skipping due to present in excluded file '$exclude_file': $file"  # Log when a file is skipped
+              else
+                # Append each valid file 
+                filtered_files="${filtered_files}${file} "
+              fi
+            done
+            
+          else
+            # If exclude.txt does not exist or is empty, use all modified files
+            echo "No exclude.txt found or file is empty, using all modified files."
+            echo "modified files: $modified_files"
+            filtered_files="$modified_files"
+          fi
+
+          # Output the final list of modified files into a GitHub Actions environment variable
+          folders_map=$(echo $filtered_files | xargs | jq -R -r 'split(" ") | join(",")')
+          echo "folders_map=$folders_map" >> $GITHUB_OUTPUT
+
+      - name: Display final modified files
+        run: |
+          echo "Final Modified Files: ${{ steps.determine-files.outputs.folders_map }}"
+
+      - name: Trigger region-code action
+        id: region_code
+        uses: inContact/acddevops-reusable-workflows/.github/actions/region-code@0ee90efc1d2c56d744f3a1ec9879c1e249708ac1
+        with:
+          python-version: '3.10'
+          folder-map: ${{ steps.determine-files.outputs.folders_map }}
+          yaml-file: '.github/config/cr_regions_path.yaml'
+
+      - name: Set filepath
+        id: filepath-regex
+        run: |
+          if [ -z "${{ steps.region_code.outputs.region_code }}" ]; then
+            echo "filepath-regex=">>$GITHUB_OUTPUT
+          else
+            echo "filepath-regex=**/*.{tf,yaml,tfvars}">>$GITHUB_OUTPUT
+          fi
+        shell: bash
+
+  validate-chg:
+    needs: analyze_changes
+    uses: nice-cxone/cxone-devops-change-validation-utilities/.github/workflows/validate-chg.yml@a5c9e00f8fa5be0721553f8e221b9f917583b594
+    with:
+      region-code: ${{ needs.analyze_changes.outputs.region_code }}
+      ref: a5c9e00f8fa5be0721553f8e221b9f917583b594
+      filepath-regex: ${{ needs.analyze_changes.outputs.filepath }}
+      bypass-ecab: true
+    secrets: inherit

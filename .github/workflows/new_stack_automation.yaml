@@ -1,0 +1,112 @@
+name: Adding empty spacelift stack
+
+run-name: add-new-spacelift-stack - ${{ github.event.inputs.main-directory-name }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      cloud-service-name:
+        description: "Choose the name of cloud service"
+        required: true
+        type: choice
+        default: aws
+        options:
+          - aws
+          - azure
+      infrastructure-type:
+        description: "Choose the IAC type"
+        required: true
+        type: choice
+        default: "-"
+        options:
+          - "-"
+          - cloudformation
+          - terraform
+      account:
+        description: "aws or azure account/integratione. e.g, ic-dev"
+        required: true
+      region:
+        description: "aws or azure region. e.g, us-west-2"
+        required: true
+      main-directory-name:
+        description: "name of the main directory under region. e.g, digital-workflow"
+        required: true
+      sub-directory-name:
+        description: "name of the sub directory under main directory. e.g, digital-hopper-rds"
+      cloudformation-stack-name:
+        description: "name of the cloudformation stack if its a cloudformation spacelift stack. Leave blank if its terraform."
+      maintainer-name:
+        description: "github team name.  e.g, kubernetes-admins"
+        required: true
+      maintainer-email:
+        description: "github team email id. e.g, devops-cloud-native-core@niceincontact.com"
+        required: true
+
+jobs:
+  # this job creates a pr with new empty stack info
+  add-new-stack:
+    runs-on: ubuntu-latest
+    steps:
+      # Checks-out main repository under $GITHUB_WORKSPACE, so the job can access it
+      - name: Checking out the repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # gitHub authentication for read/write contents
+      - name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@v1
+        with:
+          # This application is only accessible to a select number of repositories: https://github.com/organizations/inContact/settings/installations/47825146
+          app_id: 983207
+          # This secret is only accessible to a select number of repositories: https://github.com/inContact/aws-account-setup/settings/secrets/actions/AWS_ACCOUNT_SETUP_PRIVATE_KEY
+          private_key: ${{ secrets.INFRASTRUCTURE_LIVE_PRIVATE_KEY }}
+
+      # application code that adds the content to provided path
+      - name: Run adding account code
+        id: add_stack
+        env:
+          CLOUD_SERVICE_NAME: ${{ github.event.inputs.cloud-service-name }}
+          INFRA_TYPE: ${{ github.event.inputs.infrastructure-type }}
+          ACCOUNT: ${{ github.event.inputs.account }}
+          REGION: ${{ github.event.inputs.region }}
+          MAIN_DIRECTORY_NAME: ${{ github.event.inputs.main-directory-name }}
+          SUB_DIRECTORY_NAME: ${{ github.event.inputs.sub-directory-name }}
+          CF_STACK_NAME: ${{ github.event.inputs.cloudformation-stack-name }}
+          MAINTAINER_NAME: ${{ github.event.inputs. maintainer-name }}
+          MAINTAINER_EMAIL: ${{ github.event.inputs. maintainer-email }}
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          GH_ACTOR: ${{ github.actor }}
+        run: |
+          pip install pyyaml
+          pip install pygithub
+          # -u causes the output to be unbuffered, and therefore ordered chronologically
+          python -u .github/scripts/empty-stack-creation.py
+
+      # Create Pull Request with the updated changes
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v6.0.2
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          body: |
+            Adding empty stack: ${{ github.event.inputs.main-directory-name }}
+            Cloud Service: ${{ steps.add_stack.outputs.cloud_service }}
+            Infrastructure Type: ${{ steps.add_stack.outputs.infrastructure_type }}
+            Account Name: ${{ steps.add_stack.outputs.account }}
+            Region Name: ${{ steps.add_stack.outputs.region }}
+            Github Maintainer Name: ${{ steps.add_stack.outputs.gh_maintainer_name }}
+            Workflow Triggered by user: ${{ github.actor }}
+          branch: ${{ steps.add_stack.outputs.branch_name }}
+          delete-branch: true
+          labels: empty-stack-creation-automation
+          title: "[Automation] Adding the empty spacelift stack creation for ${{ github.event.inputs.main-directory-name }}"
+
+      - name: Get PR URL
+        if: steps.cpr.outputs.pull-request-operation == 'created'
+        run: |
+          echo "Pull Request link is: ${{ steps.cpr.outputs.pull-request-url }}"

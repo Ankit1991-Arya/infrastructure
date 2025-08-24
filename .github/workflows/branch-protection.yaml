@@ -1,0 +1,48 @@
+name: Branch Protection
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */4 * * *"
+
+jobs:
+  branch-protection:
+    runs-on: ubuntu-latest
+    # Without this conditional the workflow will execute in an infinite loop because the workflow edits a branch protection rule
+    # and the workflow is triggered by edits to a branch protection rule. This conditional causes edits to be ignored if made by
+    # the bot user which is used within this workflow.
+    if: ${{ github.actor != 'patgeneratorgithubactionsadmin[bot]' }}
+    steps:
+      - name: Generate admin token
+        id: generate_token
+        uses: tibdex/github-app-token@v1.0.2
+        with:
+          # This application is only accessible to a select number of repositories: https://github.com/organizations/inContact/settings/installations/13891653
+          app_id: 94905
+          # This secret is only accessible to a select number of repositories: https://github.com/organizations/inContact/settings/secrets/actions/ADMIN_APP_PRIVATE_KEY
+          private_key: ${{ secrets.ADMIN_APP_PRIVATE_KEY }}
+
+      - uses: actions/github-script@v6
+        with:
+          github-token: ${{ steps.generate_token.outputs.token }}
+          # Cannot set `require_code_owner_reviews` to true because this would cause the automated merge of release PRs to fail
+          script: |
+            const result = await github.rest.repos.updateBranchProtection({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: "main",
+              required_status_checks: {
+                checks: [{context: "code-review-bot"}, {"context": "validate-chg / get-changed-files","app_id": 15368}, {"context": "validate-chg / validate-chg","app_id": 15368}, {"context": "analyze_changes","app_id": 15368}],
+                strict: false
+              },
+              enforce_admins: true,
+              required_pull_request_reviews: {
+                dismiss_stale_reviews: true,
+                required_approving_review_count: 0
+              },
+              required_conversation_resolution: true,
+              required_linear_history: true,
+              enforce_admins: true,
+              restrictions: null
+            })
+            console.log(result)

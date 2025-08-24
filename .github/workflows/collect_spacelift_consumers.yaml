@@ -1,0 +1,39 @@
+name: Collect Spacelift Stack Owners
+
+on:
+  push:
+    paths:
+      - terraform/aws/**/spacelift.yaml
+      - .github/workflows/collect_spacelift_consumers.yaml
+
+jobs:
+  collect-owners:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Install Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.x'
+      - name: Install Python Dependencies
+        run: |
+          pip install pyyaml
+
+      - name: Process spacelift.yaml files using Python
+        run: |
+          python3 .github/scripts/process_spacelift_files.py
+          cat spacelift_files.txt  # Debugging output
+          cat extracted_names_and_emails.txt  # Debugging output
+          cat spacelift_consumers.md  # Debugging output
+      
+      - name: Commit and Push Results
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          branch_name="Update_spacelift_consumers-$(date +'%Y%m%d%H%M')"
+          git checkout -b "$branch_name"
+          git add spacelift_consumers.md
+          git commit -m "Automated update of spacelift_consumers.md"
+          git push --set-upstream origin "$branch_name"
+          

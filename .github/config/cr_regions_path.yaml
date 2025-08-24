@@ -1,0 +1,30 @@
+APAC:
+  - "cloudformation/ic-prod/ap-northeast-1/"
+  - "cloudformation/ic-prod/ap-southeast-2/"
+  - "cloudformation/ic-prod-jo1/ap-northeast-3/"
+  - "cloudformation/ic-prod-kr1/ap-northeast-2/"
+  - "cloudformation/ic-ausov1-au2/ap-southeast-2/"
+  - "terraform/aws/ic-prod/ap-northeast-1/"
+  - "terraform/aws/ic-prod/ap-southeast-2/"
+  - "terraform/aws/ic-prod-jo1/ap-northeast-3/"
+  - "terraform/aws/ic-prod-kr1/ap-northeast-2/"
+  - "terraform/aws/ic-ausov1-au2/ap-southeast-2/"
+
+UAE:
+  - "cloudformation/ic-prod-ae1/me-central-1/"
+  - "terraform/aws/ic-prod-ae1/me-central-1/"
+AMER:
+  - "cloudformation/ic-prod-ne1/us-east-1/"
+  - "cloudformation/ic-prod/us-west-2/"
+  - "terraform/aws/ic-compliance-prod/us-east-1/"
+  - "terraform/aws/ic-prod/ca-central-1/"
+  - "terraform/aws/ic-prod/us-west-2/"
+  - "terraform/aws/mon-prod-na1/us-west-2/"
+
+EMEA:
+  - "cloudformation/ic-prod/eu-west-2/"
+  - "cloudformation/ic-prod/eu-central-1/"
+  - "cloudformation/ic-eusov1-eu2/eu-central-1/"
+  - "terraform/aws/ic-prod/eu-west-2/"
+  - "terraform/aws/ic-prod/eu-central-1/"
+  - "terraform/aws/ic-eusov1-eu2/eu-central-1/"

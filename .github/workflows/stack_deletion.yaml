@@ -1,0 +1,45 @@
+name: Delete the spacelift stack
+
+run-name: delete-spacelift-stack - ${{ github.event.inputs.stack-id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      stack-id:
+        description: "Name of the stack to delete"
+        required: true
+        type: string
+      delete-option:
+        description: "Choose the delete options carefully"
+        required: true
+        type: choice
+        options:
+          - delete-both-stack-and-resources
+          - delete-stack-and-orphan-the-resources
+          - delete-resources-and-keep-the-stack
+
+jobs:
+  # this job creates a pr with new empty stack info
+  delete-stack:
+    runs-on: ubuntu-latest
+    steps:
+      # Checks-out main repository under $GITHUB_WORKSPACE, so the job can access it
+      - name: Checking out the repository
+        uses: actions/checkout@v4
+
+      # application code that adds the content to provided path
+      - name: Run delete-stack
+        id: add_stack
+        env:
+          STACK_ID: ${{ github.event.inputs.stack-id }}
+          DELETE_OPTION: ${{ github.event.inputs.delete-option }}
+          SPACELIFT_API_KEY_ID: ${{ secrets.SPACELIFT_API_KEY_ID }}
+          SPACELIFT_API_KEY_SECRET: ${{ secrets.SPACELIFT_API_KEY_SECRET }}
+          SPACELIFT_API_KEY_ENDPOINT: https://incontact.app.spacelift.io/graphql
+          GH_ACTOR: ${{ github.actor }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # -u causes the output to be unbuffered, and therefore ordered chronologically
+          pip install colorama
+          pip install pygithub
+          python -u .github/scripts/delete-stack.py
